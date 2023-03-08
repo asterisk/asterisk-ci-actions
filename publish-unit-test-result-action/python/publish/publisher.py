@@ -182,6 +182,7 @@ class Publisher:
         self._gha = gha
         self._repo = gh.get_repo(self._settings.repo)
         self._req = gh._Github__requester
+        logger.info(f'Repo {self._settings.repo}')
 
     def publish(self,
                 stats: UnitTestRunResults,

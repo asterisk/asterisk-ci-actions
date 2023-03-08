@@ -243,6 +243,8 @@ def main(settings: Settings, gha: GithubAction) -> None:
         settings.seconds_between_github_writes,
         gh._Github__requester._Requester__requestRaw
     )
+    logger.info(f'Repo {settings.repo}')
+
     Publisher(settings, gh, gha).publish(stats, results.case_results, conclusion)
 
     if action_fail_required(conclusion, settings.action_fail, settings.action_fail_on_inconclusive):
@@ -477,6 +479,7 @@ def get_settings(options: dict, gha: Optional[GithubAction] = None) -> Settings:
         seconds_between_github_reads=float(seconds_between_github_reads),
         seconds_between_github_writes=float(seconds_between_github_writes)
     )
+    logger.info(f'get settings: Repo {settings.repo}')
 
     check_var(settings.token, 'GITHUB_TOKEN', 'GitHub token')
     check_var(settings.repo, 'GITHUB_REPOSITORY', 'GitHub repository')
@@ -494,6 +497,7 @@ def get_settings(options: dict, gha: Optional[GithubAction] = None) -> Settings:
     check_var_condition(settings.api_retries >= 0, f'GITHUB_RETRIES must be a positive integer or 0: {settings.api_retries}')
     check_var_condition(settings.seconds_between_github_reads > 0, f'SECONDS_BETWEEN_GITHUB_READS must be a positive number: {seconds_between_github_reads}')
     check_var_condition(settings.seconds_between_github_writes > 0, f'SECONDS_BETWEEN_GITHUB_WRITES must be a positive number: {seconds_between_github_writes}')
+    logger.info(f'get settings: Repo {settings.repo}')
 
     return settings
 
@@ -508,6 +512,8 @@ def set_log_level(handler: logging.Logger, level: str, gha: GithubAction):
 if __name__ == "__main__":
     gha = GithubAction()
     options = dict(os.environ)
+    xxx = get_var('GITHUB_REPOSITORY', options)
+    logger.info(f'get settings: Repo {xxx}')
 
     root_log_level = get_var('ROOT_LOG_LEVEL', options) or 'INFO'
     set_log_level(logging.root, root_log_level, gha)
@@ -520,6 +526,7 @@ if __name__ == "__main__":
         gha.echo(True)
 
     settings = get_settings(options, gha)
+    logger.info(f'__main__: Repo {settings.repo}')
     logger.debug(f'Settings: {settings}')
 
     main(settings, gha)
