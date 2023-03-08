@@ -179,6 +179,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github_token }}
         GITHUB_RETRIES: ${{ inputs.github_retries }}
         COMMIT: ${{ inputs.commit }}
+        COMMIT_REPOSITORY: ${{ inputs.repository }}
         GITHUB_REPOSITORY: ${{ inputs.repository }}
         CHECK_NAME: ${{ inputs.check_name }}
         COMMENT_TITLE: ${{ inputs.comment_title }}
