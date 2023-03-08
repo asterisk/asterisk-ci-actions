@@ -1,0 +1,89 @@
+name: CheckoutAsterisk
+inputs:
+  asterisk-repo:
+    required: true
+    type: string
+  pr-number:
+    required: false
+    type: number
+    default: 0
+  base-branch:
+    required: true
+    type: string
+  is-cherry-pick:
+    required: false
+    type: boolean
+    default: false
+  github-token:
+    description: 'GitHub API Access Token.'
+    default: ${{ github.token }}
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: SetupEnv
+      id: setup-env
+      shell: bash
+      run: |
+        echo "${{env.GITHUB_ACTION}} SetupEnv"
+        cat <<EOF >> "$GITHUB_ENV"
+        CA_IS_CHERRY_PICK=${{inputs.is-cherry-pick}}
+        CA_BASE_BRANCH=${{inputs.base-branch}}
+        CA_PR_NUMBER=${{inputs.pr-number}}
+        EOF
+      
+    - name: SetupRef
+      id: setup-ref
+      shell: bash
+      run: |
+        echo "${{env.GITHUB_ACTION}} SetupRef"
+        if [ ${CA_PR_NUMBER} -gt 0 ] ; then
+          if ${CA_IS_CHERRY_PICK} ; then
+            CA_CHECKOUT_REF=${CA_BASE_BRANCH}
+            echo "Cherry picking PR ${CA_PR_NUMBER} to branch ${CA_BASE_BRANCH}" 
+          else
+            CA_CHECKOUT_REF=refs/pull/${CA_PR_NUMBER}/head
+            echo "Checking out PR ${CA_PR_NUMBER}" 
+          fi
+        else
+          if ${CA_IS_CHERRY_PICK} ; then
+            echo "::error::Cherry-pick requested without a PR to cherry-pick"
+            exit 1
+          fi
+          CA_CHECKOUT_REF=${CA_BASE_BRANCH}
+          echo "Checking out branch ${CA_BASE_BRANCH}" 
+        fi
+        echo "CA_CHECKOUT_REF=${CA_CHECKOUT_REF}" >> ${GITHUB_ENV}
+
+    - name: Checkout Destination Branch
+      id: checkout-branch
+      uses: asterisk/asterisk-ci-actions/checkout@main
+      with:
+        repository: ${{inputs.asterisk-repo}}
+        path: asterisk
+        ref: ${{ env.CA_CHECKOUT_REF }}
+        clean: true
+        fetch-depth: 5
+        set-safe-directory: true
+        quiet: true
+
+    - name: Cherry Pick PR
+      id: cherry-pick-pr
+      if: inputs.is-cherry-pick == true
+      shell: bash
+      env:
+        GH_TOKEN: ${{inputs.github-token}}
+      run: |
+        echo "${{env.GITHUB_ACTION}} Cherry-picking commits"
+        cd asterisk
+        commits=$(gh api repos/asterisk/asterisk-gh-test/pulls/${CA_PR_NUMBER}/commits --jq '.[].sha')
+        IFS=$'\n '
+        for commit in $commits ; do
+          desc=$(git show --oneline -s ${commit})
+          echo "Cherry picking commit ${desc}"
+          git cherry-pick ${commit} || {
+            echo "::error::Unable to cherry-pick commit '${desc}'"
+            exit 1
+          }
+        done 

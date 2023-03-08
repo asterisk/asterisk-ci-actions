@@ -1,21 +1,29 @@
 name: DumpContext
+inputs:
+  action-inputs:
+    required: false
+    type: string
+
 runs:
   using: "composite"
   steps:
     - name: "Dump github context"
       shell: bash
-      env:
-        GHCTX: ${{toJSON(github)}}
-        INPTS: ${{toJSON(inputs)}}
       run: |
         set -e +v +x
         echo "::group::inputs"
-        echo $"$INPTS"
+        echo '${{inputs.action-inputs}}'
         echo "::endgroup::"
+        
+        echo "::group::ctxenv"
+        echo '${{toJSON(env)}}'
+        echo "::endgroup::"
+        
         echo "::group::env"
-        printenv
+        printenv | sort
         echo "::endgroup::"
+        
         echo "::group::github_context"
-        echo $"$GHCTX"
+        echo '${{toJSON(github)}}'
         echo "::endgroup::"
         exit 0

@@ -1,0 +1,157 @@
+name: GetAsterisk
+inputs:
+  from-cache-key:
+    required: false
+    type: string
+    default: "NO_CACHE"
+  to-cache-key:
+    required: false
+    type: string
+    default: "NO_CACHE"
+  asterisk-repo:
+    required: true
+    type: string
+    default: ${{github.repository}}
+  pr-number:
+    required: false
+    type: number
+    default: 0
+  base-branch:
+    required: true
+    type: string
+  cache-dir:
+    required: false
+    type: string
+    default: ${{github.workspace}}/cache
+  is-cherry-pick:
+    required: false
+    type: boolean
+    default: false
+  github-token:
+    description: 'GitHub API Access Token.'
+    default: ${{ github.token }}
+    required: false
+  modules-blacklist:
+    description: 'List of Asterisk modules to blacklist from the build'
+    default: ""
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Setup
+      id: setup
+      shell: bash
+      run: |
+        echo "${{env.GITHUB_ACTION}} Setup"
+        CACHE_DIR=$(realpath -m ${{inputs.cache-dir}})
+        cat <<EOF >> "$GITHUB_ENV"
+        GA_IS_CHERRY_PICK=${{inputs.is-cherry-pick}}
+        GA_ASTERISK_REPO=${{inputs.asterisk-repo}}
+        GA_BASE_BRANCH=${{inputs.base-branch}}
+        GA_PR_NUMBER=${{inputs.pr-number}}
+        GA_CACHE_DIR=${CACHE_DIR}
+        GA_OUTPUT_DIR=${CACHE_DIR}/output
+        GA_CACHE_SRC_DIR=${CACHE_DIR}/src
+        GA_MODULES_BLACKLIST=${{inputs.modules-blacklist}}
+        GA_SCRIPT_DIR=$(realpath ${GITHUB_ACTION_PATH}/../scripts)
+        EOF
+      
+    # If from-cache-key is empty, we need to checkout from scratch
+    - name: Checkout Asterisk
+      id: checkout-asterisk
+      if: inputs.from-cache-key == 'NO_CACHE'
+      uses: asterisk/asterisk-ci-actions/CheckoutAsterisk@main
+      with:
+        asterisk-repo: ${{inputs.asterisk-repo}}
+        pr-number: ${{inputs.pr-number}}
+        base-branch: ${{inputs.base-branch}}
+        is-cherry-pick: ${{inputs.is-cherry-pick}}
+        github-token: ${{inputs.github-token}}
+        
+    # If there WAS a from-cache-key provided, we just need to
+    # retrieve the cache and restore the built source.
+    - name: Retrieve Cache
+      id: retrieve-cache
+      if: inputs.from-cache-key != 'NO_CACHE'
+      uses: actions/cache/restore@v3
+      with:
+        key:  ${{ inputs.from-cache-key }}
+        path: |
+          ${{env.GA_CACHE_DIR}}
+        fail-on-cache-miss: true
+
+    - name: Install Asterisk from Cache
+      id: install-asterisk-from-cache
+      if: inputs.from-cache-key != 'NO_CACHE'
+      shell: bash
+      run: |
+        echo "${{env.GITHUB_ACTION}} Install Asterisk from Cache"
+        mkdir asterisk
+        rsync -aH ${GA_CACHE_SRC_DIR}/. ./asterisk/
+
+    - name: Setup Asterisk Build Environment
+      id: setup-build-env
+      shell: bash
+      run: |
+        echo "${{env.GITHUB_ACTION}} Setup Asterisk Build Environment"
+        echo -e "Last 5 commits: \n$(git log -5 --format='%h (%an) (%ai) %s')"
+        mkdir -p /srv/cache/externals /srv/cache/sounds /srv/cache/ccache || :
+        chown -R asteriskci:users /srv/cache
+        chmod g+rw /srv/cache/ccache
+        chmod g+s /srv/cache/ccache
+        mkdir -p ${GA_OUTPUT_DIR} ${GA_CACHE_SRC_DIR} || :
+        chown -R asteriskci:users ${GA_OUTPUT_DIR}
+        echo "GA_COMMIT=$(git log -1 --format='%H')" >> "$GITHUB_ENV"
+
+      # Build asterisk if we don't already have it cached.
+    - name: Build Asterisk
+      id: build-asterisk
+      if: inputs.from-cache-key == 'NO_CACHE'
+      shell: bash
+      run: |
+        echo "${{env.GITHUB_ACTION}} Build Asterisk"
+        cd asterisk
+        ${GA_SCRIPT_DIR}/buildAsterisk.sh --github --branch-name=${GA_BRANCH} \
+          --modules-blacklist="${GA_MODULES_BLACKLIST//,/ }" \
+          --output-dir=${GA_OUTPUT_DIR}
+
+      # Cache the build if to-cache-key was provided
+    - name: Cache Build Products
+      id: cache-build-products
+      if: inputs.to-cache-key != 'NO_CACHE'
+      shell: bash
+      run: |
+        echo "${{env.GITHUB_ACTION}} Copy build to cache"
+        if [ "${GA_TO_CACHE_KEY}" != "NO_CACHE" ] ; then
+          rsync -aH ./asterisk/. ${GA_CACHE_SRC_DIR}/
+        fi 
+
+      # However we got the build, time to install it.
+    - name: Install Asterisk
+      id: install-asterisk
+      shell: bash
+      run: |
+        echo "${{env.GITHUB_ACTION}} Install Asterisk"
+        cd asterisk
+        ${GA_SCRIPT_DIR}/installAsterisk.sh --github --uninstall-all \
+          --branch-name=${GA_BRANCH} --user-group=asteriskci:users \
+          --output-dir=${GA_OUTPUT_DIR}
+
+    - name: Save Output
+      id: save-output
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: Build Logs
+        path: ${{env.GA_OUTPUT_DIR}}
+
+    - name: Save the cache
+      id: save-cache
+      if: inputs.to-cache-key != 'NO_CACHE'
+      uses: actions/cache/save@v3
+      with:
+        key: ${{ inputs.to-cache-key }}
+        path: |
+          ${{env.GA_CACHE_DIR}}

@@ -1,0 +1,46 @@
+#
+# This file contains useful Bash functions
+# and can be "source"d from the scripts.
+#
+
+declare -a POSITIONAL_ARGS
+for a in "$@" ; do
+	OPTION_COUNT+=1
+	case "$a" in
+		--*=*)
+			[[ $a =~ --([^=]+)=(.*) ]]
+			l=${BASH_REMATCH[1]//-/_}
+			r=${BASH_REMATCH[2]}
+			eval ${l^^}=\"$r\"
+			;;
+		--*)
+			[[ $a =~ --(.+) ]]
+			l=${BASH_REMATCH[1]//-/_}
+			eval ${l^^}=1
+			;;
+		*)
+			POSITIONAL_ARGS+=($a)
+			;;
+	esac
+done
+
+runner() {
+	( set -x ; ${@} )
+}
+
+declare -x log_to
+declare -x err_to
+
+begin_log() {
+	base=$1
+	log_to="${base}.txt"
+	err_to="${base}.err"
+	[ -f "${err_to}" ] && rm "${err_to}" || :
+	[ -f "${log_to}" ] && rm "${log_to}" || : 
+}
+
+end_log() {
+	log_to=/dev/stdout
+	err_to=/dev/stderr
+}
+

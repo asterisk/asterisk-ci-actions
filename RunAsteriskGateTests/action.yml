@@ -1,0 +1,117 @@
+name: RunAsteriskGateTests
+inputs:
+  asterisk-repo:
+    required: true
+    type: string
+  pr-number:
+    required: true
+    type: number
+  pr-commit:
+    required: true
+    type: string
+  base-branch:
+    required: true
+    type: string
+  github-token:
+    description: 'GitHub API Access Token.'
+    default: ${{ github.token }}
+    required: false
+  testsuite-repo:
+    description: 'Testsuite Repo (default: asterisk/testsuite)'
+    type: string
+    required: false
+    default: asterisk/testsuite
+  gatetest-group:
+    description: 'Gate Group Number'
+    type: number
+    required: true
+  gatetest-commands:
+    description: 'Gate Commands'
+    type: string
+    required: true
+  testsuite-dir:
+    required: false
+    type: string
+    default: testsuite
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: SetupEnv
+      id: setup
+      shell: bash
+      env:
+        GATETEST_COMMANDS: ${{ inputs.gatetest-commands }}
+      run: |
+        echo "${{env.GITHUB_ACTION}} Setup Testsuite"
+        echo $GATETEST_COMMANDS > /tmp/test_commands.json
+        cat <<EOF >> "$GITHUB_ENV"
+        RAGT_BRANCH=${{inputs.base-branch}}
+        RAGT_GATETEST_GROUP=${{ inputs.gatetest-group }}
+        RAGT_TESTSUITE_REPO=${{inputs.testsuite-repo}}
+        RAGT_TESTSUITE_DIR=${{inputs.testsuite-dir}}
+        RAGT_SCRIPT_DIR=$(realpath ${GITHUB_ACTION_PATH}/../scripts)
+        RAGT_TEST_NAME=$(jq -j '.${{ inputs.gatetest-group }}.name' /tmp/test_commands.json)
+        RAGT_TEST_OPTIONS=$(jq -j '.${{ inputs.gatetest-group }}.options' /tmp/test_commands.json)
+        RAGT_TEST_TIMEOUT=$(jq -j '.${{ inputs.gatetest-group }}.timeout' /tmp/test_commands.json)
+        RAGT_TEST_CMD=$(jq -j '.${{ inputs.gatetest-group }}.testcmd' /tmp/test_commands.json)
+        RAGT_TEST_DIR=$(jq -j '.${{ inputs.gatetest-group }}.dir' /tmp/test_commands.json)
+        EOF
+        
+    - name: Checkout Testsuite
+      id: checkout-testsuite
+      if: ${{ success() }}
+      shell: bash
+      run: |
+        echo "${{env.GITHUB_ACTION}} Checkout Testsuite"
+        mkdir -p ${RAGT_TESTSUITE_DIR}
+        cd ${RAGT_TESTSUITE_DIR}
+        git clone -b ${RAGT_BRANCH} --depth 1 --no-tags \
+          https://github.com/${RAGT_TESTSUITE_REPO} ./
+
+    - name: Run Testsuite
+      id: run-testsuite
+      if: ${{ success() }}
+      shell: bash
+      run: |
+        echo "${{env.GITHUB_ACTION}} Run Testsuite $RAGT_GATETEST_GROUP : ${RAGT_TEST_NAME}"
+        cd ${RAGT_TESTSUITE_DIR}
+        ${RAGT_SCRIPT_DIR}/runTestsuite.sh \
+          --timeout=${RAGT_TEST_TIMEOUT} \
+          --testsuite-command="${RAGT_TEST_OPTIONS} ${RAGT_TEST_CMD}"
+        cp asterisk-test-suite-report.xml logs/ || :
+        
+    - name: Save Output
+      id: save-output
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: Testsuite Test Output
+        path: ${{ env.RAGT_TESTSUITE_DIR }}/logs/
+
+    - name: Publish Gate Test Results
+      id: publish-results
+      if: always() && inputs.pr-number > 0
+      uses: dorny/test-reporter@v1
+      with:
+        name: Testsuite Test Results
+        path: ${{ env.RAGT_TESTSUITE_DIR }}/*.xml
+        reporter: java-junit
+        list-suites: all
+        list-tests: failed
+        max-annotations: 0
+        fail-on-error: true
+        token: ${{inputs.github-token}}
+
+
+
+#      if: always() && inputs.pr-number > 0
+#      uses: EnricoMi/publish-unit-test-result-action/composite@v2.4.2
+#      with:
+#        check_name: Testsuite Test Results
+#        files: ${{ env.RAGT_TESTSUITE_DIR }}/*.xml
+#        comment_mode: always
+#        action_fail: true
+#      env:
+#        GITHUB_REPOSITORY: ${{ inputs.asterisk-repo }}

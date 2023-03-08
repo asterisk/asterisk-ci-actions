@@ -1,0 +1,90 @@
+name: BuildInstallCacheAsterisk
+inputs:
+  to-cache-key:
+    required: false
+    type: string
+    default: "NO_CACHE"
+  asterisk-repo:
+    required: true
+    type: string
+  base-branch:
+    required: true
+    type: string
+  cache-dir:
+    required: false
+    type: string
+    default: ${{github.workspace}}/../cache
+  github-token:
+    description: 'GitHub API Access Token.'
+    default: ${{ github.token }}
+    required: false
+  modules-blacklist:
+    description: 'List of Asterisk modules to blacklist from the build'
+    default: ""
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: SetupEnv
+      shell: bash
+      run: |
+        CACHE_DIR=$(realpath -m ${{inputs.cache-dir}})
+        cat <<EOF >> "$GITHUB_ENV"
+        BICA_TO_CACHE_KEY=${{inputs.to-cache-key}}
+        BICA_CACHE_DIR=${CACHE_DIR}
+        BICA_OUTPUT_DIR=${CACHE_DIR}/output
+        BICA_SRC_DIR=${CACHE_DIR}/src
+        BICA_BRANCH=${{inputs.base-branch}}
+        BICA_MODULES_BLACKLIST=${{inputs.modules-blacklist}}
+        BICA_SCRIPT_DIR=$(realpath ${GITHUB_ACTION_PATH}/../scripts)
+        EOF
+      
+    - name: Setup Asterisk Build Environment
+      shell: bash
+      run: |
+        echo "Setup Asterisk Build Environment"
+        echo -e "Last 5 commits: \n$(git log -5 --format='%h (%an) (%ai) %s')"
+        mkdir -p /srv/cache/externals /srv/cache/sounds /srv/cache/ccache || :
+        chown -R asteriskci:users /srv/cache
+        chmod g+rw /srv/cache/ccache
+        chmod g+s /srv/cache/ccache
+        mkdir -p ${BICA_OUTPUT_DIR} ${BICA_SRC_DIR} || :
+        chown -R asteriskci:users ${BICA_OUTPUT_DIR}
+        echo "BICA_COMMIT=$(git log -1 --format='%H')" >> "$GITHUB_ENV"
+
+    - name: Build Asterisk
+      shell: bash
+      run: |
+        echo "Build Asterisk. BRANCH: ${BICA_BRANCH} OUTPUT_DIR: ${BICA_OUTPUT_DIR}"
+        ${BICA_SCRIPT_DIR}/buildAsterisk.sh --github --branch-name=${BICA_BRANCH} \
+          --modules-blacklist="${BICA_MODULES_BLACKLIST//,/ }" \
+          --output-dir=${BICA_OUTPUT_DIR}
+        if [ "${BICA_TO_CACHE_KEY}" != "NO_CACHE" ] ; then
+          rsync -aH ./. ${BICA_SRC_DIR}/
+        fi 
+
+    - name: Install Asterisk
+      if: success() && inputs.to-cache-key == 'NO_CACHE'
+      shell: bash
+      run: |
+        echo "Installing Asterisk. BRANCH: ${BICA_BRANCH} OUTPUT_DIR: ${BICA_OUTPUT_DIR}"
+        ${BICA_SCRIPT_DIR}/installAsterisk.sh --github --uninstall-all \
+          --branch-name=${BICA_BRANCH} --user-group=asteriskci:users \
+          --output-dir=${BICA_OUTPUT_DIR}
+
+    - name: Save Output
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: Build Logs
+        path: ${{env.BICA_OUTPUT_DIR}}
+
+    - name: Cache Build Products
+      if: inputs.to-cache-key != 'NO_CACHE'
+      uses: actions/cache/save@v3
+      with:
+        key: ${{ inputs.to-cache-key }}
+        path: |
+          ${{env.BICA_CACHE_DIR}}
