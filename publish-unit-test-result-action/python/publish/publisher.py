@@ -370,6 +370,7 @@ class Publisher:
 
             if check_run is None:
                 logger.debug(f'creating check with {len(annotations)} annotations')
+                logger.info(f'repo {self._repo.owner} {self._repo.name}')
                 check_run = self._repo.create_check_run(name=self._settings.check_name,
                                                         head_sha=self._settings.commit,
                                                         status='completed',
