@@ -1,0 +1,162 @@
+name: RunUnitTests
+inputs:
+  pr-number:
+    required: true
+    type: number
+  pr-sha:
+    required: true
+    type: string
+  github-token:
+    description: 'GitHub API Access Token.'
+    default: ${{ github.token }}
+    required: false
+  unittest-command:
+    description: 'Asterisk CLI command to run unit tests.'
+    default: "test execute all"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Environment
+      if: false
+      env:
+        PR_NUMBER: ${{ inputs.pr-number }}
+        PR_REF: refs/pull/${{ inputs.pr-number }}/head
+        PR_REPO: ${{ inputs.pr-repo }}
+        GH_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+      shell: bash
+      run: |
+        echo "PWD: $PWD"
+        prenv() {
+        	v=$1
+        	echo "$v: ${!v}"
+        }
+        
+        prenv GH_TOKEN
+        prenv PR_NUMBER
+        prenv PR_REPO
+        prenv GITHUB_EVENT_PATH
+        
+        gh api repos/asterisk/asterisk-gh-test/pulls/${PR_NUMBER} | jq . > pr.json
+        gh api repos/asterisk/asterisk-gh-test/pulls/${PR_NUMBER}/commits | jq . > commits.json
+        
+        REPO_DIR=${PR_REPO##*/}
+        PR_SHA=$(jq -r '.merge_commit_sha' pr.json)
+        
+        echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+        echo "PR_REF=$PR_REF" >> $GITHUB_ENV
+        echo "PR_REPO=$PR_REPO" >> $GITHUB_ENV
+        echo "GITHUB_REPOSITORY=$PR_REPO" >> $GITHUB_ENV
+        echo "REPO_DIR=$REPO_DIR" >> $GITHUB_ENV
+        echo "PR_SHA=$PR_SHA" >> $GITHUB_ENV
+        
+        jq '.client_payload' $GITHUB_EVENT_PATH > pr_event.json
+        
+        echo "::group::pr.json"
+        cat pr.json
+        echo "::endgroup::"
+        
+        echo "::group::commits.json"
+        cat commits.json
+        echo "::endgroup::"
+        
+        echo "::group::gh_event.json"
+        jq . $GITHUB_EVENT_PATH
+        echo "::endgroup::"
+        
+        echo "::group::pr_event.json"
+        cat pr_event.json
+        echo "::endgroup::"
+
+    - name: DumpEnvironment
+      uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+
+    - name: Checkout Asterisk
+      uses: actions/checkout@v3
+      with:
+        ref: refs/pull/${{ inputs.pr-number }}/head
+        clean: true
+        fetch-depth: 1
+        set-safe-directory: true
+
+    - name: Setup Asterisk Build Environment
+      shell: bash
+      run: |
+        echo $PWD
+        ls -al
+        echo "::notice::PWD: $PWD"
+        echo "::notice::$(git log -5 --format='%h %an %ai %s')"
+        mkdir -p /srv/cache/externals /srv/cache/sounds /srv/cache/ccache || :
+        chown -R asteriskci:users /srv/cache
+        chmod g+rw /srv/cache/ccache
+        chmod g+s /srv/cache/ccache
+        mkdir -p tests/CI/output || :
+        chown -R asteriskci:users tests/CI/output
+
+#      - name: Build Asterisk
+#        run: |
+#          if [ -f ./tests/CI/output/is-built ] ; then
+#            echo "Asterisk is already built"
+#            exit 0
+#          fi
+#          ./tests/CI/buildAsterisk.sh --github --branch-name=master --output-dir=./tests/CI/output
+#          touch ./tests/CI/output/is-built
+#
+#      - name: Install Asterisk
+#        if: ${{ success() }}
+#        run: |
+#          if [ -f ./tests/CI/output/is-installed ] ; then
+#            echo "Asterisk is already installed"
+#            exit 0
+#          fi
+#          ./tests/CI/installAsterisk.sh --github --uninstall-all --branch-name=master --user-group=asteriskci:users 
+#          touch ./tests/CI/output/is-installed
+#
+#      - name: Run Unit Tests
+#        if: ${{ success() }}
+#        run: |
+#          echo "::notice::Running unit test command $UNITTEST_COMMAND"
+#          tests/CI/runUnittests.sh --no-expect --github \
+#            --user-group=asteriskci:users \
+#            --output-dir=./tests/CI/output \
+#            --output-xml=./tests/CI/output/unittests-results.xml \
+#            --unittest-command="${{inputs.unittest-command}}"
+
+    - name: Run Unit Tests
+      shell: bash
+      run: |
+        echo "::notice::Running unit test command $UNITTEST_COMMAND"
+        mkdir -p tests/CI/output
+        cat > tests/CI/output/unittest-result.xml <<EOF 
+        <?xml version="1.0" encoding="UTF-8"?>
+        <testsuites>
+        	<testsuite errors="0" time="0.0" tests="693" name="AsteriskUnitTests">
+        		<properties>
+        			<property name="version" value="GIT-master-506e84e2c2M"/>
+        		</properties>
+        		<testcase time="0.0" classname="TEST_PASS_FAIL" name="JUST_PASS"/>
+        		<testcase time="0.0" classname="TEST_PASS_FAIL" name="JUST_FAIL">
+        			<failure><![CDATA[
+        [test_pbx.c:just_fail:400]: This test just forces a fail
+        
+        		]]></failure>
+        		</testcase>
+        	</testsuite>
+        </testsuites>
+        EOF
+        
+    - name: Save Output
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: Test Results
+        path: ./tests/CI/output
+
+    - name: Publish Test Results
+      uses: /asterisk/asterisk-ci-actions/publish-unit-test-result-action/composite@main
+#        uses: EnricoMi/publish-unit-test-result-action/composite@v2.4.2
+      with:
+        check_name: Unit Test Results
+        commit: ${{ inputs.pr-sha }}
+        files: tests/CI/output/*.xml
