@@ -1,0 +1,132 @@
+name: RunGateTests
+inputs:
+  pr-number:
+    required: true
+    type: number
+  pr-sha:
+    required: true
+    type: string
+  base-branch:
+    required: true
+    type: string
+  github-token:
+    description: 'GitHub API Access Token.'
+    default: ${{ github.token }}
+    required: false
+  testsuite-repo:
+    description: 'Testsuite Repo (default: asterisk/testsuite)'
+    type: string
+    required: false
+  gatetest-group:
+    description: 'Gate Group Number'
+    type: number
+    required: true
+  gatetest-commands:
+    description: 'Gate Commands'
+    type: string
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: DumpEnvironment
+      uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+
+    - name: Checkout Asterisk
+      uses: actions/checkout@v3
+      with:
+        ref: refs/pull/${{ inputs.pr-number }}/head
+        clean: true
+        fetch-depth: 1
+        set-safe-directory: true
+
+    - name: Setup Asterisk Build Environment
+      shell: bash
+      run: |
+        echo "::notice::$(git log -5 --format='%h %an %ai %s')"
+        mkdir -p /srv/cache/externals /srv/cache/sounds /srv/cache/ccache || :
+        chown -R asteriskci:users /srv/cache
+        chmod g+rw /srv/cache/ccache
+        chmod g+s /srv/cache/ccache
+        mkdir -p tests/CI/output || :
+        chown -R asteriskci:users tests/CI/output
+
+    - name: Build Asterisk
+      shell: bash
+      env:
+        BRANCH: ${{inputs.base-branch}}
+      run: |
+        echo "::group::Build Asterisk"
+        ./tests/CI/buildAsterisk.sh --github --branch-name=$BRANCH --output-dir=./tests/CI/output
+        echo "::endgroup::"
+
+    - name: Install Asterisk
+      if: ${{ success() }}
+      shell: bash
+      env:
+        BRANCH: ${{inputs.base-branch}}
+      run: |
+        echo "::group::Install Asterisk"
+        ./tests/CI/installAsterisk.sh --github --uninstall-all --branch-name=$BRANCH --user-group=asteriskci:users 
+        echo "::endgroup::"
+
+    - name: Setup Testsuite
+      if: ${{ success() }}
+      id: setup
+      shell: bash
+      env:
+        GATETEST_COMMANDS: ${{inputs.gatetest-commands}}
+        GATETEST_GROUP: ${{inputs.gatetest-group}}
+        BRANCH: ${{inputs.base-branch}}
+      run: |
+        echo $GATETEST_COMMANDS > /tmp/test_commands.json
+        echo "TEST_NAME=$(jq -j '.['$GATETEST_GROUP'].name' /tmp/test_commands.json)" >> "$GITHUB_ENV"
+        echo "TEST_DIR=$(jq -j '.['$GATETEST_GROUP'].dir' /tmp/test_commands.json)" >> "$GITHUB_ENV"
+        echo "TEST_OPTIONS=$(jq -j '.['$GATETEST_GROUP'].options' /tmp/test_commands.json)" >> "$GITHUB_ENV"
+        echo "TEST_TIMEOUT=$(jq -j '.['$GATETEST_GROUP'].timeout' /tmp/test_commands.json)" >> "$GITHUB_ENV"
+        echo "TEST_CMD=$(jq -j '.['$GATETEST_GROUP'].testcmd' /tmp/test_commands.json)" >> "$GITHUB_ENV"
+        echo "test-dir=$(jq -j '.['$GATETEST_GROUP'].dir' /tmp/test_commands.json)" >> "$GITHUB_OUTPUT"
+
+    - name: Checkout Testsuite
+      if: ${{ success() }}
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ inputs.testsuite-repo }}
+        ref: ${{inputs.base-branch}}
+        path: ${{steps.setup.outputs.test-dir}}
+        clean: true
+        fetch-depth: 1
+        set-safe-directory: true
+
+    - name: Run Testsuite
+      if: ${{ success() }}
+      shell: bash
+      env:
+        GATETEST_COMMANDS: ${{inputs.gatetest-commands}}
+        GATETEST_GROUP: ${{inputs.gatetest-group}}
+        BRANCH: ${{inputs.base-branch}}
+      run: |
+        echo $PWD
+        echo "::notice::Running Testsuite Group Number: $GATETEST_GROUP : ${TEST_NAME}"
+        ./tests/CI/runTestsuite.sh --testsuite-dir="${TEST_DIR}" \
+          --timeout=${TEST_TIMEOUT} \
+          --testsuite-command="${TEST_OPTIONS} ${TEST_CMD}"
+        
+    - name: Save Output
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: Test Results
+        path: |
+          ${{steps.setup.outputs.test-dir}}/asterisk-test-suite-report.xml
+          ${{steps.setup.outputs.test-dir}}/logs/**
+          ${{steps.setup.outputs.test-dir}}/**/core*.txt
+
+    - name: Publish Test Results
+      uses: /asterisk/asterisk-ci-actions/publish-unit-test-result-action/composite@main
+#        uses: EnricoMi/publish-unit-test-result-action/composite@v2.4.2
+      with:
+        check_name: Testsuite Test Results
+        commit: ${{ inputs.pr-sha }}
+        files: ${{steps.setup.outputs.test-dir}}/*.xml
