@@ -39,13 +39,14 @@ runs:
         action-inputs: ${{ toJSON(inputs) }}
 
     - name: Checkout Asterisk
-      uses: actions/checkout@v3
+      uses: asterisk/asterisk-ci-actions/checkout@main
       with:
         repository: ${{inputs.asterisk-repo}}
         ref: refs/pull/${{ inputs.pr-number }}/head
         clean: true
         fetch-depth: 5
         set-safe-directory: true
+        quiet: true
 
     - name: Setup Asterisk Build Environment
       shell: bash
@@ -97,7 +98,7 @@ runs:
 
     - name: Checkout Testsuite
       if: ${{ success() }}
-      uses: actions/checkout@v3
+      uses: asterisk/asterisk-ci-actions/checkout@main
       with:
         repository: ${{ inputs.testsuite-repo }}
         ref: ${{ inputs.base-branch }}
@@ -105,6 +106,7 @@ runs:
         clean: true
         fetch-depth: 1
         set-safe-directory: true
+        quiet: true
 
     - name: Run Testsuite
       if: ${{ success() }}
