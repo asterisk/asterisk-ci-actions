@@ -6,7 +6,7 @@ inputs:
   pr-number:
     required: true
     type: number
-  pr-sha:
+  pr-commit:
     required: true
     type: string
   base-branch:
@@ -41,12 +41,11 @@ runs:
     - name: CheckInputs
       shell: bash
       run: |
-        if [ x"${{inputs.pr-sha}}" == x ] ; then
+        if [ x"${{inputs.pr-commit}}" == x ] ; then
           echo "::error:: NO INPUT SHA"
         else
           echo "::notice::SHA: ${{inputs.pr-sha}}"
         fi
-        exit 1
 
     - name: Checkout Asterisk
       uses: actions/checkout@v3
@@ -148,4 +147,5 @@ runs:
       with:
         check_name: Testsuite Test Results
         repository: ${{inputs.asterisk-repo}}
+        commit: ${{inputs.pr-commit}}
         files: ${{steps.setup.outputs.test-dir}}/*.xml

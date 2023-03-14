@@ -1,0 +1,3 @@
+[submodule "publish-unit-test-result-action"]
+	path = publish-unit-test-result-action
+	url = https://github.com/EnricoMi/publish-unit-test-result-action.git
