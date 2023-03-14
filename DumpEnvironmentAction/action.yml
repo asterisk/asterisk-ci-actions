@@ -1,4 +1,9 @@
 name: DumpContext
+inputs:
+  action-inputs:
+    required: false
+    type: string
+
 runs:
   using: "composite"
   steps:
@@ -6,6 +11,10 @@ runs:
       shell: bash
       run: |
         set -e +v +x
+        echo "::group::inputs"
+        echo '${{inputs.action-inputs}}'
+        echo "::endgroup::"
+        
         echo "::group::ctxenv"
         echo '${{toJSON(env)}}'
         echo "::endgroup::"

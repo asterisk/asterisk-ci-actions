@@ -1,5 +1,8 @@
 name: RunGateTests
 inputs:
+  asterisk-repo:
+    required: true
+    type: string
   pr-number:
     required: true
     type: number
@@ -32,34 +35,51 @@ runs:
 
     - name: DumpEnvironment
       uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+      with:
+        action-inputs: ${{ toJSON(inputs) }}
+
+    - name: CheckInputs
+      shell: bash
+      run: |
+        if [ x"${{inputs.pr-sha}}" == x ] ; then
+          echo "::error:: NO INPUT SHA"
+        else
+          echo "::notice::SHA: ${{inputs.pr-sha}}"
+        fi
+        exit 1
 
     - name: Checkout Asterisk
       uses: actions/checkout@v3
       with:
+        repository: ${{inputs.asterisk-repo}}
         ref: refs/pull/${{ inputs.pr-number }}/head
         clean: true
-        fetch-depth: 1
+        fetch-depth: 5
         set-safe-directory: true
 
     - name: Setup Asterisk Build Environment
       shell: bash
       run: |
-        echo "::notice::$(git log -5 --format='%h %an %ai %s')"
+        echo "::notice::$(git log -5 --format='%h (%an) (%ai) %s')"
         mkdir -p /srv/cache/externals /srv/cache/sounds /srv/cache/ccache || :
         chown -R asteriskci:users /srv/cache
         chmod g+rw /srv/cache/ccache
         chmod g+s /srv/cache/ccache
         mkdir -p tests/CI/output || :
         chown -R asteriskci:users tests/CI/output
+        echo "COMMIT=$(git log -1 --format='%H')" >> "$GITHUB_ENV"
+
+    - name: DumpEnvironment
+      uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+      with:
+        action-inputs: ${{ toJSON(inputs) }}
 
     - name: Build Asterisk
       shell: bash
       env:
         BRANCH: ${{inputs.base-branch}}
       run: |
-        echo "::group::Build Asterisk"
         ./tests/CI/buildAsterisk.sh --github --branch-name=$BRANCH --output-dir=./tests/CI/output
-        echo "::endgroup::"
 
     - name: Install Asterisk
       if: ${{ success() }}
@@ -67,9 +87,7 @@ runs:
       env:
         BRANCH: ${{inputs.base-branch}}
       run: |
-        echo "::group::Install Asterisk"
         ./tests/CI/installAsterisk.sh --github --uninstall-all --branch-name=$BRANCH --user-group=asteriskci:users 
-        echo "::endgroup::"
 
     - name: Setup Testsuite
       if: ${{ success() }}
@@ -80,13 +98,14 @@ runs:
         GATETEST_GROUP: ${{inputs.gatetest-group}}
         BRANCH: ${{inputs.base-branch}}
       run: |
+        echo "::notice::Setup Testsuite"
         echo $GATETEST_COMMANDS > /tmp/test_commands.json
-        echo "TEST_NAME=$(jq -j '.['$GATETEST_GROUP'].name' /tmp/test_commands.json)" >> "$GITHUB_ENV"
-        echo "TEST_DIR=$(jq -j '.['$GATETEST_GROUP'].dir' /tmp/test_commands.json)" >> "$GITHUB_ENV"
-        echo "TEST_OPTIONS=$(jq -j '.['$GATETEST_GROUP'].options' /tmp/test_commands.json)" >> "$GITHUB_ENV"
-        echo "TEST_TIMEOUT=$(jq -j '.['$GATETEST_GROUP'].timeout' /tmp/test_commands.json)" >> "$GITHUB_ENV"
-        echo "TEST_CMD=$(jq -j '.['$GATETEST_GROUP'].testcmd' /tmp/test_commands.json)" >> "$GITHUB_ENV"
-        echo "test-dir=$(jq -j '.['$GATETEST_GROUP'].dir' /tmp/test_commands.json)" >> "$GITHUB_OUTPUT"
+        echo "TEST_NAME=$(jq -j '.'$GATETEST_GROUP'.name' /tmp/test_commands.json)" >> "$GITHUB_ENV"
+        echo "TEST_DIR=$(jq -j '.'$GATETEST_GROUP'.dir' /tmp/test_commands.json)" >> "$GITHUB_ENV"
+        echo "TEST_OPTIONS=$(jq -j '.'$GATETEST_GROUP'.options' /tmp/test_commands.json)" >> "$GITHUB_ENV"
+        echo "TEST_TIMEOUT=$(jq -j '.'$GATETEST_GROUP'.timeout' /tmp/test_commands.json)" >> "$GITHUB_ENV"
+        echo "TEST_CMD=$(jq -j '.'$GATETEST_GROUP'.testcmd' /tmp/test_commands.json)" >> "$GITHUB_ENV"
+        echo "test-dir=$(jq -j '.'$GATETEST_GROUP'.dir' /tmp/test_commands.json)" >> "$GITHUB_OUTPUT"
 
     - name: Checkout Testsuite
       if: ${{ success() }}
@@ -128,5 +147,5 @@ runs:
 #        uses: EnricoMi/publish-unit-test-result-action/composite@v2.4.2
       with:
         check_name: Testsuite Test Results
-        commit: ${{ inputs.pr-sha }}
+        repository: ${{inputs.asterisk-repo}}
         files: ${{steps.setup.outputs.test-dir}}/*.xml

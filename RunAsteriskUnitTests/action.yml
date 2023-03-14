@@ -1,5 +1,8 @@
 name: RunUnitTests
 inputs:
+  asterisk-repo:
+    required: true
+    type: string
   pr-number:
     required: true
     type: number
@@ -24,10 +27,13 @@ runs:
 
     - name: DumpEnvironment
       uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+      with:
+        action-inputs: ${{ toJSON(inputs)}}
 
     - name: Checkout Asterisk
       uses: actions/checkout@v3
       with:
+        repository: ${{inputs.asterisk-repo}}
         ref: refs/pull/${{ inputs.pr-number }}/head
         clean: true
         fetch-depth: 1

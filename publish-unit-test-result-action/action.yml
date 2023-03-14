@@ -14,6 +14,9 @@ inputs:
   commit:
     description: 'Commit SHA to which test results are published. Only needed if the value of GITHUB_SHA does not work for you.'
     required: false
+  repository:
+    description: 'GitHub owner/repository that contains the commit.'
+    required: false
   check_name:
     description: 'Name of the created check run.'
     default: 'Test Results'
