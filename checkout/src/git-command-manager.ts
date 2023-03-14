@@ -17,7 +17,7 @@ export interface IGitCommandManager {
   branchExists(remote: boolean, pattern: string): Promise<boolean>
   branchList(remote: boolean): Promise<string[]>
   checkout(ref: string, startPoint: string, quiet?: boolean): Promise<void>
-  checkoutDetach(): Promise<void>
+  checkoutDetach(quiet?: boolean): Promise<void>
   config(
     configKey: string,
     configValue: string,
@@ -158,6 +158,7 @@ class GitCommandManager {
     const args = ['checkout', '--force']
 
     if (quiet) {
+      core.info('Suppressing checkout output')
       args.push('-q')
     } else {
       args.push('--progress')
@@ -172,8 +173,12 @@ class GitCommandManager {
     await this.execGit(args)
   }
 
-  async checkoutDetach(): Promise<void> {
+  async checkoutDetach(quiet?: boolean): Promise<void> {
     const args = ['checkout', '--detach']
+    if (quiet) {
+      core.info('Suppressing checkout output')
+      args.push('-q')
+    }
     await this.execGit(args)
   }
 
@@ -214,6 +219,7 @@ class GitCommandManager {
     const args = ['-c', 'protocol.version=2', 'fetch']
 
     if (quiet) {
+      core.info('Suppressing fetch output')
       args.push('-q')
     } else {
       args.push('--progress')

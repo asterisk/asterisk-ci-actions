@@ -67,7 +67,8 @@ export async function getSource(settings: IGitSourceSettings): Promise<void> {
         settings.repositoryPath,
         repositoryUrl,
         settings.clean,
-        settings.ref
+        settings.ref,
+        settings.quiet
       )
     }
 
@@ -152,7 +153,7 @@ export async function getSource(settings: IGitSourceSettings): Promise<void> {
     }
 
     // Fetch
-    core.startGroup('Fetching the repository')
+    core.startGroup('Fetching the repository maybe')
     if (settings.fetchDepth <= 0) {
       // Fetch all branches and tags
       let refSpec = refHelper.getRefSpecForAllHistory(
@@ -165,11 +166,11 @@ export async function getSource(settings: IGitSourceSettings): Promise<void> {
       // commit (push or force push). If so, fetch again with a targeted refspec.
       if (!(await refHelper.testRef(git, settings.ref, settings.commit))) {
         refSpec = refHelper.getRefSpec(settings.ref, settings.commit)
-        await git.fetch(refSpec)
+        await git.fetch(refSpec, 0, settings.quiet)
       }
     } else {
       const refSpec = refHelper.getRefSpec(settings.ref, settings.commit)
-      await git.fetch(refSpec, settings.fetchDepth)
+      await git.fetch(refSpec, settings.fetchDepth, settings.quiet)
     }
     core.endGroup()
 

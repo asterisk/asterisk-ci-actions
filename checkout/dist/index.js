@@ -578,6 +578,7 @@ class GitCommandManager {
         return __awaiter(this, void 0, void 0, function* () {
             const args = ['checkout', '--force'];
             if (quiet) {
+                core.info('Suppressing checkout output');
                 args.push('-q');
             }
             else {
@@ -592,9 +593,13 @@ class GitCommandManager {
             yield this.execGit(args);
         });
     }
-    checkoutDetach() {
+    checkoutDetach(quiet) {
         return __awaiter(this, void 0, void 0, function* () {
             const args = ['checkout', '--detach'];
+            if (quiet) {
+                core.info('Suppressing checkout output');
+                args.push('-q');
+            }
             yield this.execGit(args);
         });
     }
@@ -625,6 +630,7 @@ class GitCommandManager {
         return __awaiter(this, void 0, void 0, function* () {
             const args = ['-c', 'protocol.version=2', 'fetch'];
             if (quiet) {
+                core.info('Suppressing fetch output');
                 args.push('-q');
             }
             else {
@@ -974,7 +980,7 @@ const fs = __importStar(__nccwpck_require__(7147));
 const fsHelper = __importStar(__nccwpck_require__(7219));
 const io = __importStar(__nccwpck_require__(7436));
 const path = __importStar(__nccwpck_require__(1017));
-function prepareExistingDirectory(git, repositoryPath, repositoryUrl, clean, ref) {
+function prepareExistingDirectory(git, repositoryPath, repositoryUrl, clean, ref, quiet) {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         assert.ok(repositoryPath, 'Expected repositoryPath to be defined');
@@ -1008,7 +1014,7 @@ function prepareExistingDirectory(git, repositoryPath, repositoryUrl, clean, ref
                 core.startGroup('Removing previously created refs, to avoid conflicts');
                 // Checkout detached HEAD
                 if (!(yield git.isDetached())) {
-                    yield git.checkoutDetach();
+                    yield git.checkoutDetach(quiet);
                 }
                 // Remove all refs/heads/*
                 let branches = yield git.branchList(false);
@@ -1155,7 +1161,7 @@ function getSource(settings) {
             }
             // Prepare existing directory, otherwise recreate
             if (isExisting) {
-                yield gitDirectoryHelper.prepareExistingDirectory(git, settings.repositoryPath, repositoryUrl, settings.clean, settings.ref);
+                yield gitDirectoryHelper.prepareExistingDirectory(git, settings.repositoryPath, repositoryUrl, settings.clean, settings.ref, settings.quiet);
             }
             if (!git) {
                 // Downloading using REST API
@@ -1209,7 +1215,7 @@ function getSource(settings) {
                 yield git.lfsInstall();
             }
             // Fetch
-            core.startGroup('Fetching the repository');
+            core.startGroup('Fetching the repository maybe');
             if (settings.fetchDepth <= 0) {
                 // Fetch all branches and tags
                 let refSpec = refHelper.getRefSpecForAllHistory(settings.ref, settings.commit);
@@ -1218,12 +1224,12 @@ function getSource(settings) {
                 // commit (push or force push). If so, fetch again with a targeted refspec.
                 if (!(yield refHelper.testRef(git, settings.ref, settings.commit))) {
                     refSpec = refHelper.getRefSpec(settings.ref, settings.commit);
-                    yield git.fetch(refSpec);
+                    yield git.fetch(refSpec, 0, settings.quiet);
                 }
             }
             else {
                 const refSpec = refHelper.getRefSpec(settings.ref, settings.commit);
-                yield git.fetch(refSpec, settings.fetchDepth);
+                yield git.fetch(refSpec, settings.fetchDepth, settings.quiet);
             }
             core.endGroup();
             // Checkout info
