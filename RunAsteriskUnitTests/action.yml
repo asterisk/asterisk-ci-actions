@@ -6,7 +6,7 @@ inputs:
   pr-number:
     required: true
     type: number
-  pr-sha:
+  pr-commit:
     required: true
     type: string
   base-branch:
@@ -36,7 +36,7 @@ runs:
         repository: ${{inputs.asterisk-repo}}
         ref: refs/pull/${{ inputs.pr-number }}/head
         clean: true
-        fetch-depth: 1
+        fetch-depth: 5
         set-safe-directory: true
 
     - name: Setup Asterisk Build Environment
@@ -56,12 +56,7 @@ runs:
       env:
         BRANCH: ${{inputs.base-branch}}
       run: |
-        if [ -f ./tests/CI/output/is-built ] ; then
-          echo "Asterisk is already built"
-          exit 0
-        fi
         ./tests/CI/buildAsterisk.sh --github --branch-name=$BRANCH --output-dir=./tests/CI/output
-        touch ./tests/CI/output/is-built
 
     - name: Install Asterisk
       if: ${{ success() }}
@@ -69,12 +64,7 @@ runs:
       env:
         BRANCH: ${{inputs.base-branch}}
       run: |
-        if [ -f ./tests/CI/output/is-installed ] ; then
-          echo "Asterisk is already installed"
-          exit 0
-        fi
         ./tests/CI/installAsterisk.sh --github --uninstall-all --branch-name=$BRANCH --user-group=asteriskci:users 
-        touch ./tests/CI/output/is-installed
 
     - name: Run Unit Tests
       shell: bash
@@ -87,29 +77,6 @@ runs:
           --output-xml=./tests/CI/output/unittests-results.xml \
           --unittest-command="${{inputs.unittest-command}}"
 
-#    - name: Run Unit Tests
-#      shell: bash
-#      run: |
-#        echo "::notice::Running unit test command $UNITTEST_COMMAND"
-#        mkdir -p tests/CI/output
-#        cat > tests/CI/output/unittest-result.xml <<EOF 
-#        <?xml version="1.0" encoding="UTF-8"?>
-#        <testsuites>
-#        	<testsuite errors="0" time="0.0" tests="693" name="AsteriskUnitTests">
-#        		<properties>
-#        			<property name="version" value="GIT-master-506e84e2c2M"/>
-#        		</properties>
-#        		<testcase time="0.0" classname="TEST_PASS_FAIL" name="JUST_PASS"/>
-#        		<testcase time="0.0" classname="TEST_PASS_FAIL" name="JUST_FAIL">
-#        			<failure><![CDATA[
-#        [test_pbx.c:just_fail:400]: This test just forces a fail
-#        
-#        		]]></failure>
-#        		</testcase>
-#        	</testsuite>
-#        </testsuites>
-#        EOF
-        
     - name: Save Output
       if: ${{ always() }}
       uses: actions/upload-artifact@v3
@@ -122,5 +89,8 @@ runs:
 #        uses: EnricoMi/publish-unit-test-result-action/composite@v2.4.2
       with:
         check_name: Unit Test Results
-        commit: ${{ inputs.pr-sha }}
         files: tests/CI/output/*.xml
+      env:
+        GITHUB_REPOSITORY: ${{ inputs.asterisk-repo }}
+        COMMIT: ${{ inputs.pr-commit }}
+        
