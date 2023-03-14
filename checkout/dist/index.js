@@ -615,9 +615,12 @@ class GitCommandManager {
             return output.exitCode === 0;
         });
     }
-    fetch(refSpec, fetchDepth) {
+    fetch(refSpec, fetchDepth, quiet) {
         return __awaiter(this, void 0, void 0, function* () {
             const args = ['-c', 'protocol.version=2', 'fetch'];
+            if (quiet) {
+                args.push('-q');
+            }
             if (!refSpec.some(x => x === refHelper.tagsRefSpec)) {
                 args.push('--no-tags');
             }
@@ -1201,7 +1204,7 @@ function getSource(settings) {
             if (settings.fetchDepth <= 0) {
                 // Fetch all branches and tags
                 let refSpec = refHelper.getRefSpecForAllHistory(settings.ref, settings.commit);
-                yield git.fetch(refSpec);
+                yield git.fetch(refSpec, 0, settings.quiet);
                 // When all history is fetched, the ref we're interested in may have moved to a different
                 // commit (push or force push). If so, fetch again with a targeted refspec.
                 if (!(yield refHelper.testRef(git, settings.ref, settings.commit))) {
@@ -1698,6 +1701,9 @@ function getInputs() {
         // Determine the GitHub URL that the repository is being hosted from
         result.githubServerUrl = core.getInput('github-server-url');
         core.debug(`GitHub Host URL = ${result.githubServerUrl}`);
+        // Quiet
+        result.quiet = (core.getInput('quiet') || 'true').toUpperCase() === 'TRUE';
+        core.debug(`quiet = ${result.quiet}`);
         return result;
     });
 }

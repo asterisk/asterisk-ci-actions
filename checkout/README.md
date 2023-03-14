@@ -101,6 +101,10 @@ When Git 2.18 or higher is not in your PATH, falls back to the REST API to downl
     # running from unless specified. Example URLs are https://github.com or
     # https://my-ghes-server.example.com
     github-server-url: ''
+
+    # Whether to suppress output from git-fetch
+    # Default: false
+    quiet: ''
 ```
 <!-- end usage -->
 

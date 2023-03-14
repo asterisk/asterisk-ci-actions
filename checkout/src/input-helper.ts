@@ -130,5 +130,9 @@ export async function getInputs(): Promise<IGitSourceSettings> {
   result.githubServerUrl = core.getInput('github-server-url')
   core.debug(`GitHub Host URL = ${result.githubServerUrl}`)
 
+  // Quiet
+  result.quiet = (core.getInput('quiet') || 'true').toUpperCase() === 'TRUE'
+  core.debug(`quiet = ${result.quiet}`)
+
   return result
 }

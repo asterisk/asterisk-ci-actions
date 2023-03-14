@@ -25,7 +25,7 @@ export interface IGitCommandManager {
     add?: boolean
   ): Promise<void>
   configExists(configKey: string, globalConfig?: boolean): Promise<boolean>
-  fetch(refSpec: string[], fetchDepth?: number): Promise<void>
+  fetch(refSpec: string[], fetchDepth?: number, quiet?:boolean): Promise<void>
   getDefaultBranch(repositoryUrl: string): Promise<string>
   getWorkingDirectory(): string
   init(): Promise<void>
@@ -201,8 +201,14 @@ class GitCommandManager {
     return output.exitCode === 0
   }
 
-  async fetch(refSpec: string[], fetchDepth?: number): Promise<void> {
+  async fetch(refSpec: string[], fetchDepth?: number,
+  	quiet?: boolean): Promise<void> {
     const args = ['-c', 'protocol.version=2', 'fetch']
+    
+    if (quiet) {
+      args.push('-q')
+    }
+
     if (!refSpec.some(x => x === refHelper.tagsRefSpec)) {
       args.push('--no-tags')
     }
