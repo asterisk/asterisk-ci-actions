@@ -130,9 +130,8 @@ runs:
           ${{ steps.setup.outputs.test-dir }}/logs/**
           ${{ steps.setup.outputs.test-dir }}/**/core*.txt
 
-    - name: Publish Test Results
-      uses: /asterisk/asterisk-ci-actions/publish-unit-test-result-action@main
-#        uses: EnricoMi/publish-unit-test-result-action/composite@v2.4.2
+    - name: Publish Gate Test Results
+      uses: EnricoMi/publish-unit-test-result-action/composite@v2.4.2
       with:
         check_name: Testsuite Test Results
         files: ${{ steps.setup.outputs.test-dir }}/*.xml

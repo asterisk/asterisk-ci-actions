@@ -84,13 +84,13 @@ runs:
         name: Test Results
         path: ./tests/CI/output
 
-    - name: Publish Test Results
-      uses: /asterisk/asterisk-ci-actions/publish-unit-test-result-action/composite@main
-#        uses: EnricoMi/publish-unit-test-result-action/composite@v2.4.2
+    - name: Publish Unit Test Results
+      uses: EnricoMi/publish-unit-test-result-action/composite@v2.4.2
       with:
         check_name: Unit Test Results
         files: tests/CI/output/*.xml
+        commit: ${{ inputs.pr-commit }}
       env:
         GITHUB_REPOSITORY: ${{ inputs.asterisk-repo }}
-        COMMIT: ${{ inputs.pr-commit }}
+        GITHUB_SHA: ${{ inputs.pr-commit }}
         
