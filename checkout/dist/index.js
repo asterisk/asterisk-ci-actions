@@ -574,9 +574,15 @@ class GitCommandManager {
             return result;
         });
     }
-    checkout(ref, startPoint) {
+    checkout(ref, startPoint, quiet) {
         return __awaiter(this, void 0, void 0, function* () {
-            const args = ['checkout', '--progress', '--force'];
+            const args = ['checkout', '--force'];
+            if (quiet) {
+                args.push('-q');
+            }
+            else {
+                args.push('--progress');
+            }
             if (startPoint) {
                 args.push('-B', ref, startPoint);
             }
@@ -621,10 +627,13 @@ class GitCommandManager {
             if (quiet) {
                 args.push('-q');
             }
+            else {
+                args.push('--progress');
+            }
             if (!refSpec.some(x => x === refHelper.tagsRefSpec)) {
                 args.push('--no-tags');
             }
-            args.push('--prune', '--progress', '--no-recurse-submodules');
+            args.push('--prune', '--no-recurse-submodules');
             if (fetchDepth && fetchDepth > 0) {
                 args.push(`--depth=${fetchDepth}`);
             }
@@ -1231,7 +1240,7 @@ function getSource(settings) {
             }
             // Checkout
             core.startGroup('Checking out the ref');
-            yield git.checkout(checkoutInfo.ref, checkoutInfo.startPoint);
+            yield git.checkout(checkoutInfo.ref, checkoutInfo.startPoint, settings.quiet);
             core.endGroup();
             // Submodules
             if (settings.submodules) {

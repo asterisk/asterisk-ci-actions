@@ -16,7 +16,7 @@ export interface IGitCommandManager {
   branchDelete(remote: boolean, branch: string): Promise<void>
   branchExists(remote: boolean, pattern: string): Promise<boolean>
   branchList(remote: boolean): Promise<string[]>
-  checkout(ref: string, startPoint: string): Promise<void>
+  checkout(ref: string, startPoint: string, quiet?: boolean): Promise<void>
   checkoutDetach(): Promise<void>
   config(
     configKey: string,
@@ -25,7 +25,7 @@ export interface IGitCommandManager {
     add?: boolean
   ): Promise<void>
   configExists(configKey: string, globalConfig?: boolean): Promise<boolean>
-  fetch(refSpec: string[], fetchDepth?: number, quiet?:boolean): Promise<void>
+  fetch(refSpec: string[], fetchDepth?: number, quiet?: boolean): Promise<void>
   getDefaultBranch(repositoryUrl: string): Promise<string>
   getWorkingDirectory(): string
   init(): Promise<void>
@@ -153,8 +153,16 @@ class GitCommandManager {
     return result
   }
 
-  async checkout(ref: string, startPoint: string): Promise<void> {
-    const args = ['checkout', '--progress', '--force']
+  async checkout(ref: string, startPoint: string,
+    quiet?: boolean): Promise<void> {
+    const args = ['checkout', '--force']
+
+    if (quiet) {
+      args.push('-q')
+    } else {
+      args.push('--progress')
+    }
+
     if (startPoint) {
       args.push('-B', ref, startPoint)
     } else {
@@ -204,16 +212,18 @@ class GitCommandManager {
   async fetch(refSpec: string[], fetchDepth?: number,
   	quiet?: boolean): Promise<void> {
     const args = ['-c', 'protocol.version=2', 'fetch']
-    
+
     if (quiet) {
       args.push('-q')
+    } else {
+      args.push('--progress')
     }
 
     if (!refSpec.some(x => x === refHelper.tagsRefSpec)) {
       args.push('--no-tags')
     }
 
-    args.push('--prune', '--progress', '--no-recurse-submodules')
+    args.push('--prune', '--no-recurse-submodules')
     if (fetchDepth && fetchDepth > 0) {
       args.push(`--depth=${fetchDepth}`)
     } else if (
