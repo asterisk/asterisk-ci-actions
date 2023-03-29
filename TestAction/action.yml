@@ -1,0 +1,8 @@
+name: TestAction
+
+runs:
+  using: "docker"
+  image: "docker://ghcr.io/asterisk/asteriskci-agent-rocky8:latest"
+  args:
+    - entrypointTestAction.sh
+

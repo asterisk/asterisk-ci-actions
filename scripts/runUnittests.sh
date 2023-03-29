@@ -139,9 +139,9 @@ rm -rf $ASTETCDIR/extensions.{ael,lua} || :
 TESTRC=0
 begin_log "${OUTPUT_DIR}/test_output"
 if [ x"$EXPECT" != x -a $NO_EXPECT -eq 0 ] ; then
-	run_tests_expect >>"${log_to}" 2>>"${err_to}" || TESTRC=1
+	run_tests_expect 2> >(tee "${err_to}") > >(tee "${log_to}") || TESTRC=1
 else
-	run_tests_socket >>"${log_to}" 2>>"${err_to}" || TESTRC=1
+	run_tests_socket 2> >(tee "${err_to}") > >(tee "${log_to}") || TESTRC=1
 fi
 end_log
 
