@@ -1,0 +1,87 @@
+name: AsteriskGateComposite
+inputs:
+  test_type:
+    required: true
+    type: string
+  asterisk_repo:
+    required: true
+    type: string
+  pr_number:
+    required: true
+    type: number
+  pr_commit:
+    required: true
+    type: string
+  base_branch:
+    required: true
+    type: string
+  github_token:
+    description: 'GitHub API Access Token.'
+    default: ${{ github.token }}
+    required: false
+  testsuite_repo:
+    description: 'Testsuite Repo (default: asterisk/testsuite)'
+    type: string
+    required: false
+    default: asterisk/testsuite
+  gatetest_group:
+    description: 'Gate Group Number'
+    type: number
+    required: true
+  gatetest_commands:
+    description: 'Gate Commands'
+    type: string
+    required: true
+  testsuite_dir:
+    required: false
+    type: string
+    default: testsuite
+  
+runs:
+  using: "composite"
+  steps:
+    - name: SetupIPV6
+      uses: asterisk/asterisk-ci-actions/EnableIPv6InRunner@main
+
+    - name: Install Asterisk
+      uses: asterisk/asterisk-ci-actions/GetAsterisk@main
+      with:
+        asterisk_repo:     ${{inputs.asterisk_repo}}
+        base_branch:       ${{inputs.base_branch}}
+        pr_number:         ${{inputs.pr_number}}
+        github_token:      ${{inputs.github_token}}
+        modules_blacklist: ${{inputs.modules_blacklist}}
+  
+    - name: ${{inputs.test_type}} Test ${{inputs.gatetest_group}}/${{inputs.base_branch}}
+      uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
+      with:
+        asterisk_repo:     ${{inputs.asterisk_repo}}
+        base_branch:       ${{inputs.base_branch}}
+        pr_number:         ${{inputs.pr_number}}
+        github_token:      ${{inputs.github_token}}
+        testsuite_repo:    ${{inputs.testsuite_repo}}
+        gatetest_group:    ${{inputs.gatetest_group}}
+        gatetest_commands: ${{inputs.gatetest_commands}} 
+
+    - name: Save Output
+      id: save-output
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{inputs.test_type}} Test Output ${{inputs.gatetest_group}}/${{inputs.base_branch}}
+        path: testsuite/logs
+
+    - name: Publish Unit Test Results
+      id: publish-results
+      if: always()
+      uses: EnricoMi/publish-unit-test-result-action@v2.4.2
+      with:
+        check_name: ${{inputs.test_type}} Test Results ${{inputs.gatetest_group}}/${{inputs.base_branch}}
+        comment_title: ${{inputs.test_type}} Test Results ${{inputs.gatetest_group}}/${{inputs.base_branch}}
+        files: testsuite/*.xml
+        comment_mode: always
+        compare_to_earlier_commit: false
+        report_individual_runs: true
+        action_fail: true
+      env:
+        GITHUB_REPOSITORY: ${{inputs.asterisk_repo}}
