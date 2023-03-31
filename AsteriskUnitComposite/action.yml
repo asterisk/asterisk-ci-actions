@@ -1,0 +1,67 @@
+name: AsteriskUnitComposite
+inputs:
+  test_type:
+    required: true
+    type: string
+  asterisk_repo:
+    required: true
+    type: string
+  pr_number:
+    required: true
+    type: number
+  pr_commit:
+    required: true
+    type: string
+  base_branch:
+    required: true
+    type: string
+  github_token:
+    description: 'GitHub API Access Token.'
+    default: ${{ github.token }}
+    required: false
+  unittest_command:
+    type: string
+    required: true
+  
+runs:
+  using: "composite"
+  steps:
+    - name: Install Asterisk
+      uses: asterisk/asterisk-ci-actions/GetAsterisk@main
+      with:
+        asterisk_repo:     ${{inputs.asterisk_repo}}
+        base_branch:       ${{inputs.base_branch}}
+        pr_number:         ${{inputs.pr_number}}
+        github_token:      ${{inputs.github_token}}
+        modules_blacklist: ${{inputs.modules_blacklist}}
+
+    - name: Run Unit Tests
+      uses: asterisk/asterisk-ci-actions/RunAsteriskUnitTests@main
+      with:
+        asterisk_repo:    ${{inputs.asterisk_repo}}
+        base_branch:      ${{inputs.base_branch}}
+        pr_number:        ${{inputs.pr_number}}
+        github_token:     ${{inputs.github_token}}
+        unittest_command: ${{inputs.unittest_command}}
+
+    - name: Save Output
+      id: save-output
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: Unit Test Output
+        path: cache/output
+
+    - name: Publish Unit Test Results
+      id: publish-results
+      if: always()
+      uses: EnricoMi/publish-unit-test-result-action@v2.4.2
+      with:
+        check_name: Unit Test Results
+        files: cache/output/*.xml
+        comment_mode: always
+        compare_to_earlier_commit: false
+        report_individual_runs: true
+        action_fail: true
+      env:
+        GITHUB_REPOSITORY: ${{inputs.asterisk_repo}}

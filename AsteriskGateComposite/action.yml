@@ -52,7 +52,7 @@ runs:
         github_token:      ${{inputs.github_token}}
         modules_blacklist: ${{inputs.modules_blacklist}}
   
-    - name: ${{inputs.test_type}} Test ${{inputs.gatetest_group}}/${{inputs.base_branch}}
+    - name: ${{inputs.test_type}} Test ${{inputs.gatetest_group}}-${{inputs.base_branch}}
       uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
       with:
         asterisk_repo:     ${{inputs.asterisk_repo}}
@@ -68,7 +68,7 @@ runs:
       if: ${{ always() }}
       uses: actions/upload-artifact@v3
       with:
-        name: ${{inputs.test_type}} Test Output ${{inputs.gatetest_group}}/${{inputs.base_branch}}
+        name: ${{inputs.test_type}} Test Output ${{inputs.gatetest_group}}-${{inputs.base_branch}}
         path: testsuite/logs
 
     - name: Publish Unit Test Results
@@ -76,8 +76,8 @@ runs:
       if: always()
       uses: EnricoMi/publish-unit-test-result-action@v2.4.2
       with:
-        check_name: ${{inputs.test_type}} Test Results ${{inputs.gatetest_group}}/${{inputs.base_branch}}
-        comment_title: ${{inputs.test_type}} Test Results ${{inputs.gatetest_group}}/${{inputs.base_branch}}
+        check_name: ${{inputs.test_type}} Test Results ${{inputs.gatetest_group}}-${{inputs.base_branch}}
+        comment_title: ${{inputs.test_type}} Test Results ${{inputs.gatetest_group}}-${{inputs.base_branch}}
         files: testsuite/*.xml
         comment_mode: always
         compare_to_earlier_commit: false
