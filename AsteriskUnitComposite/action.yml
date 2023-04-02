@@ -15,6 +15,10 @@ inputs:
   base_branch:
     required: true
     type: string
+  modules_blacklist:
+    description: 'List of Asterisk modules to blacklist from the build'
+    default: ""
+    required: false
   github_token:
     description: 'GitHub API Access Token.'
     default: ${{ github.token }}
