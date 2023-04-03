@@ -1,0 +1,21 @@
+name: Test Workflow
+run-name: "Test workflow started by ${{ github.actor }}"
+on:
+  workflow_dispatch:
+
+env:
+  ASTERISK_REPO:     ${{github.repository}}
+  BRANCH:            master
+  GITHUB_TOKEN:      ${{secrets.GITHUB_TOKEN}}
+  MODULES_BLACKLIST: ${{vars.GATETEST_MODULES_BLACKLIST}} ${{vars.UNITTEST_MODULES_BLACKLIST}}
+
+jobs:
+  AsteriskBuilds:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SetupIPV6
+        uses: asterisk/asterisk-ci-actions/EnableIPv6InRunner@main
+
+      - name: Test Action
+        uses: asterisk/asterisk-ci-actions/TestAction@main
+
