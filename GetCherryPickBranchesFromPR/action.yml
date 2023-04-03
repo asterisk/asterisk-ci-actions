@@ -1,0 +1,53 @@
+name: GetCherryPickBranchesFromPR
+inputs:
+  asterisk_repo:
+    required: true
+    type: string
+  pr_number:
+    required: true
+    type: number
+  github_token:
+    description: 'GitHub API Access Token.'
+    default: ${{ github.token }}
+    required: false
+
+outputs:
+  branches: ${{ steps.getbranches.outputs.branches }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get cherry-pick branches
+      id: getbranches
+      shell: bash
+      env:
+        GCP_ASTERISK_REPO: ${{inputs.asterisk_repo}}
+        GCP_PR_NUMBER:     ${{inputs.pr_number}}
+        GITHUB_TOKEN:      ${{inputs.github_token}}
+        GH_TOKEN:          ${{inputs.github_token}}
+      run: |
+        echo "${{env.GITHUB_ACTION}} Get branches"
+        gh pr edit --repo ${GCP_ASTERISK_REPO} \
+          --remove-label ${{vars.CHERRY_PICK_TEST_LABEL}} ${GCP_PR_NUMBER}
+        # now scan the comments
+        branchlist=$(gh api /repos/${GCP_ASTERISK_REPO}/issues/${GCP_PR_NUMBER}/comments \
+          --jq '.[].body | match("${{ vars.CHERRY_PICK_REGEX }}"; "g") | .captures[0].string' | tr '\n' ' ')
+        echo $branchlist
+        eval declare -a BRANCHES=( $branchlist )
+        declare -p BRANCHES
+        branch_count=0
+        json="["
+        for branch in ${BRANCHES[@]} ; do
+          echo "Will cherry-pick to branch $branch"
+          [ $branch_count -ne 0 ] && json+=","
+          json+="'$branch'"
+          branch_count+=1
+        done
+        json+="]"
+        echo "branches=$json" >> "$GITHUB_OUTPUT"
+        if [ $branch_count -eq 0 ] ; then
+          echo "::notice::No branches needing cherry picks identified"
+        else
+          echo "::notice::Branches that will have cherry-picks testeds: $json"
+        fi
+  
