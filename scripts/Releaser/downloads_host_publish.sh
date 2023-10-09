@@ -47,16 +47,23 @@ curl --no-progress-meter --fail-early -f -L --remote-name-all $urls
 # If we do get them all, move them into the releases directory.
 rsync -vaH --remove-source-files * ../releases/
 
-# Remove any existing RC links
+# Remove any existing RC links (including the transient -testing link)
 cd ..
 
 rm -f *${end_tag_array[major]}.${end_tag_array[minor]}${end_tag_array[patchsep]}${end_tag_array[patch]}-rc*
+rm -f *-testing*
 
 if [ ${end_tag_array[release_type]} == "rc" ] ; then
 	# Create the direct links
 	cd releases
 	ln -sfr $files ../
-	echo 'Release candidate so not disturbing existing links'
+	echo 'Release candidate so not disturbing existing production links'
+	from=.${end_tag_array[minor]}${end_tag_array[patchsep]}${end_tag_array[patch]}
+	# Also create a transient permalink (for each major version) to the release candidate
+	to=-testing
+	for f in $files ; do
+		ln -sfr $f ../${f/${from}/${to}}
+	done
 	exit 0
 fi
 
@@ -81,4 +88,3 @@ fi
 for f in $files ; do
    	ln -sfr $f ../${f/${from}/${to}}
 done
-
