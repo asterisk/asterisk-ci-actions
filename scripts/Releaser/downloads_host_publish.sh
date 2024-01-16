@@ -51,7 +51,7 @@ rsync -vaH --remove-source-files * ../releases/
 cd ..
 
 rm -f *${end_tag_array[major]}.${end_tag_array[minor]}${end_tag_array[patchsep]}${end_tag_array[patch]}-rc*
-rm -f *-testing*
+rm -f *${end_tag_array[major]}-testing*
 
 if [ ${end_tag_array[release_type]} == "rc" ] ; then
 	# Create the direct links
