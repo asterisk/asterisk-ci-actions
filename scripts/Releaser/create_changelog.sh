@@ -93,10 +93,10 @@ Change Log for Release ${PRODUCT}-${END_TAG}
 Links:
 ----------------------------------------
 
- - [Full ChangeLog](https://downloads.asterisk.org/pub/telephony/${PRODUCT}/releases/ChangeLog-${END_TAG}.md)  
+ - [Full ChangeLog](https://downloads.asterisk.org/pub/telephony/${end_tag_array[download_dir]}/releases/ChangeLog-${END_TAG}.md)  
  - [GitHub Diff](https://github.com/asterisk/${PRODUCT}/compare/${START_TAG}...${END_TAG})  
- - [Tarball](https://downloads.asterisk.org/pub/telephony/${PRODUCT}/${PRODUCT}-${END_TAG}.tar.gz)  
- - [Downloads](https://downloads.asterisk.org/pub/telephony/${PRODUCT})  
+ - [Tarball](https://downloads.asterisk.org/pub/telephony/${end_tag_array[download_dir]}/${PRODUCT}-${END_TAG}.tar.gz)  
+ - [Downloads](https://downloads.asterisk.org/pub/telephony/${end_tag_array[download_dir]})  
 
 Summary:
 ----------------------------------------
