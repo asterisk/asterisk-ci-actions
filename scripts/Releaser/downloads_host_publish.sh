@@ -58,7 +58,7 @@ if [ ${end_tag_array[release_type]} == "rc" ] ; then
 	cd releases
 	ln -sfr $files ../
 	echo 'Release candidate so not disturbing existing production links'
-	from=.${end_tag_array[minor]}${end_tag_array[patchsep]}${end_tag_array[patch]}
+	from=.${end_tag_array[minor]}${end_tag_array[patchsep]}${end_tag_array[patch]}-${end_tag_array[release_type]}${end_tag_array[release_num]}
 	# Also create a transient permalink (for each major version) to the release candidate
 	to=-testing
 	for f in $files ; do
