@@ -14,12 +14,11 @@ runs:
       id: teststep
       shell: bash
       run: |
-        if [ "${{inputs.test_type}}" == "pass_fail" ] ; then
-          echo "Exiting with RC 1 (forced)"
-          echo "result=failure" >> $GITHUB_OUTPUT
-          exit 1
-        fi
-        sleep 120
         echo "Exiting with RC 0 (forced)"
         echo "result=success" >> $GITHUB_OUTPUT
         exit 0
+
+    - name: TestDockerAction
+      uses: ./TestDockerAction
+      with:
+        test_type: basic

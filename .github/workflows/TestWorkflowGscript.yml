@@ -1,0 +1,38 @@
+name: TestWorkflowGscript
+run-name: "TestWorkflowGscript"
+on:
+  workflow_dispatch:
+    inputs:
+      param1:
+        required: false
+        type: string
+      param2:
+        required: false
+        type: string
+      param3:
+        required: false
+        type: string
+      param4:
+        required: false
+        type: number
+
+jobs:
+  TestWorkflowGscript:
+    runs-on: ubuntu-latest
+    env:
+      GTC: ${{ toJSON(fromJSON(vars.GATETEST_COMMANDS).ari1) }}
+      PR: ${{ fromJSON(vars.PR_REVIEWERS)[0] }}
+    steps:
+    - id: copyvars
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.ASTERISKTEAM_PAT }}
+        retries: 5
+        script: |
+          const opts = github.rest.actions.listRepoVariables.endpoint.merge({
+            owner: "asterisk",
+            repo: "asterisk",
+          });
+          console.log(opts);
+          const source_vars = await github.paginate(opts);
+          console.log(source_vars);
