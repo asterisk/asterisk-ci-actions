@@ -38,6 +38,8 @@ inputs:
 
 runs:
   using: "docker"
-  image: "docker://ghcr.io/asterisk/asteriskci-agent-rocky8:latest"
+  image: 'Dockerfile'  
+#  image: "docker://ghcr.io/asterisk/asteriskci-agent-rocky8:latest"
+#  entrypoint: '/GetRepo/entrypoint.sh'
   args:
     - entrypointGetRepo.sh

@@ -3,48 +3,30 @@ run-name: "TestWorkflow"
 on:
   workflow_dispatch:
     inputs:
-      counter:
-        type: number
-        default: 0
-
-env:
-  COUNTER: 42
+      branches:
+        required: false
+        type: string
+        description: "Array of branches to run: ['21','master'].  Defaults to NIGHTLYTEST_BRANCHES"
+      group_list:
+        required: false
+        type: string
+        description: "Array of test groups to run: ['ari1','channels'].  Defaults to NIGHTLYTEST_LIST"
 
 jobs:
-  Setup:
-    runs-on: ubuntu-latest
-    steps:
-      - name: DumpEnvironment
-        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
-        with:
-          action-inputs: ${{ toJSON(inputs) }}
 
-  SetupMatrix:
-#    if: ${{ inputs.counter == 666 }}
-#    needs: Setup 
-    runs-on: ubuntu-latest
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        group: ['A','B']
-    steps:
-      - name: DoSomething
-        shell: bash
-        run: |
-          echo "I DID SOMETHING FIRST"
-
-  Setup2:
-#    needs: SetupMatrix 
-    runs-on: ubuntu-latest
-    steps:
-      - name: DoSomething
-        shell: bash
-        run: |
-          echo "I DID SOMETHING AFTER"
-
-
-#  TestCalledWorkflow:
-#    uses: ./.github/workflows/TestCalledWorkflow.yml
-#    with:
-#      counter: ${{inputs.counter}}
-
+  NightlyTestMatrix:
+    uses: ./.github/workflows/AsteriskUnitGateTest.yml
+    with:
+      test_type:         nightly
+      asterisk_repo:     ${{github.repository}}
+      pr_number:         0
+      base_branch:       master
+      is_cherry_pick:    false
+      build_options:     ${{vars.BUILD_OPTIONS}}
+      unittest_command:  ${{vars.UNITTEST_COMMAND}}
+      testsuite_test_type: Nightly
+      testsuite_repo:    ${{vars.TESTSUITE_REPO}}
+      gatetest_list:     ${{inputs.group_list}}
+      gatetest_commands: ${{vars.GATETEST_COMMANDS}}
+    secrets:
+      TOKEN: ${{ secrets.GITHUB_TOKEN }}

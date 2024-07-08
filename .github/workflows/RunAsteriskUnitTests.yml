@@ -33,9 +33,26 @@ on:
         required: true
 
 jobs:
+#  Setup:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: DumpEnvironment
+#        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+#      - name: SetupUbuntuRunner
+#        uses: asterisk/asterisk-ci-actions/SetupUbuntuRunner@test
+#      - name: SetTestName
+#        run: |
+#          ip addr
+#          sudo sysctl net.ipv6.conf.all.disable_ipv6
+#          printenv
+#          echo "AAAAA" > $GITHUB_WORKSPACE/AAAA.txt
+#
+  
   RunUnitTests:
     name: UnitTests ${{ inputs.base_branch }}
+#    needs: Setup
     runs-on: ubuntu-latest
+#    container: docker://ghcr.io/asterisk/asteriskci-agent-rocky8:latest
     services:
       postgres-asterisk:
         image: postgres
@@ -46,19 +63,26 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+
     steps:
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
       - name: SetupUbuntuRunner
-        uses: asterisk/asterisk-ci-actions/SetupUbuntuRunner@main
+        uses: asterisk/asterisk-ci-actions/SetupUbuntuRunner@test
 
       - name: SetTestName
-        shell: bash
         run: |
-          BASE_BRANCH="${{inputs.base_branch}}"
-          UNIT_TEST_NAME="unittests-${BASE_BRANCH//\//-}"
-          echo "UNIT_TEST_NAME=${UNIT_TEST_NAME}" >> "${GITHUB_ENV}"
+          ls -al $GITHUB_WORKSPACE
+          ip addr
+          sudo sysctl net.ipv6.conf.all.disable_ipv6
+          printenv
+          echo "AAAAA" > $GITHUB_WORKSPACE/AAAA.txt
 
       - name: Get Asterisk
-        uses: asterisk/asterisk-ci-actions/GetRepo@main
+        uses: asterisk/asterisk-ci-actions/GetRepo@test
         with:
           repo:              ${{inputs.asterisk_repo}}
           base_branch:       ${{inputs.base_branch}}
@@ -69,20 +93,20 @@ jobs:
           github_token:      ${{secrets.TOKEN}}
           modules_blacklist: ${{inputs.modules_blacklist}}
 
-      - name: Run unittest-${{inputs.base_branch}}
-        uses: asterisk/asterisk-ci-actions/RunAsteriskUnitTests@main
-        with:
-          asterisk_repo:    ${{inputs.asterisk_repo}}
-          base_branch:      ${{inputs.base_branch}}
-          pr_number:        ${{inputs.pr_number}}
-          github_token:     ${{secrets.TOKEN}}
-          unittest_command: ${{inputs.unittest_command}}
-  
-      - name: Save Output
-        id: save-output
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{env.UNIT_TEST_NAME}}
-          path: cache/output
-
+#      - name: Run unittest-${{inputs.base_branch}}
+#        uses: asterisk/asterisk-ci-actions/RunAsteriskUnitTests@main
+#        with:
+#          asterisk_repo:    ${{inputs.asterisk_repo}}
+#          base_branch:      ${{inputs.base_branch}}
+#          pr_number:        ${{inputs.pr_number}}
+#          github_token:     ${{secrets.TOKEN}}
+#          unittest_command: ${{inputs.unittest_command}}
+#
+#      - name: Save Output
+#        id: save-output
+#        if: always()
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: ${{env.UNIT_TEST_NAME}}
+#          path: cache/output
+#

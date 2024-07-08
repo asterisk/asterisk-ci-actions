@@ -13,6 +13,26 @@ mkdir -p ${REPO_DIR}
 mkdir -p ${OUTPUT_DIR}
 
 cd ${GITHUB_WORKSPACE}
+
+	cat <<EOF > ~/.pgpass
+*:*:*:postgres:postgres
+*:*:*:asterisk_test:asterisk_test
+EOF
+	PGHOST=postgres-asterisk
+	sleep 5
+	ping -c 1 $PGHOST || sleep 5
+	ping -c 1 $PGHOST || PGHOST=localhost
+	export PGOPTS="-h $PGHOST -w --username=postgres"
+	chmod go-rwx ~/.pgpass
+	export PGPASSFILE=~/.pgpass
+	echo "Creating asterisk_test user and database"
+	dropdb $PGOPTS --if-exists -e asterisk_test >/dev/null 2>&1 || :
+	dropuser $PGOPTS --if-exists -e asterisk_test >/dev/null  2>&1 || :
+	psql $PGOPTS -c "create user asterisk_test with login password 'asterisk_test';" || return 1
+#	createuser $PGOPTS -RDIElS asterisk_test || return 1
+	createdb $PGOPTS -E UTF-8 -O asterisk_test asterisk_test || return 1
+
+exit 0
 ${SCRIPT_DIR}/checkoutRepo.sh --repo=${INPUT_REPO} \
 	--branch=${INPUT_BASE_BRANCH} --is-cherry-pick=${INPUT_IS_CHERRY_PICK} \
 	--pr-number=${INPUT_PR_NUMBER} --destination=${REPO_DIR}

@@ -64,59 +64,59 @@ jobs:
       unittest_command:  ${{ inputs.unittest_command }}
     secrets: inherit
 
-  GateTests:
-    if: ${{ inputs.testsuite_test_type != 'NONE' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        group: ${{ fromJSON(inputs.gatetest_list) }}
-    uses: ./.github/workflows/RunAsteriskGateTests.yml
-    with:
-      test_type:         ${{ inputs.testsuite_test_type }}
-      asterisk_repo:     ${{ inputs.asterisk_repo }}
-      pr_number:         ${{ inputs.pr_number }}
-      base_branch:       ${{ inputs.base_branch }}
-      is_cherry_pick:    ${{ inputs.is_cherry_pick }}
-      testsuite_repo:    ${{ inputs.testsuite_repo }}
-      gatetest_group:    ${{ matrix.group }}
-      gatetest_commands: ${{ inputs.gatetest_commands }}
-    secrets: inherit
-
-  UnitGateTestResults:
-    if: always()
-    runs-on: ubuntu-latest
-    needs: [UnitTests,GateTests]
-    steps:
-      - name: Check test matrix status
-        env:
-          GH_TOKEN:  ${{ secrets.TOKEN }}
-          PR_NUMBER: ${{ inputs.pr_number }}
-          RESULT_UNIT: ${{ needs.UnitTests.result }}
-          RESULT_GATE: ${{ needs.GateTests.result }}
-        run: |
-          declare -i rc=0
-          echo "all results: ${{ toJSON(needs.*.result) }}"
-          case $RESULT_UNIT in
-            success)
-              echo "::notice::Unit tests passed"
-              ;;
-            skipped)
-              echo "::error::Unit tests were skipped because of an earlier failure"
-              rc+=1
-              ;;
-            *)
-              echo "::error::One or more unit tests failed ($RESULT_UNIT)"
-              rc+=1
-          esac
-          case $RESULT_GATE in
-            success)
-              echo "::notice::Gate tests passed"
-              ;;
-            skipped)
-              echo "::notice::Gate tests were not requested"
-              ;;
-            *)
-              echo "::error::One or more gate tests failed ($RESULT_GATE)"
-              rc+=1
-          esac
-          exit $rc
+#  GateTests:
+#    if: ${{ inputs.testsuite_test_type != 'NONE' }}
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        group: ${{ fromJSON(inputs.gatetest_list) }}
+#    uses: ./.github/workflows/RunAsteriskGateTests.yml
+#    with:
+#      test_type:         ${{ inputs.testsuite_test_type }}
+#      asterisk_repo:     ${{ inputs.asterisk_repo }}
+#      pr_number:         ${{ inputs.pr_number }}
+#      base_branch:       ${{ inputs.base_branch }}
+#      is_cherry_pick:    ${{ inputs.is_cherry_pick }}
+#      testsuite_repo:    ${{ inputs.testsuite_repo }}
+#      gatetest_group:    ${{ matrix.group }}
+#      gatetest_commands: ${{ inputs.gatetest_commands }}
+#    secrets: inherit
+#
+#  UnitGateTestResults:
+#    if: always()
+#    runs-on: ubuntu-latest
+#    needs: [UnitTests,GateTests]
+#    steps:
+#      - name: Check test matrix status
+#        env:
+#          GH_TOKEN:  ${{ secrets.TOKEN }}
+#          PR_NUMBER: ${{ inputs.pr_number }}
+#          RESULT_UNIT: ${{ needs.UnitTests.result }}
+#          RESULT_GATE: ${{ needs.GateTests.result }}
+#        run: |
+#          declare -i rc=0
+#          echo "all results: ${{ toJSON(needs.*.result) }}"
+#          case $RESULT_UNIT in
+#            success)
+#              echo "::notice::Unit tests passed"
+#              ;;
+#            skipped)
+#              echo "::error::Unit tests were skipped because of an earlier failure"
+#              rc+=1
+#              ;;
+#            *)
+#              echo "::error::One or more unit tests failed ($RESULT_UNIT)"
+#              rc+=1
+#          esac
+#          case $RESULT_GATE in
+#            success)
+#              echo "::notice::Gate tests passed"
+#              ;;
+#            skipped)
+#              echo "::notice::Gate tests were not requested"
+#              ;;
+#            *)
+#              echo "::error::One or more gate tests failed ($RESULT_GATE)"
+#              rc+=1
+#          esac
+#          exit $rc
