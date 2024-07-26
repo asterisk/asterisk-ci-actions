@@ -36,6 +36,12 @@ TEST_DIR=$(jq -j '.dir' /tmp/test_commands.json)
 
 cd ${TESTSUITE_DIR}
 
+if [[ "${INPUT_TESTSUITE_TEST_PR}" =~ [0-9]+ ]] ; then
+	echo "Checking out testsuite PR ${INPUT_TESTSUITE_TEST_PR}"
+	gh pr checkout "${INPUT_TESTSUITE_TEST_PR}" -b "pr-${INPUT_TESTSUITE_TEST_PR}" || \
+		{ echo "::error::Testsuite PR ${INPUT_TESTSUITE_TEST_PR} not found" ; exit 1 ; }
+fi
+
 TESTRC=0
 ${SCRIPT_DIR}/runAsteriskGateTests.sh \
   --test-timeout=${TEST_TIMEOUT} \

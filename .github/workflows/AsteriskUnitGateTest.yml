@@ -42,6 +42,9 @@ on:
       testsuite_repo:
         type: string
         required: true
+      testsuite_test_pr:
+        type: string
+        required: false
       gatetest_list:
         type: string
         required: true
@@ -78,6 +81,7 @@ jobs:
       base_branch:       ${{ inputs.base_branch }}
       is_cherry_pick:    ${{ inputs.is_cherry_pick }}
       testsuite_repo:    ${{ inputs.testsuite_repo }}
+      testsuite_test_pr: ${{ inputs.testsuite_test_pr }}
       gatetest_group:    ${{ matrix.group }}
       gatetest_commands: ${{ inputs.gatetest_commands }}
     secrets: inherit

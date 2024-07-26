@@ -1,4 +1,4 @@
-name: 'RAGT'
+name: 'RunAsteriskGateTests'
 on:
   workflow_call:
     inputs:
@@ -40,6 +40,9 @@ on:
         type: string
         required: false
         default: asterisk/testsuite
+      testsuite_test_pr:
+        type: string
+        required: false
       gatetest_group:
         description: 'Gate Group'
         type: string
@@ -87,6 +90,7 @@ jobs:
           cache_dir:         ${{inputs.cache_dir}}
           github_token:      ${{secrets.TOKEN}}
           testsuite_repo:    ${{inputs.testsuite_repo}}
+          testsuite_test_pr: ${{inputs.testsuite_test_pr}}
           gatetest_group:    0
           gatetest_command:  ${{ toJSON(fromJSON(inputs.gatetest_commands)[inputs.gatetest_group]) }}
  

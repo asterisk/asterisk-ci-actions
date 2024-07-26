@@ -23,6 +23,9 @@ inputs:
     description: 'Testsuite Repo (default: asterisk/testsuite)'
     type: string
     required: true
+  testsuite_test_pr:
+    type: string
+    required: false
   gatetest_group:
     description: 'Gate Group Number'
     type: number
