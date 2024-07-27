@@ -13,20 +13,20 @@ env:
 jobs:
   Setup:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
     steps:
-#      - name: DumpEnvironment
-#        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
-#        with:
-#          action-inputs: ${{ toJSON(inputs) }}
-#
-      - name: CreateIssue
+      - name: DumpEnv
         env:
           GH_TOKEN: ${{secrets.ASTERISKTEAM_PAT}}
           FPBX_ISSUE_REPO: 'freepbx/github-integration-test'
           ASTERISK_VERSION: '21.4.1'
         run: |
-          gh issue create -R ${FPBX_ISSUE_REPO} \
-            --title "Asterisk Version ${ASTERISK_VERSION} Has Been Released" \
-            --body "Release Notes: https://github.com/asterisk/asterisk/releases/tag/${ASTERISK_VERSION}" 
+          mount
+          echo "PWD:"
+          pwd
+          ls -al
+          echo "PRINTENV:"
+          printenv
 
 

@@ -1,26 +1,95 @@
 name: TestCalledWorkflow
 run-name: "TestCalledWorkflow"
 on:
-  workflow_run:
-    workflows: [TestWorkflow]
-    types:
-      - in_progress
-
-#  workflow_call:
-#    inputs:
-#      counter:
-#        type: string
-#        default: 0
-#    secrets:
-#      TOKEN:
-#        required: true
+  workflow_call:
+    inputs:
+      counter:
+        type: string
+        default: 0
+    secrets:
+      TOKEN:
+        required: true
 
 jobs:
-  TestCalledWorkflow:
-    name: DumpEnv
+  Setup:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+    services:
+      postgres-asterisk:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: DumpEnvironment
         uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
-#        with:
-#          action-inputs: ${{ toJSON(inputs) }}
+    
+#      - name: SetupUbuntuRunner
+#        uses: asterisk/asterisk-ci-actions/SetupUbuntuRunner@main
+
+      - name: BuildAsterisk
+        env:
+          GH_TOKEN: ${{secrets.TOKEN}}
+          GITHUB_ACTION_REPOSITORY: asterisk/asterisk-ci-actions
+          INPUT_GITHUB_TOKEN: ${{secrets.TOKEN}}
+          INPUT_REPO: asterisk/asterisk-gh-test
+          INPUT_CACHE_DIR: cache
+          INPUT_BASE_BRANCH: master
+          INPUT_IS_CHERRY_PICK: false
+          INPUT_PR_NUMBER: 0
+          INPUT_BUILD_SCRIPT: buildAsterisk.sh
+          INPUT_BUILD_OPTIONS: ''
+          INPUT_MODULES_BLACKLIST: ''
+        run: |
+          sysctl kernel.core_pattern
+          sysctl net.ipv6.conf.all.disable_ipv6
+          export GITHUB_ACTION_REPOSITORY=asterisk/asterisk-ci-actions
+          export ACTION_DIR=$(basename ${GITHUB_ACTION_REPOSITORY})
+          export SCRIPT_DIR=${GITHUB_WORKSPACE}/${ACTION_DIR}/scripts
+          export REPO_DIR=$(basename ${INPUT_REPO})
+          export OUTPUT_DIR=${GITHUB_WORKSPACE}/${INPUT_CACHE_DIR}/output
+          cd ${GITHUB_WORKSPACE}
+          echo "*** Cloning ${GITHUB_ACTION_REPOSITORY}"
+          git clone ${GITHUB_SERVER_URL}/${GITHUB_ACTION_REPOSITORY}
+          git -C ${ACTION_DIR} checkout main-cache-builds
+          mkdir -p ${REPO_DIR}
+          mkdir -p ${OUTPUT_DIR}
+          mkdir build-cache
+          ls -al
+          
+          echo "*** Checking out ${INPUT_REPO}"
+          ${SCRIPT_DIR}/checkoutRepo.sh --repo=${INPUT_REPO} \
+            --branch=${INPUT_BASE_BRANCH} --is-cherry-pick=${INPUT_IS_CHERRY_PICK} \
+            --pr-number=${INPUT_PR_NUMBER} --destination=${REPO_DIR}
+          ls -al
+          
+          cd ${REPO_DIR}
+          echo "*** Starting build"
+          ${SCRIPT_DIR}/${INPUT_BUILD_SCRIPT} --github --branch-name=${INPUT_BASE_BRANCH} \
+            --ccache-disable ${INPUT_BUILD_OPTIONS} \
+            --modules-blacklist="${INPUT_MODULES_BLACKLIST// /}" \
+            --output-dir=${OUTPUT_DIR}
+          echo "*** Build Complete"
+          echo "*** Installing"
+          make DESTDIR=${GITHUB_WORKSPACE}/build-cache install
+          make DESTDIR=${GITHUB_WORKSPACE}/build-cache samples
+          make DESTDIR=${GITHUB_WORKSPACE}/build-cache install-headers
+          echo "*** Install Complete"
+          cd ../build-cache
+          find -type d
+          gh cache delete ${{github.workflow}}-666-master || :
+
+      - id: cache-build-output
+        uses: actions/cache/save@v4
+        with:
+          path: build-cache
+          key: ${{github.workflow}}-666-master

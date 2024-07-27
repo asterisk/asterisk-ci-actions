@@ -36,48 +36,74 @@ jobs:
   RunUnitTests:
     name: UnitTests ${{ inputs.base_branch }}
     runs-on: ubuntu-latest
-    services:
-      postgres-asterisk:
-        image: postgres
-        env:
-          POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - name: SetupUbuntuRunner
-        uses: asterisk/asterisk-ci-actions/SetupUbuntuRunner@main
-
-      - name: SetTestName
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+    defaults:
+      run:
         shell: bash
+    steps:
+      - name: Restore Asterisk Cache
+        uses: actions/cache/restore@v4
+        with:
+          path: build-cache
+          key: ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}}
+              
+      - name: Setup
+        env:
+          GH_TOKEN: ${{secrets.TOKEN}}
+          GITHUB_TOKEN: ${{secrets.TOKEN}}
+          ASTERISK_REPO: ${{inputs.asterisk_repo}}
+          CACHE_DIR: cache
+          BASE_BRANCH: ${{ inputs.base_branch }}
+          IS_CHERRY_PICK: ${{ inputs.is_cherry_pick }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          BUILD_SCRIPT: ${{ inputs.build_script }}
+          BUILD_OPTIONS: ${{ inputs.build_options }}
+          MODULES_BLACKLIST: ${{ inputs.modules_blacklist }}
         run: |
+          id
           BASE_BRANCH="${{inputs.base_branch}}"
           UNIT_TEST_NAME="unittests-${BASE_BRANCH//\//-}"
           echo "UNIT_TEST_NAME=${UNIT_TEST_NAME}" >> "${GITHUB_ENV}"
+          export GITHUB_ACTION_REPOSITORY=asterisk/asterisk-ci-actions
+          export ACTION_DIR=$(basename ${GITHUB_ACTION_REPOSITORY})
+          export SCRIPT_DIR=${GITHUB_WORKSPACE}/${ACTION_DIR}/scripts
+          export REPO_DIR=$(basename ${ASTERISK_REPO})
+          export OUTPUT_DIR=${GITHUB_WORKSPACE}/${CACHE_DIR}/output
+          cd ${GITHUB_WORKSPACE}
+          ls -al
+          
+          echo "*** Cloning ${GITHUB_ACTION_REPOSITORY}"
+          git clone ${GITHUB_SERVER_URL}/${GITHUB_ACTION_REPOSITORY}
+          git -C ${ACTION_DIR} checkout main-cache-builds
+          mkdir -p ${OUTPUT_DIR}
+          cd build-cache
+          sudo rsync -vaH . /
+          chown -R asteriskci:users /etc/asterisk /var/{cache,lib,log,spool}/asterisk
 
-      - name: Get Asterisk
-        uses: asterisk/asterisk-ci-actions/GetRepo@main
-        with:
-          repo:              ${{inputs.asterisk_repo}}
-          base_branch:       ${{inputs.base_branch}}
-          pr_number:         ${{inputs.pr_number}}
-          is_cherry_pick:    ${{inputs.is_cherry_pick}}
-          build_script:      ${{inputs.build_script}}
-          build_options:     ${{inputs.build_options}}
-          github_token:      ${{secrets.TOKEN}}
-          modules_blacklist: ${{inputs.modules_blacklist}}
+      - name: Setup
+        env:
+          GH_TOKEN: ${{secrets.TOKEN}}
+          GITHUB_TOKEN: ${{secrets.TOKEN}}
+          CACHE_DIR: cache
+          BASE_BRANCH: ${{ inputs.base_branch }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          UNITTEST_COMMAND: ${{ inputs.unittest_command }}
+        run: |
+          UNIT_TEST_NAME="unittests-${BASE_BRANCH//\//-}"
+          echo "UNIT_TEST_NAME=${UNIT_TEST_NAME}" >> "${GITHUB_ENV}"
+          export GITHUB_ACTION_REPOSITORY=asterisk/asterisk-ci-actions
+          export ACTION_DIR=$(basename ${GITHUB_ACTION_REPOSITORY})
+          export SCRIPT_DIR=${GITHUB_WORKSPACE}/${ACTION_DIR}/scripts
+          export OUTPUT_DIR=${GITHUB_WORKSPACE}/${CACHE_DIR}/output
 
-      - name: Run unittest-${{inputs.base_branch}}
-        uses: asterisk/asterisk-ci-actions/RunAsteriskUnitTests@main
-        with:
-          asterisk_repo:    ${{inputs.asterisk_repo}}
-          base_branch:      ${{inputs.base_branch}}
-          pr_number:        ${{inputs.pr_number}}
-          github_token:     ${{secrets.TOKEN}}
-          unittest_command: ${{inputs.unittest_command}}
-  
+          cd ${GITHUB_WORKSPACE}
+          ${SCRIPT_DIR}/runAsteriskUnitTests.sh --no-expect --github \
+            --user-group=asteriskci:users \
+            --output-dir=${OUTPUT_DIR} \
+            --output-xml=${OUTPUT_DIR}/unittests-results.xml \
+            --unittest-command="${UNITTEST_COMMAND}"
+
       - name: Save Output
         id: save-output
         if: always()
