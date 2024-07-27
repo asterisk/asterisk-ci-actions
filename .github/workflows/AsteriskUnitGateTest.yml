@@ -27,8 +27,15 @@ on:
         required: false
         type: string
         default: ""
+      output_cache_dir:
+        required: false
+        type: string
+        default: cache
+      build_cache_dir:
+        required: false
+        type: string
+        default: build-cache
       modules_blacklist:
-        description: 'List of Asterisk modules to blacklist from the build'
         type: string
         default: ""
         required: false
@@ -41,7 +48,8 @@ on:
         default: Gate
       testsuite_repo:
         type: string
-        required: true
+        required: false
+        default: asterisk/testsuite
       testsuite_test_pr:
         type: string
         required: false
@@ -51,24 +59,45 @@ on:
       gatetest_commands:
         type: string
         required: true
+      user_group:
+        required: false
+        type: string
+        default: asteriskci:users
     secrets:
       TOKEN:
         required: true
-jobs:
 
-  UnitTests:
-    uses: ./.github/workflows/RunAsteriskUnitTests.yml
+jobs:
+  BuildAndCache:
+    uses: ./.github/workflows/AsteriskBuildAndCache.yml
     with:
+      test_type:         ${{ inputs.test_type }}
       asterisk_repo:     ${{ inputs.asterisk_repo }}
       pr_number:         ${{ inputs.pr_number }}
       base_branch:       ${{ inputs.base_branch }}
       is_cherry_pick:    ${{ inputs.is_cherry_pick }}
       build_options:     ${{ inputs.build_options }}
+      modules_blacklist: ${{ inputs.modules_blacklist }}
+      build_cache_dir:   ${{ inputs.build_cache_dir }}
+      build_cache_key:   ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}}
+    secrets: inherit
+  
+  Units:
+    needs: BuildAndCache
+    uses: ./.github/workflows/RunAsteriskUnitTests.yml
+    with:
+      test_type:         ${{ inputs.testsuite_test_type }}
+      base_branch:       ${{ inputs.base_branch }}
+      user_group:        ${{ inputs.user_group }}
       unittest_command:  ${{ inputs.unittest_command }}
+      output_cache_dir:  ${{ inputs.output_cache_dir }}
+      build_cache_dir:   ${{ inputs.build_cache_dir }}
+      build_cache_key:   ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}}
     secrets: inherit
 
-  GateTests:
-    if: ${{ inputs.testsuite_test_type != 'NONE' }}
+  Gates:
+    needs: BuildAndCache
+    if: ${{ inputs.testsuite_test_type != 'NONE' && inputs.gatetest_list != '[]' }}
     strategy:
       fail-fast: false
       matrix:
@@ -76,33 +105,37 @@ jobs:
     uses: ./.github/workflows/RunAsteriskGateTests.yml
     with:
       test_type:         ${{ inputs.testsuite_test_type }}
-      asterisk_repo:     ${{ inputs.asterisk_repo }}
-      pr_number:         ${{ inputs.pr_number }}
       base_branch:       ${{ inputs.base_branch }}
-      is_cherry_pick:    ${{ inputs.is_cherry_pick }}
+      user_group:        ${{ inputs.user_group }}
       testsuite_repo:    ${{ inputs.testsuite_repo }}
       testsuite_test_pr: ${{ inputs.testsuite_test_pr }}
       gatetest_group:    ${{ matrix.group }}
       gatetest_commands: ${{ inputs.gatetest_commands }}
+      build_cache_dir:   ${{ inputs.build_cache_dir }}
+      build_cache_key:   ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}}
     secrets: inherit
 
-  UnitGateTestResults:
+  Results:
+    name: '**Results-${{inputs.base_branch}}'
     if: always()
     runs-on: ubuntu-latest
-    needs: [UnitTests,GateTests]
+    needs: [Units,Gates]
     steps:
       - name: Check test matrix status
         env:
-          GH_TOKEN:  ${{ secrets.TOKEN }}
-          PR_NUMBER: ${{ inputs.pr_number }}
-          RESULT_UNIT: ${{ needs.UnitTests.result }}
-          RESULT_GATE: ${{ needs.GateTests.result }}
+          GH_TOKEN:  ${{secrets.TOKEN}}
+          PR_NUMBER: ${{inputs.pr_number}}
+          ASTERISK_REPO: ${{ inputs.asterisk_repo }}
+          RESULT_UNIT: ${{needs.Units.result}}
+          RESULT_GATE: ${{needs.Gates.result}}
+          BUILD_CACHE_KEY: ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}} 
         run: |
+          gh cache delete -R ${ASTERISK_REPO} ${BUILD_CACHE_KEY} || :
           declare -i rc=0
           echo "all results: ${{ toJSON(needs.*.result) }}"
           case $RESULT_UNIT in
             success)
-              echo "::notice::Unit tests passed"
+              echo "Unit tests passed"
               ;;
             skipped)
               echo "::error::Unit tests were skipped because of an earlier failure"
@@ -114,10 +147,10 @@ jobs:
           esac
           case $RESULT_GATE in
             success)
-              echo "::notice::Gate tests passed"
+              echo "Gate tests passed"
               ;;
             skipped)
-              echo "::notice::Gate tests were not requested"
+              echo "Gate tests were not requested"
               ;;
             *)
               echo "::error::One or more gate tests failed ($RESULT_GATE)"

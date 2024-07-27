@@ -3,30 +3,45 @@ run-name: "TestWorkflow"
 on:
   workflow_dispatch:
     inputs:
-      counter:
-        type: number
-        default: 0
+      test_type:
+        type: string
+        default: "Nightly"
+      base_branch:
+        type: string
+        default: master
+      user_group:
+        type: string
+        default: asteriskci:users
+      testsuite_repo:
+        description: 'Testsuite Repo (default: asterisk/testsuite)'
+        type: string
+        default: asterisk/testsuite
+      testsuite_test_pr:
+        type: string
+      gatetest_group:
+        description: 'Gate Group'
+        type: string
+        default: "somegroup"
+      gatetest_commands:
+        description: 'Gate Commands'
+        type: string
+        default: '[]'
+      build_cache_dir:
+        type: string
+        default: build-cache
+      build_cache_key:
+        type: string
+        default: "akey"
 
 env:
   COUNTER: 42
 
 jobs:
-  Setup:
-    runs-on: ubuntu-latest
-    steps:
-#      - name: DumpEnvironment
-#        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
-#        with:
-#          action-inputs: ${{ toJSON(inputs) }}
-#
-      - name: CreateIssue
-        env:
-          GH_TOKEN: ${{secrets.ASTERISKTEAM_PAT}}
-          FPBX_ISSUE_REPO: 'freepbx/github-integration-test'
-          ASTERISK_VERSION: '21.4.1'
-        run: |
-          gh issue create -R ${FPBX_ISSUE_REPO} \
-            --title "Asterisk Version ${ASTERISK_VERSION} Has Been Released" \
-            --body "Release Notes: https://github.com/asterisk/asterisk/releases/tag/${ASTERISK_VERSION}" 
-
-
+  TestCalledWorkflow:
+    uses: ./.github/workflows/TestCalledWorkflow.yml
+    with:
+      test_type:         ${{ inputs.test_type }}
+      base_branch:       ${{ inputs.base_branch }}
+      build_cache_dir:   ${{ inputs.build_cache_dir }}
+      build_cache_key:   ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}}
+    secrets: inherit

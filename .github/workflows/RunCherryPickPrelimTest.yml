@@ -1,0 +1,47 @@
+name: 'RunCherryPickPrelimTest'
+on:
+  workflow_call:
+    inputs:
+      repo:
+        required: true
+        type: string
+      pr_number:
+        required: true
+        type: string
+      base_branch:
+        required: true
+        type: string
+
+env:
+  GH_TOKEN: ${{secrets.TOKEN}}
+  GITHUB_TOKEN: ${{secrets.TOKEN}}
+  TEST_TYPE: ${{inputs.test_type}}
+  BASE_BRANCH: ${{inputs.base_branch}}
+  CACHE_DIR: ${{inputs.output_cache_dir}}
+  ACTION_DIR: asterisk-ci-actions
+  SCRIPT_DIR: ${{github.workspace}}/asterisk-ci-actions/scripts
+  REPO: ${{inputs.repo}}
+  REPO_DIR: ${{github.event.repository.name}}
+  REPO_ORG: ${{github.event.repository.owner.login}}
+  CI_BRANCH: main-cache-builds
+
+jobs:
+  CherryPickPrelimTest:
+    name: CherryPickPrelimTest PR ${{inputs.pr_number}} to branch ${{ inputs.base_branch }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Run Cherry Pick
+        run: |
+          echo "*** Cloning ${REPO_ORG}/${ACTION_DIR}"
+          git clone ${GITHUB_SERVER_URL}/${REPO_ORG}/${ACTION_DIR}
+          git -C ${ACTION_DIR} checkout ${CI_BRANCH:-main}
+
+          mkdir -p ${REPO_DIR}
+
+          echo "*** Checking out ${ASTERISK_REPO}"
+          ${SCRIPT_DIR}/cherryPick.sh --repo=${REPO} \
+            --pr-number=${PR_NUMBER} --branch=${BRANCH} \
+            --repo-dir=${REPO_DIR}

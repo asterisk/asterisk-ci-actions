@@ -60,8 +60,23 @@ jobs:
           testsuite_test_auto_merge_regex: ${{ vars.TESTSUITE_TEST_AUTO_MERGE_REGEX }}
           github_token: ${{ secrets.TOKEN }}
 
-  CherryPickTestMatrix:
+  CherryPickPrelimTestMatrix:
     needs: IdentifyBranches
+    if: ${{ needs.IdentifyBranches.outputs.branch_count > 0 && ( success() || failure() ) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJSON(needs.IdentifyBranches.outputs.branches) }}
+    uses: ./.github/workflows/RunCherryPickPrelimTest.yml
+    with:
+      repo:        ${{github.repository}}
+      pr_number:   ${{github.event.number}}
+      base_branch: ${{matrix.branch}}
+    secrets: inherit
+
+
+  CherryPickTestMatrix:
+    needs: [IdentifyBranches,CherryPickPrelimTestMatrix]
     if: ${{ needs.IdentifyBranches.outputs.branch_count > 0 && ( success() || failure() ) }}
     strategy:
       fail-fast: false
@@ -83,7 +98,7 @@ jobs:
     secrets: inherit
 
   CherryPickTestResults:
-    needs: [ IdentifyBranches, CherryPickTestMatrix ]
+    needs: [ IdentifyBranches, CherryPickPrelimTestMatrix, CherryPickTestMatrix ]
     if: ${{ needs.IdentifyBranches.outputs.branch_count > 0 && ( success() || failure() ) }}
     runs-on: ubuntu-latest
     steps:

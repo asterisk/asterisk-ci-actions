@@ -7,6 +7,7 @@ source $SCRIPT_DIR/ci.functions
 if [ "${OUTPUT_DIR: -1}" != "/" ] ; then
 	OUTPUT_DIR+=/
 fi
+mkdir -p ${OUTPUT_DIR}
 
 ASTETCDIR="$DESTDIR/etc/asterisk"
 ASTERISK="$DESTDIR/usr/sbin/asterisk"
@@ -14,18 +15,6 @@ CONFFILE="$ASTETCDIR/asterisk.conf"
 
 [ ! -x "$ASTERISK" ] && { echo "Asterisk isn't installed." ; exit 1 ; }
 [ ! -f "$CONFFILE" ] && { echo "Asterisk samples aren't installed." ; exit 1 ; }
-
-coreglob=$(asterisk_corefile_glob)
-corefiles=$(find $(dirname $coreglob) -name $(basename $coreglob))
-if [ -n "$corefiles" ] ; then
-	echo "*** Found one or more core files before running tests ***"
-	echo "Search glob: ${coreglob}"
-	echo "Corefiles: ${corefiles}"
-	if [[ "$coreglob" =~ asterisk ]] ; then
-		echo "Removing matching corefiles: $corefiles"
-		rm -rf $corefiles || :
-	fi
-fi
 
 ASTERISK="$DESTDIR/usr/sbin/asterisk"
 CONFFILE=$ASTETCDIR/asterisk.conf
@@ -127,7 +116,7 @@ runner rsync -vaH $DESTDIR/var/log/asterisk/. $OUTPUT_DIR
 
 [ x"$USER_GROUP" != x ] && chown -R $USER_GROUP $OUTPUT_DIR
 
-coreglob=$(asterisk_corefile_glob)
+coreglob="/tmp/core-asterisk*"
 corefiles=$(find $(dirname $coreglob) -name $(basename $coreglob))
 if [ -n "$corefiles" ] ; then
 	echo "*** Found one or more core files after running tests ***"

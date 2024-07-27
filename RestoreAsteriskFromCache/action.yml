@@ -1,0 +1,47 @@
+name: RestoreAsteriskFromCache
+inputs:
+  repo_dir:
+    required: false
+    type: string
+  build_cache_key:
+    required: true
+    type: string
+  build_cache_dir:
+    required: true
+    type: string
+  user_group:
+    required: false
+    type: string
+    default: asteriskci:users
+
+runs:
+  using: "composite"
+  steps:
+    - name: DumpEnvironment
+      uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+
+    - name: Restore Asterisk Cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{inputs.build_cache_dir}}
+        key: ${{inputs.build_cache_key}}
+            
+    - name: Install From Cache
+      shell: bash
+      env:
+        REPO_DIR: ${{inputs.repo_dir}}
+        BUILD_CACHE_DIR: ${{inputs.build_cache_dir}}
+        USER_GROUP: ${{inputs.user_group}}
+      run: |
+        cd ${GITHUB_WORKSPACE}
+        if [ -f ${BUILD_CACHE_DIR}/asterisk-source.tar.gz ] ; then
+          echo "*** Found ${BUILD_CACHE_DIR}/asterisk-source.tar.gz"
+          tar -xf ${BUILD_CACHE_DIR}/asterisk-source.tar.gz
+          rm ${BUILD_CACHE_DIR}/asterisk-source.tar.gz
+        else
+          echo "*** No cached asterisk source found"
+        fi
+        cd ${BUILD_CACHE_DIR}
+        echo "*** Installing asterisk from cache"
+        sudo rsync -aH . /
+        chown -R ${USER_GROUP} /etc/asterisk $(find /var/*/asterisk -maxdepth 0 -type d)

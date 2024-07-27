@@ -1,26 +1,61 @@
 name: TestCalledWorkflow
 run-name: "TestCalledWorkflow"
 on:
-  workflow_run:
-    workflows: [TestWorkflow]
-    types:
-      - in_progress
+  workflow_call:
+    inputs:
+      test_type:
+        type: string
+        default: "Nightly"
+      base_branch:
+        type: string
+        default: master
+      user_group:
+        type: string
+        default: asteriskci:users
+      testsuite_repo:
+        description: 'Testsuite Repo (default: asterisk/testsuite)'
+        type: string
+        default: asterisk/testsuite
+      testsuite_test_pr:
+        type: string
+      gatetest_group:
+        description: 'Gate Group'
+        type: string
+        default: "somegroup"
+      gatetest_commands:
+        description: 'Gate Commands'
+        type: string
+        default: '[]'
+      build_cache_dir:
+        type: string
+        default: build-cache
+      build_cache_key:
+        type: string
+        default: "akey"
 
-#  workflow_call:
-#    inputs:
-#      counter:
-#        type: string
-#        default: 0
-#    secrets:
-#      TOKEN:
-#        required: true
-
+env:
+  WF_ENV: ${{inputs.build_cache_dir}}
+  
 jobs:
-  TestCalledWorkflow:
-    name: DumpEnv
+    
+  Setup:
+    env:
+      JOB_ENV: ${{inputs.build_cache_key}}
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+      options: --privileged
+      
+    defaults:
+      run:
+        shell: bash
+
     steps:
       - name: DumpEnvironment
         uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
-#        with:
-#          action-inputs: ${{ toJSON(inputs) }}
+      - name: TestSysctl
+        run: |
+          sysctl -w kernel.core_pattern=/tmp/core-%e-%t
+          sysctl -n kernel.core_pattern
+          df -h
+

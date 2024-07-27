@@ -6,9 +6,13 @@ on:
         required: true
 
 env:
-  ACTION:     ${{ github.event.action }}
-  CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-  REPO:       ${{ github.repository }}
+  ACTION:     ${{github.event.action}}
+  CONCLUSION: ${{github.event.workflow_run.conclusion}}
+  REPO:       ${{github.repository}}
+  GH_TOKEN:   ${{secrets.TOKEN}}
+  SHA:        ${{github.event.workflow_run.head_sha}}
+  HEAD_REPO:  ${{github.event.workflow_run.head_repository.full_name}}
+  WORKFLOW:   ${{github.event.workflow.name}}
 
 jobs:
   PRStateChangedPriv:
@@ -16,30 +20,34 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       PR_NUMBER:     ${{ steps.getpr.outputs.PR_NUMBER }}
+      BASE_BRANCH:   ${{ steps.getpr.outputs.BASE_BRANCH }}
     steps:
       - name: DumpEnvironment
         uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
 
       - name: Get PR Number
         id: getpr
-        env:
-          GH_TOKEN: ${{ secrets.TOKEN }}
-          SHA: ${{github.event.workflow_run.head_sha}}
-          HEAD_REPO: ${{github.event.workflow_run.head_repository.full_name}}
         run: |
           URL="/repos/$HEAD_REPO/commits/$SHA/pulls"
           echo "Using URL $URL"
-          PR_NUMBER=$(gh api $URL --jq '.[].number')
-          if [ -z "$PR_NUMBER" ] ; then
-            echo "::error::Unable to find PR number"
-            exit 1
-          fi
-          if [[ "$PR_NUMBER" =~ ^[0-9]+$ ]] ; then
-            echo "PR_NUMBER=${PR_NUMBER}" >>${GITHUB_OUTPUT}
+          PR_BRANCH=$(gh api $URL --jq '.[] | (.number | tostring) + ":" + .base.ref')
+          if [[ "$PR_BRANCH" =~ ^([0-9]+):([^ ]+)$ ]] ; then
+            PR_NUMBER=${BASH_REMATCH[1]}
+            echo "PR_NUMBER=${PR_NUMBER}" >> ${GITHUB_OUTPUT}
+            echo "PR_NUMBER=${PR_NUMBER}" >> ${GITHUB_ENV}
+            BASE_BRANCH=${BASH_REMATCH[2]}
+            echo "BASE_BRANCH=${BASE_BRANCH}" >> ${GITHUB_OUTPUT}
+            echo "BASE_BRANCH=${BASE_BRANCH}" >> ${GITHUB_ENV}
+            echo "PR: ${PR_NUMBER}  BASE_BRANCH: ${BASE_BRANCH}"
             exit 0
           fi
           echo "::error::PR number '$PR_NUMBER' not valid"
           exit 1
+
+      - name: PreStart
+        if: github.event.action == 'requested'
+        run: |
+          gh cache delete ${WORKFLOW}-${PR_NUMBER}-${BASE_BRANCH} || :
 
       - name: Set Label
         id: setlabel
@@ -52,6 +60,7 @@ jobs:
         with:
           retries: 5
           script: |
+            core.info(`BASE_BRANCH ${process.env.BASE_BRANCH}`);
             let label;
             if (process.env.ACTION === 'requested') {
               label = process.env.LABEL_TIP;
@@ -123,35 +132,7 @@ jobs:
             })
             return;
 
-#      - name: Add reviewers
-#        if: github.event.action == 'completed'
-#        uses: actions/github-script@v7
-#        env:
-#          PR_NUMBER: ${{steps.getpr.outputs.PR_NUMBER}}
-#          REVIEWERS: ${{vars.PR_REVIEWERS}}
-#        with:
-#          retries: 5
-#          github-token: ${{ secrets.TOKEN }}
-#          script: |
-#            let rs = JSON.parse(process.env.REVIEWERS.length ? process.env.REVIEWERS : '[]');
-#            let users = [];
-#            let teams = [];
-#            for (const r of rs) {
-#              if (r.indexOf("/") > 0) {
-#                teams.push(r.split('/')[1]);
-#              } else {
-#                users.push(r);
-#              }
-#            }
-#            if (teams.length > 0 || users.length > 0) {
-#              core.info(`Adding user reviewers ${users}`);
-#              core.info(`Adding team reviewers ${teams}`);
-#              await github.rest.pulls.requestReviewers({
-#                pull_number: process.env.PR_NUMBER,
-#                owner: context.repo.owner,
-#                repo: context.repo.repo,
-#                reviewers: users,
-#                team_reviewers: teams
-#              });
-#            }
-#            return;
+      - name: PostComplete
+        if: github.event.action == 'completed'
+        run: |
+          gh cache delete ${WORKFLOW}-${PR_NUMBER}-${BASE_BRANCH} || :
