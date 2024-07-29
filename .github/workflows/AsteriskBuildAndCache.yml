@@ -115,10 +115,12 @@ jobs:
             --cache-dir=${CACHE_DIR}
           echo "*** Build Complete"
           
-          echo "*** Installing to ${BUILD_CACHE_DIR}"
-          make DESTDIR=${BUILD_CACHE_DIR} install
-          make DESTDIR=${BUILD_CACHE_DIR} samples
-          make DESTDIR=${BUILD_CACHE_DIR} install-headers
+          echo "*** Installing binaries to ${BUILD_CACHE_DIR}"
+          make DESTDIR=${BUILD_CACHE_DIR} WGET_EXTRA_ARGS=-q install >/dev/null
+          echo "*** Installing samples to ${BUILD_CACHE_DIR}"
+          make DESTDIR=${BUILD_CACHE_DIR} samples >/dev/null
+          echo "*** Installing headers to ${BUILD_CACHE_DIR}"
+          make DESTDIR=${BUILD_CACHE_DIR} install-headers  >/dev/null
           echo "*** Install Complete"
           
           echo "*** Deleting old cache (if any): ${BUILD_CACHE_KEY}"
