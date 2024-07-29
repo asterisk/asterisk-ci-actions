@@ -1,4 +1,4 @@
-name: AsteriskBuildAndCache
+name: BuildAndCacheAsterisk
 on:
   workflow_call:
     inputs:
@@ -32,6 +32,10 @@ on:
         type: string
         default: ""
         required: false
+      output_cache_dir:
+        type: string
+        required: false
+        default: cache
       build_cache_dir:
         type: string
         required: false
@@ -67,14 +71,10 @@ jobs:
       - name: DumpEnvironment
         uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
     
-#      - name: SetupUbuntuRunner
-#        uses: asterisk/asterisk-ci-actions/SetupUbuntuRunner@main
-
       - name: BuildAsterisk
         env:
           GH_TOKEN: ${{secrets.TOKEN}}
           GITHUB_TOKEN: ${{secrets.TOKEN}}
-          GITHUB_ACTION_REPOSITORY: asterisk/asterisk-ci-actions
           ASTERISK_REPO: ${{inputs.asterisk_repo}}
           BASE_BRANCH: ${{ inputs.base_branch }}
           IS_CHERRY_PICK: ${{ inputs.is_cherry_pick }}
@@ -82,23 +82,24 @@ jobs:
           BUILD_SCRIPT: ${{ inputs.build_script }}
           BUILD_OPTIONS: ${{ inputs.build_options }}
           MODULES_BLACKLIST: ${{ inputs.modules_blacklist }}
+          CACHE_DIR: ${{github.workspace}}/${{inputs.output_cache_dir}}
+          REPO_DIR: ${{github.event.repository.name}}
+          REPO_ORG: ${{github.event.repository.owner.login}}
+          OUTPUT_DIR: ${{github.workspace}}/${{inputs.output_cache_dir}}/output
+          ACTION_DIR: asterisk-ci-actions
+          SCRIPT_DIR: ${{github.workspace}}/asterisk-ci-actions/scripts
+          BUILD_CACHE_DIR: ${{github.workspace}}/${{inputs.build_cache_dir}}
+          BUILD_CACHE_KEY: ${{inputs.build_cache_key}}
         run: |
-          id
-          export GITHUB_ACTION_REPOSITORY=asterisk/asterisk-ci-actions
-          export ACTION_DIR=$(basename ${GITHUB_ACTION_REPOSITORY})
-          export SCRIPT_DIR=${GITHUB_WORKSPACE}/${ACTION_DIR}/scripts
-          export REPO_DIR=$(basename ${ASTERISK_REPO})
-          export CACHE_DIR=${GITHUB_WORKSPACE}/cache
-          export OUTPUT_DIR=${CACHE_DIR}/output
           cd ${GITHUB_WORKSPACE}
           
           echo "*** Cloning ${GITHUB_ACTION_REPOSITORY}"
-          git clone ${GITHUB_SERVER_URL}/${GITHUB_ACTION_REPOSITORY}
+          git clone ${GITHUB_SERVER_URL}/${REPO_ORG}/${ACTION_DIR}
           git -C ${ACTION_DIR} checkout main-cache-builds
           mkdir -p ${REPO_DIR}
           mkdir -p ${CACHE_DIR}
           mkdir -p ${OUTPUT_DIR}
-          mkdir build-cache
+          mkdir -p ${BUILD_CACHE_DIR}
           
           echo "*** Checking out ${ASTERISK_REPO}"
           ${SCRIPT_DIR}/checkoutRepo.sh --repo=${ASTERISK_REPO} \
@@ -114,14 +115,15 @@ jobs:
             --cache-dir=${CACHE_DIR}
           echo "*** Build Complete"
           
-          echo "*** Installing"
-          make DESTDIR=${GITHUB_WORKSPACE}/build-cache install
-          make DESTDIR=${GITHUB_WORKSPACE}/build-cache samples
-          make DESTDIR=${GITHUB_WORKSPACE}/build-cache install-headers
+          echo "*** Installing to ${BUILD_CACHE_DIR}"
+          make DESTDIR=${BUILD_CACHE_DIR} install
+          make DESTDIR=${BUILD_CACHE_DIR} samples
+          make DESTDIR=${BUILD_CACHE_DIR} install-headers
           echo "*** Install Complete"
           
-          echo "*** Deleting old cache (if any): ${{inputs.build_cache_key}}"
-          gh cache delete ${{inputs.build_cache_key}} || :
+          echo "*** Deleting old cache (if any): ${BUILD_CACHE_KEY}"
+          # We don't care if it fails
+          gh cache delete ${BUILD_CACHE_KEY} || :
 
       - id: cache-build-output
         name: CacheBuildProducts

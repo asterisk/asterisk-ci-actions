@@ -2,6 +2,9 @@ name: 'RAUT'
 on:
   workflow_call:
     inputs:
+      test_type:
+        required: true
+        type: string
       base_branch:
         required: true
         type: string
@@ -49,7 +52,7 @@ jobs:
           BASE_BRANCH: ${{ inputs.base_branch }}
         run: |
           BASE_BRANCH="${{inputs.base_branch}}"
-          UNIT_TEST_NAME="unittests-${BASE_BRANCH//\//-}"
+          UNIT_TEST_NAME="${{inputs.test_type}}-unit-${BASE_BRANCH//\//-}"
           echo "UNIT_TEST_NAME=${UNIT_TEST_NAME}" >> "${GITHUB_ENV}"
           export GITHUB_ACTION_REPOSITORY=asterisk/asterisk-ci-actions
           echo "GITHUB_ACTION_REPOSITORY=${GITHUB_ACTION_REPOSITORY}" >> "${GITHUB_ENV}"
