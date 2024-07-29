@@ -47,6 +47,25 @@ on:
       TOKEN:
         required: true
 
+env:
+  GH_TOKEN: ${{secrets.TOKEN}}
+  GITHUB_TOKEN: ${{secrets.TOKEN}}
+  ASTERISK_REPO: ${{inputs.asterisk_repo}}
+  BASE_BRANCH: ${{ inputs.base_branch }}
+  IS_CHERRY_PICK: ${{ inputs.is_cherry_pick }}
+  PR_NUMBER: ${{ inputs.pr_number }}
+  BUILD_SCRIPT: ${{ inputs.build_script }}
+  BUILD_OPTIONS: ${{ inputs.build_options }}
+  MODULES_BLACKLIST: ${{ inputs.modules_blacklist }}
+  CACHE_DIR: ${{github.workspace}}/${{inputs.output_cache_dir}}
+  REPO_DIR: ${{github.event.repository.name}}
+  REPO_ORG: ${{github.event.repository.owner.login}}
+  OUTPUT_DIR: ${{github.workspace}}/${{inputs.output_cache_dir}}/output
+  ACTION_DIR: asterisk-ci-actions
+  SCRIPT_DIR: ${{github.workspace}}/asterisk-ci-actions/scripts
+  BUILD_CACHE_DIR: ${{github.workspace}}/${{inputs.build_cache_dir}}
+  BUILD_CACHE_KEY: ${{inputs.build_cache_key}}
+
 jobs:
   BuildAndCache:
     name: BuildAndCache-${{ inputs.base_branch }}
@@ -70,42 +89,23 @@ jobs:
     steps:
       - name: DumpEnvironment
         uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
-    
+
       - name: BuildAsterisk
-        env:
-          GH_TOKEN: ${{secrets.TOKEN}}
-          GITHUB_TOKEN: ${{secrets.TOKEN}}
-          ASTERISK_REPO: ${{inputs.asterisk_repo}}
-          BASE_BRANCH: ${{ inputs.base_branch }}
-          IS_CHERRY_PICK: ${{ inputs.is_cherry_pick }}
-          PR_NUMBER: ${{ inputs.pr_number }}
-          BUILD_SCRIPT: ${{ inputs.build_script }}
-          BUILD_OPTIONS: ${{ inputs.build_options }}
-          MODULES_BLACKLIST: ${{ inputs.modules_blacklist }}
-          CACHE_DIR: ${{github.workspace}}/${{inputs.output_cache_dir}}
-          REPO_DIR: ${{github.event.repository.name}}
-          REPO_ORG: ${{github.event.repository.owner.login}}
-          OUTPUT_DIR: ${{github.workspace}}/${{inputs.output_cache_dir}}/output
-          ACTION_DIR: asterisk-ci-actions
-          SCRIPT_DIR: ${{github.workspace}}/asterisk-ci-actions/scripts
-          BUILD_CACHE_DIR: ${{github.workspace}}/${{inputs.build_cache_dir}}
-          BUILD_CACHE_KEY: ${{inputs.build_cache_key}}
         run: |
-          cd ${GITHUB_WORKSPACE}
-          
-          echo "*** Cloning ${GITHUB_ACTION_REPOSITORY}"
+          echo "*** Cloning ${REPO_ORG}/${ACTION_DIR}"
           git clone ${GITHUB_SERVER_URL}/${REPO_ORG}/${ACTION_DIR}
-          git -C ${ACTION_DIR} checkout main-cache-builds
+          git -C ${ACTION_DIR} checkout ${CI_BRANCH:-main}
+
           mkdir -p ${REPO_DIR}
           mkdir -p ${CACHE_DIR}
           mkdir -p ${OUTPUT_DIR}
           mkdir -p ${BUILD_CACHE_DIR}
-          
+
           echo "*** Checking out ${ASTERISK_REPO}"
           ${SCRIPT_DIR}/checkoutRepo.sh --repo=${ASTERISK_REPO} \
             --branch=${BASE_BRANCH} --is-cherry-pick=${IS_CHERRY_PICK} \
             --pr-number=${PR_NUMBER} --destination=${REPO_DIR}
-          
+
           cd ${REPO_DIR}
           echo "*** Starting build"
           ${SCRIPT_DIR}/${BUILD_SCRIPT} --github --branch-name=${BASE_BRANCH} \
@@ -114,7 +114,7 @@ jobs:
             --output-dir=${OUTPUT_DIR} \
             --cache-dir=${CACHE_DIR}
           echo "*** Build Complete"
-          
+
           echo "*** Installing binaries to ${BUILD_CACHE_DIR}"
           make DESTDIR=${BUILD_CACHE_DIR} WGET_EXTRA_ARGS=-q install >/dev/null
           echo "*** Installing samples to ${BUILD_CACHE_DIR}"
@@ -122,7 +122,7 @@ jobs:
           echo "*** Installing headers to ${BUILD_CACHE_DIR}"
           make DESTDIR=${BUILD_CACHE_DIR} install-headers  >/dev/null
           echo "*** Install Complete"
-          
+
           echo "*** Deleting old cache (if any): ${BUILD_CACHE_KEY}"
           # We don't care if it fails
           gh cache delete ${BUILD_CACHE_KEY} || :

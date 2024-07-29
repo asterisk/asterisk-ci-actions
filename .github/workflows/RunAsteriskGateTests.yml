@@ -36,6 +36,25 @@ on:
         type: string
         required: true
 
+env:
+  GH_TOKEN: ${{secrets.TOKEN}}
+  GITHUB_TOKEN: ${{secrets.TOKEN}}
+  TEST_TYPE: ${{inputs.test_type}}
+  BASE_BRANCH: ${{inputs.base_branch}}
+  CACHE_DIR: ${{inputs.output_cache_dir}}
+  USER_GROUP: ${{inputs.user_group}}
+  ACTION_DIR: asterisk-ci-actions
+  SCRIPT_DIR: ${{github.workspace}}/asterisk-ci-actions/scripts
+  OUTPUT_DIR: ${{github.workspace}}/${{inputs.output_cache_dir}}/output
+  REPO_DIR: ${{github.event.repository.name}}
+  REPO_ORG: ${{github.event.repository.owner.login}}
+  CI_BRANCH: main-cache-builds
+
+  TESTSUITE_REPO: ${{inputs.testsuite_repo}}
+  TESTSUITE_TEST_PR: ${{inputs.testsuite_test_pr}}
+  GATETEST_GROUP: ${{inputs.gatetest_group}}
+  GATETEST_COMMAND: ${{ toJSON(fromJSON(inputs.gatetest_commands)[inputs.gatetest_group]) }}
+
 jobs:
   RunGateTests:
     name: GateTests ${{ inputs.base_branch }} ${{inputs.gatetest_group}}
@@ -54,41 +73,17 @@ jobs:
           user_group: ${{inputs.user_group}}
 
       - name: Setup
-        env:
-          GH_TOKEN: ${{secrets.TOKEN}}
-          GITHUB_TOKEN: ${{secrets.TOKEN}}
-          BASE_BRANCH: ${{ inputs.base_branch }}
-          ACTION_DIR: asterisk-ci-actions
         run: |
-          echo "GC_TESTSUITE_DIR=$(basename ${{inputs.testsuite_repo}})" >> "${GITHUB_ENV}"
-          GC_TEST_NAME="${{inputs.test_type}}-${{inputs.gatetest_group}}-${BASE_BRANCH//\//-}"
-          export GITHUB_ACTION_REPOSITORY=asterisk/asterisk-ci-actions
-          export ACTION_DIR=$(basename ${GITHUB_ACTION_REPOSITORY})
-          export SCRIPT_DIR=${GITHUB_WORKSPACE}/${ACTION_DIR}/scripts
+          echo "GC_TESTSUITE_DIR=$(basename ${TESTSUITE_REPO})" >> "${GITHUB_ENV}"
+          echo "GC_TEST_NAME=${TEST_TYPE}-${GATETEST_GROUP}-${BASE_BRANCH//\//-}" >> "${GITHUB_ENV}"
 
-          echo "GC_TEST_NAME=${GC_TEST_NAME}" >> "${GITHUB_ENV}"
-          echo "GITHUB_ACTION_REPOSITORY=${GITHUB_ACTION_REPOSITORY}" >> "${GITHUB_ENV}"
-          echo "SCRIPT_DIR=${SCRIPT_DIR}" >> "${GITHUB_ENV}"
-          echo "BASE_BRANCH=${BASE_BRANCH}" >> "${GITHUB_ENV}"
-          
-          cd ${GITHUB_WORKSPACE}
-          ls -al
-          
-          echo "*** Cloning ${GITHUB_ACTION_REPOSITORY}"
-          git clone ${GITHUB_SERVER_URL}/${GITHUB_ACTION_REPOSITORY}
-          git -C ${ACTION_DIR} checkout main-cache-builds
+          echo "*** Cloning ${REPO_ORG}/${ACTION_DIR}"
+          git clone ${GITHUB_SERVER_URL}/${REPO_ORG}/${ACTION_DIR}
+          git -C ${ACTION_DIR} checkout ${CI_BRANCH:-main}
 
       - name: ${{inputs.test_type}} Test ${{inputs.gatetest_group}}-${{inputs.base_branch}}
-        env:
-          GH_TOKEN: ${{secrets.TOKEN}}
-          GITHUB_TOKEN: ${{secrets.TOKEN}}
-          USER_GROUP: ${{ inputs.user_group }}
-          TESTSUITE_REPO: ${{inputs.testsuite_repo}}
-          TESTSUITE_TEST_PR: ${{inputs.testsuite_test_pr}}
-          GATETEST_COMMAND: ${{ toJSON(fromJSON(inputs.gatetest_commands)[inputs.gatetest_group]) }}
-          ACTION_DIR: asterisk-ci-actions
         run: |
-          TESTSUITE_DIR=${GITHUB_WORKSPACE}/$(basename ${TESTSUITE_REPO})
+          TESTSUITE_DIR=${GITHUB_WORKSPACE}/${GC_TESTSUITE_DIR}
           mkdir -p ${TESTSUITE_DIR}
           git clone --depth 1 --no-tags -q -b ${BASE_BRANCH} \
           	${GITHUB_SERVER_URL}/${TESTSUITE_REPO} ${TESTSUITE_DIR}
