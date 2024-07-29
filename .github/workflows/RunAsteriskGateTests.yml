@@ -58,6 +58,7 @@ jobs:
           GH_TOKEN: ${{secrets.TOKEN}}
           GITHUB_TOKEN: ${{secrets.TOKEN}}
           BASE_BRANCH: ${{ inputs.base_branch }}
+          ACTION_DIR: asterisk-ci-actions
         run: |
           echo "GC_TESTSUITE_DIR=$(basename ${{inputs.testsuite_repo}})" >> "${GITHUB_ENV}"
           GC_TEST_NAME="${{inputs.test_type}}-${{inputs.gatetest_group}}-${BASE_BRANCH//\//-}"
@@ -85,6 +86,7 @@ jobs:
           TESTSUITE_REPO: ${{inputs.testsuite_repo}}
           TESTSUITE_TEST_PR: ${{inputs.testsuite_test_pr}}
           GATETEST_COMMAND: ${{ toJSON(fromJSON(inputs.gatetest_commands)[inputs.gatetest_group]) }}
+          ACTION_DIR: asterisk-ci-actions
         run: |
           TESTSUITE_DIR=${GITHUB_WORKSPACE}/$(basename ${TESTSUITE_REPO})
           mkdir -p ${TESTSUITE_DIR}
