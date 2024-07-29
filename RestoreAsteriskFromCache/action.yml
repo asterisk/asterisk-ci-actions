@@ -1,0 +1,35 @@
+name: RestoreAsteriskFromCache
+inputs:
+  build_cache_key:
+    required: true
+    type: string
+  build_cache_dir:
+    required: true
+    type: string
+  user_group:
+    required: false
+    type: string
+    default: asteriskci:users
+
+runs:
+  using: "composite"
+  steps:
+    - name: DumpEnvironment
+      uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+
+    - name: Restore Asterisk Cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{inputs.build_cache_dir}}
+        key: ${{inputs.build_cache_key}}
+            
+    - name: Install From Cache
+      shell: bash
+      env:
+        BUILD_CACHE_DIR: ${{inputs.build_cache_dir}}
+        USER_GROUP: ${{ inputs.user_group }}
+      run: |
+        cd ${GITHUB_WORKSPACE}
+        cd ${BUILD_CACHE_DIR}
+        sudo rsync -aH . /
+        chown -R ${USER_GROUP} /etc/asterisk /var/{cache,lib,log,spool}/asterisk

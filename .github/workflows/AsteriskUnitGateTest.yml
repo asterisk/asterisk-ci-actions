@@ -65,18 +65,20 @@ jobs:
       is_cherry_pick:    ${{ inputs.is_cherry_pick }}
       build_options:     ${{ inputs.build_options }}
       modules_blacklist: ${{ inputs.modules_blacklist }}
+      build_cache_dir:   build-cache
+      build_cache_key:   ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}}
     secrets: inherit
   
   UnitTests:
     needs: BuildAndCacheAsterisk
     uses: ./.github/workflows/RunAsteriskUnitTests.yml
     with:
-      asterisk_repo:     ${{ inputs.asterisk_repo }}
-      pr_number:         ${{ inputs.pr_number }}
       base_branch:       ${{ inputs.base_branch }}
-      is_cherry_pick:    ${{ inputs.is_cherry_pick }}
-      build_options:     ${{ inputs.build_options }}
+      user_group:        asteriskci:users
       unittest_command:  ${{ inputs.unittest_command }}
+      output_cache_dir:  cache
+      build_cache_dir:   build-cache
+      build_cache_key:    ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}}
     secrets: inherit
 
 #  GateTests:

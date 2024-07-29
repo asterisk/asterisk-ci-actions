@@ -32,12 +32,20 @@ on:
         type: string
         default: ""
         required: false
+      build_cache_dir:
+        type: string
+        required: false
+        default: build-cache
+      build_cache_key:
+        type: string
+        required: true
     secrets:
       TOKEN:
         required: true
 
 jobs:
-  BuildAndCacheAsterisk:
+  BuildAndCache:
+    name: BuildAndCache-${{ inputs.base_branch }}
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
@@ -112,11 +120,12 @@ jobs:
           make DESTDIR=${GITHUB_WORKSPACE}/build-cache install-headers
           echo "*** Install Complete"
           
-          echo "*** Deleting old cache (if any): ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}}"
-          gh cache delete ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}} || :
+          echo "*** Deleting old cache (if any): ${{inputs.build_cache_key}}"
+          gh cache delete ${{inputs.build_cache_key}} || :
 
       - id: cache-build-output
+        name: CacheBuildProducts
         uses: actions/cache/save@v4
         with:
-          path: build-cache
-          key: ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}}
+          path: ${{inputs.build_cache_dir}}
+          key: ${{inputs.build_cache_key}}
