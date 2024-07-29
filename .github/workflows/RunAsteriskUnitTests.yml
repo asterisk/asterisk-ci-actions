@@ -48,12 +48,11 @@ jobs:
           CACHE_DIR: ${{inputs.output_cache_dir}}
           BASE_BRANCH: ${{ inputs.base_branch }}
         run: |
-          id
           BASE_BRANCH="${{inputs.base_branch}}"
           UNIT_TEST_NAME="unittests-${BASE_BRANCH//\//-}"
           echo "UNIT_TEST_NAME=${UNIT_TEST_NAME}" >> "${GITHUB_ENV}"
           export GITHUB_ACTION_REPOSITORY=asterisk/asterisk-ci-actions
-          echo "GITHUB_ACTION_REPOSITORY=asterisk/asterisk-ci-actions" >> "${GITHUB_ENV}"
+          echo "GITHUB_ACTION_REPOSITORY=${GITHUB_ACTION_REPOSITORY}" >> "${GITHUB_ENV}"
           export ACTION_DIR=$(basename ${GITHUB_ACTION_REPOSITORY})
           echo "ACTION_DIR=${ACTION_DIR}" >> "${GITHUB_ENV}"
           export SCRIPT_DIR=${GITHUB_WORKSPACE}/${ACTION_DIR}/scripts
@@ -91,5 +90,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{env.UNIT_TEST_NAME}}
-          path: cache/output
+          path: ${{inputs.output_cache_dir}}/output
 

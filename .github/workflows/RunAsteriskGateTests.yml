@@ -5,36 +5,13 @@ on:
       test_type:
         required: true
         type: string
-      asterisk_repo:
-        required: true
-        type: string
-      pr_number:
-        required: true
-        type: string
       base_branch:
         required: true
         type: string
-      is_cherry_pick:
-        required: false
-        type: boolean
-        default: false
-      build_script:
-        required: false
+      user_group:
         type: string
-        default: "buildAsterisk.sh"
-      build_options:
         required: false
-        type: string
-        default: ""
-      modules_blacklist:
-        description: 'List of Asterisk modules to blacklist from the build'
-        type: string
-        default: ""
-        required: false
-      cache_dir:
-        type: string
-        default: cache
-        required: false
+        default: asteriskci:users
       testsuite_repo:
         description: 'Testsuite Repo (default: asterisk/testsuite)'
         type: string
@@ -51,48 +28,90 @@ on:
         description: 'Gate Commands'
         type: string
         required: true
+      build_cache_dir:
+        type: string
+        required: false
+        default: build-cache
+      build_cache_key:
+        type: string
+        required: true
 
 jobs:
   RunGateTests:
     name: GateTests ${{ inputs.base_branch }} ${{inputs.gatetest_group}}
     runs-on: ubuntu-latest
-    steps:
-      - name: SetupUbuntuRunner
-        uses: asterisk/asterisk-ci-actions/SetupUbuntuRunner@main
-
-      - name: GetTestsuiteDir
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+    defaults:
+      run:
         shell: bash
+    steps:
+      - name: Restore Asterisk Cache
+        uses: asterisk/asterisk-ci-actions/RestoreAsteriskFromCache@main-cache-builds
+        with:
+          build_cache_dir: ${{inputs.build_cache_dir}}
+          build_cache_key: ${{inputs.build_cache_key}}
+          user_group: ${{inputs.user_group}}
+
+      - name: Setup
+        env:
+          GH_TOKEN: ${{secrets.TOKEN}}
+          GITHUB_TOKEN: ${{secrets.TOKEN}}
+          BASE_BRANCH: ${{ inputs.base_branch }}
         run: |
           echo "GC_TESTSUITE_DIR=$(basename ${{inputs.testsuite_repo}})" >> "${GITHUB_ENV}"
-          BASE_BRANCH="${{inputs.base_branch}}"
           GC_TEST_NAME="${{inputs.test_type}}-${{inputs.gatetest_group}}-${BASE_BRANCH//\//-}"
+          export GITHUB_ACTION_REPOSITORY=asterisk/asterisk-ci-actions
+          export ACTION_DIR=$(basename ${GITHUB_ACTION_REPOSITORY})
+          export SCRIPT_DIR=${GITHUB_WORKSPACE}/${ACTION_DIR}/scripts
+
           echo "GC_TEST_NAME=${GC_TEST_NAME}" >> "${GITHUB_ENV}"
+          echo "GITHUB_ACTION_REPOSITORY=${GITHUB_ACTION_REPOSITORY}" >> "${GITHUB_ENV}"
+          echo "SCRIPT_DIR=${SCRIPT_DIR}" >> "${GITHUB_ENV}"
+          echo "BASE_BRANCH=${BASE_BRANCH}" >> "${GITHUB_ENV}"
+          
+          cd ${GITHUB_WORKSPACE}
+          ls -al
+          
+          echo "*** Cloning ${GITHUB_ACTION_REPOSITORY}"
+          git clone ${GITHUB_SERVER_URL}/${GITHUB_ACTION_REPOSITORY}
+          git -C ${ACTION_DIR} checkout main-cache-builds
 
-      - name: Get Asterisk
-        uses: asterisk/asterisk-ci-actions/GetRepo@main
-        with:
-          repo:              ${{inputs.asterisk_repo}}
-          base_branch:       ${{inputs.base_branch}}
-          pr_number:         ${{inputs.pr_number}}
-          is_cherry_pick:    ${{inputs.is_cherry_pick}}
-          build_script:      ${{inputs.build_script}}
-          build_options:     ${{inputs.build_options}}
-          github_token:      ${{secrets.TOKEN}}
-          modules_blacklist: ${{inputs.modules_blacklist}}
-
-      - id: runtests
-        name: ${{inputs.test_type}} Test ${{inputs.gatetest_group}}-${{inputs.base_branch}}
-        uses: asterisk/asterisk-ci-actions/RunAsteriskGateTests@main
-        with:
-          asterisk_repo:     ${{inputs.asterisk_repo}}
-          base_branch:       ${{inputs.base_branch}}
-          pr_number:         ${{inputs.pr_number}}
-          cache_dir:         ${{inputs.cache_dir}}
-          github_token:      ${{secrets.TOKEN}}
-          testsuite_repo:    ${{inputs.testsuite_repo}}
-          testsuite_test_pr: ${{inputs.testsuite_test_pr}}
-          gatetest_group:    0
-          gatetest_command:  ${{ toJSON(fromJSON(inputs.gatetest_commands)[inputs.gatetest_group]) }}
+      - name: ${{inputs.test_type}} Test ${{inputs.gatetest_group}}-${{inputs.base_branch}}
+        env:
+          GH_TOKEN: ${{secrets.TOKEN}}
+          GITHUB_TOKEN: ${{secrets.TOKEN}}
+          USER_GROUP: ${{ inputs.user_group }}
+          TESTSUITE_REPO: ${{inputs.testsuite_repo}}
+          TESTSUITE_TEST_PR: ${{inputs.testsuite_test_pr}}
+          GATETEST_COMMAND: ${{ toJSON(fromJSON(inputs.gatetest_commands)[inputs.gatetest_group]) }}
+        run: |
+          TESTSUITE_DIR=${GITHUB_WORKSPACE}/$(basename ${TESTSUITE_REPO})
+          mkdir -p ${TESTSUITE_DIR}
+          git clone --depth 1 --no-tags -q -b ${BASE_BRANCH} \
+          	${GITHUB_SERVER_URL}/${TESTSUITE_REPO} ${TESTSUITE_DIR}
+          git config --global --add safe.directory ${TESTSUITE_DIR}
+          
+          echo ${GATETEST_COMMAND} > /tmp/test_commands.json
+          TEST_NAME=$(jq -j '.name' /tmp/test_commands.json)
+          TEST_OPTIONS=$(jq -j '.options' /tmp/test_commands.json)
+          TEST_TIMEOUT=$(jq -j '.timeout' /tmp/test_commands.json)
+          TEST_CMD=$(jq -j '.testcmd' /tmp/test_commands.json)
+          TEST_DIR=$(jq -j '.dir' /tmp/test_commands.json)
+          
+          cd ${TESTSUITE_DIR}
+          
+          if [[ "${TESTSUITE_TEST_PR}" =~ [0-9]+ ]] ; then
+          	echo "Checking out testsuite PR ${TESTSUITE_TEST_PR}"
+          	gh pr checkout "${TESTSUITE_TEST_PR}" -b "pr-${TESTSUITE_TEST_PR}" || \
+          		{ echo "::error::Testsuite PR ${TESTSUITE_TEST_PR} not found" ; exit 1 ; }
+          fi
+          
+          TESTRC=0
+          ${SCRIPT_DIR}/runAsteriskGateTests.sh \
+            --test-timeout=${TEST_TIMEOUT} \
+            --testsuite-command="${TEST_OPTIONS} ${TEST_CMD}" || TESTRC=1
+          exit $TESTRC
  
       - name: Save Output
         id: save-output
@@ -102,5 +121,4 @@ jobs:
           name: ${{env.GC_TEST_NAME}}
           path: |
             ${{env.GC_TESTSUITE_DIR}}/logs
-            ${{inputs.cache_dir}}
 
