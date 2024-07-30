@@ -72,6 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+      options: --privileged
     services:
       postgres-asterisk:
         image: postgres
@@ -92,6 +93,7 @@ jobs:
 
       - name: BuildAsterisk
         run: |
+          sysctl -w kernel.core_pattern=/tmp/core-%e-%t
           echo "*** Cloning ${REPO_ORG}/${ACTION_DIR}"
           git clone ${GITHUB_SERVER_URL}/${REPO_ORG}/${ACTION_DIR}
           git -C ${ACTION_DIR} checkout ${CI_BRANCH:-main}

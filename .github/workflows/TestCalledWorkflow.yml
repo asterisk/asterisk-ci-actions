@@ -42,14 +42,20 @@ jobs:
     env:
       JOB_ENV: ${{inputs.build_cache_key}}
     runs-on: ubuntu-latest
-#    container:
-#      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
-
-#    defaults:
-#      run:
-#        shell: bash
+    container:
+      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
+      options: --privileged
+      
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: DumpEnvironment
         uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
-    
+      - name: TestSysctl
+        run: |
+          sysctl -w kernel.core_pattern=/tmp/core-%e-%t
+          sysctl -n kernel.core_pattern
+          df -h
+

@@ -116,7 +116,7 @@ runner rsync -vaH $DESTDIR/var/log/asterisk/. $OUTPUT_DIR
 
 [ x"$USER_GROUP" != x ] && chown -R $USER_GROUP $OUTPUT_DIR
 
-coreglob=$(asterisk_corefile_glob)
+coreglob="/tmp/core-asterisk*"
 corefiles=$(find $(dirname $coreglob) -name $(basename $coreglob))
 if [ -n "$corefiles" ] ; then
 	echo "*** Found one or more core files after running tests ***"
