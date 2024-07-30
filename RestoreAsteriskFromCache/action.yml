@@ -32,4 +32,4 @@ runs:
         cd ${GITHUB_WORKSPACE}
         cd ${BUILD_CACHE_DIR}
         sudo rsync -aH . /
-        chown -R ${USER_GROUP} /etc/asterisk /var/{cache,lib,log,spool}/asterisk
+        chown -R ${USER_GROUP} /etc/asterisk $(find /var/*/asterisk -maxdepth 0 -type d)

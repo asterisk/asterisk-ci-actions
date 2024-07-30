@@ -123,11 +123,13 @@ jobs:
     steps:
       - name: Check test matrix status
         env:
-          GH_TOKEN:  ${{ secrets.TOKEN }}
-          PR_NUMBER: ${{ inputs.pr_number }}
-          RESULT_UNIT: ${{ needs.Units.result }}
-          RESULT_GATE: ${{ needs.Gates.result }}
+          GH_TOKEN:  ${{secrets.TOKEN}}
+          PR_NUMBER: ${{inputs.pr_number}}
+          RESULT_UNIT: ${{needs.Units.result}}
+          RESULT_GATE: ${{needs.Gates.result}}
+          BUILD_CACHE_KEY: ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}} 
         run: |
+          gh cache delete ${BUILD_CACHE_KEY} || :
           declare -i rc=0
           echo "all results: ${{ toJSON(needs.*.result) }}"
           case $RESULT_UNIT in

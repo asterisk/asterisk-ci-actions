@@ -6,9 +6,13 @@ on:
         required: true
 
 env:
-  ACTION:     ${{ github.event.action }}
-  CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-  REPO:       ${{ github.repository }}
+  ACTION:     ${{github.event.action}}
+  CONCLUSION: ${{github.event.workflow_run.conclusion}}
+  REPO:       ${{github.repository}}
+  GH_TOKEN:   ${{secrets.TOKEN}}
+  SHA:        ${{github.event.workflow_run.head_sha}}
+  HEAD_REPO:  ${{github.event.workflow_run.head_repository.full_name}}
+  WORKFLOW:   ${{github.event.workflow.name}}
 
 jobs:
   PRStateChangedPriv:
@@ -23,10 +27,6 @@ jobs:
 
       - name: Get PR Number
         id: getpr
-        env:
-          GH_TOKEN: ${{ secrets.TOKEN }}
-          SHA: ${{github.event.workflow_run.head_sha}}
-          HEAD_REPO: ${{github.event.workflow_run.head_repository.full_name}}
         run: |
           URL="/repos/$HEAD_REPO/commits/$SHA/pulls"
           echo "Using URL $URL"
@@ -43,6 +43,11 @@ jobs:
           fi
           echo "::error::PR number '$PR_NUMBER' not valid"
           exit 1
+
+      - name: PreStart
+        if: github.event.action == 'requested'
+        run: |
+          gh cache delete ${WORKFLOW}-${PR_NUMBER}-${BASE_BRANCH} || :
 
       - name: Set Label
         id: setlabel
@@ -127,11 +132,7 @@ jobs:
             })
             return;
 
-      - name: Cleanup
+      - name: PostComplete
         if: github.event.action == 'completed'
-        env:
-          GH_TOKEN:  ${{ secrets.TOKEN }}
-          PR_NUMBER: ${{steps.getpr.outputs.PR_NUMBER}}
-          WORKFLOW:  ${{github.event.workflow.name}}
         run: |
           gh cache delete ${WORKFLOW}-${PR_NUMBER}-${BASE_BRANCH} || :

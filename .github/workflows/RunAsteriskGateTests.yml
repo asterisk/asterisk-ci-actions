@@ -104,6 +104,7 @@ jobs:
           	echo "Checking out testsuite PR ${TESTSUITE_TEST_PR}"
           	gh pr checkout "${TESTSUITE_TEST_PR}" -b "pr-${TESTSUITE_TEST_PR}" || \
           		{ echo "::error::Testsuite PR ${TESTSUITE_TEST_PR} not found" ; exit 1 ; }
+          	git --no-pager log -1 --oneline
           fi
           
           TESTRC=0
