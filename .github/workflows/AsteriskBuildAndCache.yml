@@ -123,6 +123,10 @@ jobs:
           make DESTDIR=${BUILD_CACHE_DIR} samples >/dev/null
           echo "*** Installing headers to ${BUILD_CACHE_DIR}"
           make DESTDIR=${BUILD_CACHE_DIR} install-headers  >/dev/null
+          echo "*** Caching source"
+          git archive --format=tar -o ${BUILD_CACHE_DIR}/asterisk-source.tar --prefix=${REPO_DIR}/ HEAD
+          gzip ${BUILD_CACHE_DIR}/asterisk-source.tar
+          ls -al ${BUILD_CACHE_DIR}/
           echo "*** Install Complete"
 
           echo "*** Deleting old cache (if any): ${BUILD_CACHE_KEY}"

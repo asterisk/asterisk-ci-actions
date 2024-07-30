@@ -40,6 +40,8 @@ env:
   REPO_DIR: ${{github.event.repository.name}}
   REPO_ORG: ${{github.event.repository.owner.login}}
   CI_BRANCH: main-cache-builds
+  BUILD_CACHE_DIR: ${{inputs.build_cache_dir}}
+  BUILD_CACHE_KEY: ${{inputs.build_cache_key}}
 
   UNITTEST_COMMAND: ${{ inputs.unittest_command }}
 
@@ -57,6 +59,7 @@ jobs:
       - name: Restore Asterisk Cache
         uses: asterisk/asterisk-ci-actions/RestoreAsteriskFromCache@main-cache-builds
         with:
+          repo_dir: ${{github.event.repository.name}}
           build_cache_dir: ${{inputs.build_cache_dir}}
           build_cache_key: ${{inputs.build_cache_key}}
           user_group: ${{inputs.user_group}}
@@ -72,6 +75,13 @@ jobs:
 
       - name: Run Unit Tests
         run: |
+          if [ -d ${REPO_DIR} ] ; then
+            echo "*** Found asterisk source cache '${REPO_DIR}'"
+            chown -R ${USER_GROUP} ${REPO_DIR}
+            cd ${REPO_DIR}
+            chmod go-rw tests/keys/rsa_key1.key
+          fi
+          echo "*** Running asterisk unit tests"
           ${SCRIPT_DIR}/runAsteriskUnitTests.sh --no-expect --github \
             --user-group=${USER_GROUP} \
             --output-dir=${OUTPUT_DIR} \

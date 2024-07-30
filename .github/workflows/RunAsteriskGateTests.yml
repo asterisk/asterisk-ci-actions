@@ -69,6 +69,7 @@ jobs:
       - name: Restore Asterisk Cache
         uses: asterisk/asterisk-ci-actions/RestoreAsteriskFromCache@main-cache-builds
         with:
+          repo_dir: ${{github.event.repository.name}}
           build_cache_dir: ${{inputs.build_cache_dir}}
           build_cache_key: ${{inputs.build_cache_key}}
           user_group: ${{inputs.user_group}}
