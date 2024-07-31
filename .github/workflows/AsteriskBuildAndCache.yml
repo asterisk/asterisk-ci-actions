@@ -94,6 +94,7 @@ jobs:
       - name: BuildAsterisk
         run: |
           sysctl -w kernel.core_pattern=/tmp/core-%e-%t
+          chmod 1777 /tmp
           echo "*** Cloning ${REPO_ORG}/${ACTION_DIR}"
           git clone ${GITHUB_SERVER_URL}/${REPO_ORG}/${ACTION_DIR}
           git -C ${ACTION_DIR} checkout ${CI_BRANCH:-main}
