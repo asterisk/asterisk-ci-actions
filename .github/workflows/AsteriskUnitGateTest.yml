@@ -97,7 +97,7 @@ jobs:
 
   Gates:
     needs: BuildAndCache
-    if: ${{ inputs.testsuite_test_type != 'NONE' }}
+    if: ${{ inputs.testsuite_test_type != 'NONE' && inputs.gatetest_list != '[]' }}
     strategy:
       fail-fast: false
       matrix:
@@ -125,11 +125,12 @@ jobs:
         env:
           GH_TOKEN:  ${{secrets.TOKEN}}
           PR_NUMBER: ${{inputs.pr_number}}
+          ASTERISK_REPO: ${{ inputs.asterisk_repo }}
           RESULT_UNIT: ${{needs.Units.result}}
           RESULT_GATE: ${{needs.Gates.result}}
           BUILD_CACHE_KEY: ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}} 
         run: |
-          gh cache delete ${BUILD_CACHE_KEY} || :
+          gh cache delete -R ${ASTERISK_REPO} ${BUILD_CACHE_KEY} || :
           declare -i rc=0
           echo "all results: ${{ toJSON(needs.*.result) }}"
           case $RESULT_UNIT in
