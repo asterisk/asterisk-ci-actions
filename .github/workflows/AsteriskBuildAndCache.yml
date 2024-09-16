@@ -1,4 +1,4 @@
-name: BuildAndCacheAsterisk
+name: Build
 on:
   workflow_call:
     inputs:
@@ -67,8 +67,8 @@ env:
   BUILD_CACHE_KEY: ${{inputs.build_cache_key}}
 
 jobs:
-  BuildAndCache:
-    name: BuildAndCache-${{ inputs.base_branch }}
+  Build:
+    name: ${{ inputs.base_branch }}-build
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest

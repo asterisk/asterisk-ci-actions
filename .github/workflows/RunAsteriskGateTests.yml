@@ -57,7 +57,7 @@ env:
 
 jobs:
   RunGateTests:
-    name: GateTests ${{ inputs.base_branch }} ${{inputs.gatetest_group}}
+    name: ${{ inputs.base_branch }} ${{inputs.gatetest_group}}
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
@@ -85,7 +85,7 @@ jobs:
           git clone ${GITHUB_SERVER_URL}/${REPO_ORG}/${ACTION_DIR}
           git -C ${ACTION_DIR} checkout ${CI_BRANCH:-main}
 
-      - name: ${{inputs.test_type}} Test ${{inputs.gatetest_group}}-${{inputs.base_branch}}
+      - name: ${{inputs.test_type}} Test ${{inputs.base_branch}}-${{inputs.gatetest_group}}
         run: |
           TESTSUITE_DIR=${GITHUB_WORKSPACE}/${GC_TESTSUITE_DIR}
           mkdir -p ${TESTSUITE_DIR}

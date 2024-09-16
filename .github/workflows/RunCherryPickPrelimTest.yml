@@ -11,23 +11,24 @@ on:
       base_branch:
         required: true
         type: string
+    secrets:
+      TOKEN:
+        required: true
 
 env:
   GH_TOKEN: ${{secrets.TOKEN}}
   GITHUB_TOKEN: ${{secrets.TOKEN}}
-  TEST_TYPE: ${{inputs.test_type}}
+  REPO: ${{inputs.repo}}
+  PR_NUMBER: ${{inputs.pr_number}}
   BASE_BRANCH: ${{inputs.base_branch}}
-  CACHE_DIR: ${{inputs.output_cache_dir}}
   ACTION_DIR: asterisk-ci-actions
   SCRIPT_DIR: ${{github.workspace}}/asterisk-ci-actions/scripts
-  REPO: ${{inputs.repo}}
   REPO_DIR: ${{github.event.repository.name}}
   REPO_ORG: ${{github.event.repository.owner.login}}
   CI_BRANCH: main-cache-builds
 
 jobs:
-  CherryPickPrelimTest:
-    name: CherryPickPrelimTest PR ${{inputs.pr_number}} to branch ${{ inputs.base_branch }}
+  CherryPick:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -43,5 +44,5 @@ jobs:
 
           echo "*** Checking out ${ASTERISK_REPO}"
           ${SCRIPT_DIR}/cherryPick.sh --repo=${REPO} \
-            --pr-number=${PR_NUMBER} --branch=${BRANCH} \
+            --pr-number=${PR_NUMBER} --branch=${BASE_BRANCH} \
             --repo-dir=${REPO_DIR}

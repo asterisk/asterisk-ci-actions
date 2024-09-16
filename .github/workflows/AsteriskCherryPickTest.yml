@@ -10,8 +10,8 @@ env:
   VAR_CHERRY_PICK_TEST_LABEL: ${{vars.CHERRY_PICK_TEST_LABEL}}
 
 jobs:
-  IdentifyBranches:
-    name: IdentifyBranches
+  GetBranches:
+    name: GetBranches
     runs-on: ubuntu-latest
     outputs:
       branches:     ${{ steps.getbranches.outputs.branches }}
@@ -61,12 +61,12 @@ jobs:
           github_token: ${{ secrets.TOKEN }}
 
   CherryPickPrelimTestMatrix:
-    needs: IdentifyBranches
-    if: ${{ needs.IdentifyBranches.outputs.branch_count > 0 && ( success() || failure() ) }}
+    needs: GetBranches
+    if: ${{ needs.GetBranches.outputs.branch_count > 0 && ( success() || failure() ) }}
     strategy:
       fail-fast: false
       matrix:
-        branch: ${{ fromJSON(needs.IdentifyBranches.outputs.branches) }}
+        branch: ${{ fromJSON(needs.GetBranches.outputs.branches) }}
     uses: ./.github/workflows/RunCherryPickPrelimTest.yml
     with:
       repo:        ${{github.repository}}
@@ -74,14 +74,13 @@ jobs:
       base_branch: ${{matrix.branch}}
     secrets: inherit
 
-
   CherryPickTestMatrix:
-    needs: [IdentifyBranches,CherryPickPrelimTestMatrix]
-    if: ${{ needs.IdentifyBranches.outputs.branch_count > 0 && ( success() || failure() ) }}
+    needs: [GetBranches,CherryPickPrelimTestMatrix]
+    if: ${{ needs.GetBranches.outputs.branch_count > 0 && ( success() || failure() ) }}
     strategy:
       fail-fast: false
       matrix:
-        branch: ${{ fromJSON(needs.IdentifyBranches.outputs.branches) }}
+        branch: ${{ fromJSON(needs.GetBranches.outputs.branches) }}
     uses: ./.github/workflows/AsteriskUnitGateTest.yml
     with:
       test_type:         cherry-pick
@@ -92,14 +91,14 @@ jobs:
       build_options:     ${{vars.BUILD_OPTIONS}}
       unittest_command:  ${{vars.UNITTEST_COMMAND}}
       testsuite_repo:    ${{vars.TESTSUITE_REPO}}
-      testsuite_test_pr: ${{needs.IdentifyBranches.outputs.testsuite_test_pr}}
+      testsuite_test_pr: ${{needs.GetBranches.outputs.testsuite_test_pr}}
       gatetest_list:     ${{vars.GATETEST_LIST}}
       gatetest_commands: ${{vars.GATETEST_COMMANDS}}
     secrets: inherit
 
   CherryPickTestResults:
-    needs: [ IdentifyBranches, CherryPickPrelimTestMatrix, CherryPickTestMatrix ]
-    if: ${{ needs.IdentifyBranches.outputs.branch_count > 0 && ( success() || failure() ) }}
+    needs: [ GetBranches, CherryPickPrelimTestMatrix, CherryPickTestMatrix ]
+    if: ${{ needs.GetBranches.outputs.branch_count > 0 && ( success() || failure() ) }}
     runs-on: ubuntu-latest
     steps:
       - name: Check test matrix status

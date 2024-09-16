@@ -1,4 +1,4 @@
-name: AsteriskUnitGateTest
+name: UnitGateTest
 on:
   workflow_call:
     inputs:
@@ -68,7 +68,7 @@ on:
         required: true
 
 jobs:
-  BuildAndCache:
+  Build:
     uses: ./.github/workflows/AsteriskBuildAndCache.yml
     with:
       test_type:         ${{ inputs.test_type }}
@@ -82,8 +82,8 @@ jobs:
       build_cache_key:   ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}}
     secrets: inherit
   
-  Units:
-    needs: BuildAndCache
+  Unit:
+    needs: Build
     uses: ./.github/workflows/RunAsteriskUnitTests.yml
     with:
       test_type:         ${{ inputs.testsuite_test_type }}
@@ -95,8 +95,9 @@ jobs:
       build_cache_key:   ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}}
     secrets: inherit
 
-  Gates:
-    needs: BuildAndCache
+  Gate:
+    needs: Build
+    name: Gate
     if: ${{ inputs.testsuite_test_type != 'NONE' && inputs.gatetest_list != '[]' }}
     strategy:
       fail-fast: false
@@ -119,15 +120,15 @@ jobs:
     name: '**Results-${{inputs.base_branch}}'
     if: always()
     runs-on: ubuntu-latest
-    needs: [Units,Gates]
+    needs: [Unit,Gate]
     steps:
       - name: Check test matrix status
         env:
           GH_TOKEN:  ${{secrets.TOKEN}}
           PR_NUMBER: ${{inputs.pr_number}}
           ASTERISK_REPO: ${{ inputs.asterisk_repo }}
-          RESULT_UNIT: ${{needs.Units.result}}
-          RESULT_GATE: ${{needs.Gates.result}}
+          RESULT_UNIT: ${{needs.Unit.result}}
+          RESULT_GATE: ${{needs.Gate.result}}
           BUILD_CACHE_KEY: ${{github.workflow}}-${{inputs.pr_number}}-${{inputs.base_branch}} 
         run: |
           gh cache delete -R ${ASTERISK_REPO} ${BUILD_CACHE_KEY} || :

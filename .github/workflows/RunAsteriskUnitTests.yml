@@ -42,12 +42,11 @@ env:
   CI_BRANCH: main-cache-builds
   BUILD_CACHE_DIR: ${{inputs.build_cache_dir}}
   BUILD_CACHE_KEY: ${{inputs.build_cache_key}}
-
   UNITTEST_COMMAND: ${{ inputs.unittest_command }}
 
 jobs:
   RunUnitTests:
-    name: UnitTests ${{ inputs.base_branch }}
+    name: ${{ inputs.base_branch }}-unit
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest

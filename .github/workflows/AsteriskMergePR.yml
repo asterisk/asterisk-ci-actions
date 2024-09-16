@@ -18,8 +18,8 @@ env:
   BASE_BRANCH: ${{github.event.pull_request.base.ref}}
 
 jobs:
-  IdentifyBranches:
-    name: IdentifyBranches
+  GetBranches:
+    name: GetBranches
     runs-on: ubuntu-latest
     outputs:
       branches:     ${{ steps.getbranches.outputs.branches }}
@@ -34,8 +34,6 @@ jobs:
             --remove-label ${{github.event.label.name}} \
             --remove-label ${{vars.PRE_MERGE_CHECKS_PASSED_LABEL}} \
             --remove-label ${{vars.PRE_MERGE_CHECKS_FAILED_LABEL}} \
-            --remove-label ${{vars.PRE_MERGE_GATES_PASSED_LABEL}} \
-            --remove-label ${{vars.PRE_MERGE_GATES_FAILED_LABEL}} \
             --remove-label ${{vars.PRE_MERGE_TESTING_IN_PROGRESS}} \
             ${{env.PR_NUMBER}} || :
 
@@ -71,13 +69,13 @@ jobs:
           github_token:      ${{secrets.TOKEN}}
           push:              false
 
-  PreMergeUnitTestMatrix:
-    needs: [ IdentifyBranches ]
+  PreMergeTest:
+    needs: [ GetBranches ]
     if: success()
     strategy:
       fail-fast: false
       matrix:
-        branch: ${{ fromJSON(needs.IdentifyBranches.outputs.all_branches) }}
+        branch: ${{ fromJSON(needs.GetBranches.outputs.all_branches) }}
     uses: ./.github/workflows/AsteriskUnitGateTest.yml
     with:
       test_type:         cherry-pick
@@ -95,7 +93,7 @@ jobs:
 
   PreMergeTestResults:
     if: always()
-    needs: [ IdentifyBranches, PreMergeUnitTestMatrix ]
+    needs: [ GetBranches, PreMergeTest ]
     runs-on: ubuntu-latest
     steps:
       - name: Check unit test matrix status
@@ -130,7 +128,7 @@ jobs:
           esac
 
   MergeAndCherryPick:
-    needs: [ IdentifyBranches, PreMergeTestResults ]
+    needs: [ GetBranches, PreMergeTestResults ]
     if: success() && !inputs.dry_run
     runs-on: ubuntu-latest
     steps:
@@ -150,13 +148,13 @@ jobs:
           application_private_key: ${{secrets.application_private_key}}
           organization: asterisk
 
-      - name: Merge and Cherry Pick to ${{needs.IdentifyBranches.outputs.branches}}
+      - name: Merge and Cherry Pick to ${{needs.GetBranches.outputs.branches}}
         id: mergecp
         uses: asterisk/asterisk-ci-actions/MergeAndCherryPickComposite@main
         with:
           repo:          ${{github.repository}}
           pr_number:     ${{env.PR_NUMBER}}
-          branches:      ${{needs.IdentifyBranches.outputs.branches}}
+          branches:      ${{needs.GetBranches.outputs.branches}}
           force:         ${{env.FORCE}}
           github_token:  ${{steps.get_workflow_token.outputs.token}}
 
@@ -165,8 +163,8 @@ jobs:
         env:
           RESULT:    ${{ steps.mergecp.outcome }}
           GH_TOKEN:  ${{ secrets.TOKEN }}
-          BRANCH_COUNT: ${{ needs.IdentifyBranches.outputs.branch_count }}
-          BRANCHES:     ${{ needs.IdentifyBranches.outputs.branches }}
+          BRANCH_COUNT: ${{ needs.GetBranches.outputs.branch_count }}
+          BRANCHES:     ${{ needs.GetBranches.outputs.branches }}
 
         run: |
           case $RESULT in
