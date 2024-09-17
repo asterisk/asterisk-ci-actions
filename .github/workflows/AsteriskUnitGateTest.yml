@@ -139,11 +139,11 @@ jobs:
               echo "Unit tests passed"
               ;;
             skipped)
-              echo "::error::Unit tests were skipped because of an earlier failure"
+              echo "::error::One or more tests were skipped because of an earlier failure"
               rc+=1
               ;;
             *)
-              echo "::error::One or more unit tests failed ($RESULT_UNIT)"
+              echo "::error::One or more tests failed ($RESULT)"
               rc+=1
           esac
           case $RESULT_GATE in
@@ -154,7 +154,7 @@ jobs:
               echo "Gate tests were not requested"
               ;;
             *)
-              echo "::error::One or more gate tests failed ($RESULT_GATE)"
+              echo "::error::One or more tests failed ($RESULT)"
               rc+=1
           esac
           exit $rc

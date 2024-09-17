@@ -107,7 +107,7 @@ jobs:
                 --remove-label ${{vars.PRE_MERGE_TESTING_IN_PROGRESS}} \
                 --add-label ${{vars.PRE_MERGE_CHECKS_PASSED_LABEL}} \
                 ${{env.PR_NUMBER}} || :
-              echo "::notice::All tests passed"
+              echo "All tests passed"
               exit 0
               ;;
             skipped)
@@ -115,7 +115,7 @@ jobs:
                 --remove-label ${{vars.PRE_MERGE_TESTING_IN_PROGRESS}} \
                 --add-label ${{vars.PRE_MERGE_CHECKS_FAILED_LABEL}} \
                 ${{env.PR_NUMBER}} || :
-              echo "::notice::Unit tests were skipped because of an earlier failure"
+              echo "::error::One or more tests were skipped because of an earlier failure"
               exit 1
               ;;
             *)

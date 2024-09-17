@@ -52,7 +52,7 @@ jobs:
               exit 0
               ;;
             skipped)
-              echo "::notice::Unit tests were skipped because of an earlier failure"
+              echo "::error::One or more tests were skipped because of an earlier failure"
               exit 1
               ;;
             *)

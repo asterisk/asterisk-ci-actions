@@ -40,10 +40,10 @@ runs:
           --jq '.[].body | match("${{inputs.testsuite_test_pr_regex}}"; "g") | .captures[0].string') || \
           { echo "::error::Unable to retrieve comments for /repos/${{inputs.repo}}/issues/${{inputs.pr_number}}" ; exit 1 ; }
         if [ -n "${testsuite_pr}" ] ; then
-          echo "::notice::Testsuite PR: ${testsuite_pr}"
+          echo "Testsuite PR: ${testsuite_pr}"
           echo "testsuite_test_pr=${testsuite_pr}" >> "$GITHUB_OUTPUT"
         else
-          echo "::notice::Testsuite PR not found"
+          echo "Testsuite PR not found"
         fi
         
         echo "${{env.GITHUB_ACTION}} Get Testsuite Auto Merge"
@@ -51,9 +51,9 @@ runs:
           --jq '.[].body | match("${{inputs.testsuite_test_auto_merge_regex}}"; "g") | .captures[0].string') || \
           { echo "::error::Unable to retrieve comments for /repos/${{inputs.repo}}/issues/${{inputs.pr_number}}" ; exit 1 ; }
         if [ -n "${testsuite_automerge}" ] ; then
-          echo "::notice::Testsuite automerge: ${testsuite_automerge}"
+          echo "Testsuite automerge: ${testsuite_automerge}"
           echo "testsuite_test_auto_merge=${testsuite_automerge}" >> "$GITHUB_OUTPUT"
         else
-          echo "::notice::Testsuite automerge not identified"
+          echo "Testsuite automerge not identified"
         fi
 

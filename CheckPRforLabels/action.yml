@@ -26,10 +26,10 @@ runs:
         set -e +v +x
         echo "event path: $GITHUB_EVENT_PATH"
         PR=$(jq '.number' $GITHUB_EVENT_PATH)
-        echo "::notice::Checking Pull Request $PR"
-        echo "::notice::Labels required: $REQUIRED_LABELS"
+        echo "Checking Pull Request $PR"
+        echo "Labels required: $REQUIRED_LABELS"
         LABELS=$( gh api /repos/asterisk/asterisk-gh-test/pulls/${PR} --jq '.labels[].name')
-        echo "::notice::Labels on PR: $LABELS"
+        echo "Labels on PR: $LABELS"
         rc=0
         IFS=$','
         for rl in $REQUIRE_ONLY_ONE_OF ; do
@@ -57,7 +57,7 @@ runs:
           fi
         done
         if [ $rc -eq 0 ] ; then
-          echo "::notice::The PR has good labels"
+          echo "The PR has good labels"
         else
           echo "::error::The PR failed at least 1 label check"
         fi
