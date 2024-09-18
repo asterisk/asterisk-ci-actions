@@ -1,4 +1,4 @@
-name: AsteriskCherryPickTest
+name: CherryPickTest
 on:
   workflow_call:
     secrets:

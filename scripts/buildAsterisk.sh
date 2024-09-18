@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-CIDIR=$(dirname $(readlink -fn $0))
+SCRIPT_DIR=$(dirname $(readlink -fn $0))
 GITHUB=false
 COVERAGE=false
 REF_DEBUG=false
@@ -13,7 +13,7 @@ NO_DEV_MODE=false
 OUTPUT_DIR=/tmp/asterisk_ci/
 TESTED_ONLY=false
 
-source $CIDIR/ci.functions
+source $SCRIPT_DIR/ci.functions
 
 if [ "${OUTPUT_DIR: -1}" != "/" ] ; then
 	OUTPUT_DIR+=/
@@ -68,7 +68,7 @@ fi
 
 MAKE=`which make`
 PKGCONFIG=`which pkg-config`
-_libdir=`${CIDIR}/findLibdir.sh`
+_libdir=`${SCRIPT_DIR}/findLibdir.sh`
 
 git config --global --add safe.directory $PWD
 
@@ -205,110 +205,6 @@ if $COVERAGE ; then
 	# reported with 0% coverage for all sources.
 	runner lcov --quiet --directory . --no-external --capture --initial --rc lcov_branch_coverage=0 \
 		--output-file ${LCOV_DIR}/initial.info
-fi
-
-run_alembic_heads_branches() {
-	config=$1
-	echo "Running heads/branches for $config"
-	pushd contrib/ast-db-manage >/dev/null
-	[ ! -f $config ] && { echo "Config file $config not found" ; return 1 ; }
-	out=$( alembic -c $config heads )
-	[ $? -ne 0 ] && { echo "heads: $out" ; return 1 ; }
-	lc=$(echo "$out" | wc -l)
-	[ $lc != 1 ] && { echo "Expecting 1 head but found $lc" ; echo $out ; return 1 ; }
-	out=$( alembic -c $config branches )
-	[ $? -ne 0 ] && { echo "branches: $out" ; return 1 ; }
-	lc=$(echo "$out" | sed -r -e "/^\s*$/d" | wc -l)
-	[ $lc != 0 ] && { echo "Expecting no branches but found $(( $lc - 1 ))" ; echo $out ; return 1 ; }
-	popd > /dev/null
-	echo "Running heads/branches for $config succeeded"
-	return 0
-}
-
-upgrade_downgrade() {
-	config=$1
-	echo "Running upgrade/downgrade for ${config}"
-	sed -r -e "s/^sqlalchemy.url\s*=\s*mysql.*/sqlalchemy.url = postgresql:\/\/asterisk_test:asterisk_test@postgres-asterisk\/asterisk_test/g" ${config}.sample > .${config}	
-	alembic -c ./.${config} upgrade head || {
-		echo "Alembic upgrade failed for ${config}"
-		rm -rf .${config} || :
-		return 1
-	}
-	alembic -c ./.${config} downgrade base || {
-		echo "Alembic downgrade failed for ${config}"
-		rm -rf .${config} || :
-		return 1
-	}
-	rm -rf .${config} || :
-	echo "Running upgrade/downgrade for ${config} succeeded"
-	return 0
-}
-
-run_alembic_upgrade_downgrade() {
-	ping -c 1 postgres-asterisk &>/dev/null || {
-		echo "No postgres server available.  Skipping upgrade/downgrade"
-		return 0
-	}
-
-	pushd contrib/ast-db-manage >/dev/null
-	
-	cat <<EOF > ~/.pgpass
-*:*:*:postgres:postgres
-*:*:*:asterisk_test:asterisk_test
-EOF
-	export PGOPTS="-h postgres-asterisk -w --username=postgres"
-	chmod go-rwx ~/.pgpass
-	export PGPASSFILE=~/.pgpass
-	echo "Creating asterisk_test user and database"
-	dropdb $PGOPTS --if-exists -e asterisk_test >/dev/null 2>&1 || :
-	dropuser $PGOPTS --if-exists -e asterisk_test >/dev/null  2>&1 || :
-	psql $PGOPTS -c "create user asterisk_test with login password 'asterisk_test';" || return 1
-#	createuser $PGOPTS -RDIElS asterisk_test || return 1
-	createdb $PGOPTS -E UTF-8 -O asterisk_test asterisk_test || return 1
-
-	RC=0
-	upgrade_downgrade config.ini || RC=1
-	[ $RC == 0 ] && upgrade_downgrade cdr.ini || RC=1
-	[ $RC == 0 ] && upgrade_downgrade voicemail.ini || RC=1
-
-	echo "Cleaning up user and database"
-	dropdb $PGOPTS --if-exists -e asterisk_test >/dev/null 2>&1 || :
-	dropuser $PGOPTS --if-exists -e asterisk_test >/dev/null  2>&1 || :
-
-	popd > /dev/null
-	return $RC
-}
-
-if ! $NO_ALEMBIC ; then
-	echo "Running Alembic"
-	ALEMBIC=$(which alembic 2>/dev/null || : )
-	if [ x"$ALEMBIC" = x ] ; then
-		>&2 echo "::error::Alembic not installed"
-		exit 1
-	fi
-
-	find contrib/ast-db-manage -name *.pyc -delete
-	
-	run_alembic_heads_branches config.ini.sample || {
-		>&2 echo "::error::Alembic head/branch check failed for config.ini"
-		exit 1
-	}
-
-	run_alembic_heads_branches cdr.ini.sample || {
-		>&2 echo "::error::Alembic head/branch check failed for cdr.ini"
-		exit 1
-	}
-
-	run_alembic_heads_branches voicemail.ini.sample || {
-		>&2 echo "::error::Alembic head/branch check failed for voicemail.ini"
-		exit 1
-	}
-
-	run_alembic_upgrade_downgrade || {
-		>&2 echo "::error::Alembic upgrade/downgrade failed"
-		exit 1
-	}
-	
 fi
 
 if [ -f "doc/core-en_US.xml" ] ; then

@@ -1,7 +1,12 @@
-name: AsteriskNightlyTest
+name: NightlyTest
 on:
   workflow_call:
     inputs:
+      test_type:
+        description: 'weekly, nightly, prstatechange, prrecheck, cherry-pick'
+        type: string
+        required: false
+        default: nightly
       branches:
         required: true
         type: string
@@ -10,41 +15,43 @@ on:
         required: false
         type: string
         description: "Array of test groups to run: ['ari1','channels']."
+      realtime:
+        type: boolean
+        required: false
+        default: false
     secrets:
       TOKEN:
         required: true
 
 jobs:
 
-  NightlyTestMatrix:
+  Test:
     strategy:
       fail-fast: false
       matrix:
         branch: ${{ fromJSON(inputs.branches) }}
     uses: ./.github/workflows/AsteriskUnitGateTest.yml
     with:
-      test_type:         nightly
+      test_type:         ${{ inputs.test_type }}
       asterisk_repo:     ${{ github.repository }}
       pr_number:         0
       base_branch:       ${{ matrix.branch }}
       is_cherry_pick:    false
       build_options:     ${{ vars.BUILD_OPTIONS }}
       unittest_command:  ${{ vars.UNITTEST_COMMAND }}
-      testsuite_test_type: Nightly
       testsuite_repo:    ${{ vars.TESTSUITE_REPO }}
       gatetest_list:     ${{ inputs.group_list }}
       gatetest_commands: ${{ vars.GATETEST_COMMANDS }}
+      realtime:          ${{ inputs.realtime }}
     secrets: inherit
 
-  NightlyTestResults:
-    needs: [ NightlyTestMatrix ]
+  Cleanup:
+    needs: [ Test ]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Check test matrix status
-        env:
-          RESULT:    ${{ needs.NightlyTestMatrix.result }}
-          GH_TOKEN:  ${{ secrets.TOKEN }}
+      - env:
+          RESULT:    ${{ needs.Test.result }}
         run: |
           case $RESULT in
             success)

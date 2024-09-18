@@ -69,6 +69,7 @@ env:
   SCRIPT_DIR:        ${{ github.workspace }}/asterisk-ci-actions/scripts
   BUILD_CACHE_DIR:   ${{ github.workspace }}/${{ inputs.build_cache_dir }}
   BUILD_CACHE_KEY:   ${{ inputs.build_cache_key }}
+  CI_BRANCH:         main-nightly-realtime
 
 jobs:
   Build:
@@ -77,17 +78,6 @@ jobs:
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
       options: --privileged
-    services:
-      postgres-asterisk:
-        image: postgres
-        env:
-          POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     defaults:
       run:
         shell: bash
@@ -115,6 +105,11 @@ jobs:
             --pr-number=${PR_NUMBER} --destination=${REPO_DIR}
 
           cd ${REPO_DIR}
+          echo "*** Running Alembic Tests"
+          ${SCRIPT_DIR}/setupDatabase.sh
+          ${SCRIPT_DIR}/runAlembicTests.sh
+          ${SCRIPT_DIR}/teardownDatabase.sh --stop-database
+
           echo "*** Starting build"
           ${SCRIPT_DIR}/${BUILD_SCRIPT} --github --branch-name=${BASE_BRANCH} \
             --ccache-disable ${BUILD_OPTIONS} \

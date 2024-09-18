@@ -1,4 +1,4 @@
-name: AsteriskPRStateChangedPriv
+name: PRStateChangedPriv
 on:
   workflow_call:
     secrets:

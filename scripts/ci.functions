@@ -3,6 +3,13 @@
 # and can be "source"d from the scripts.
 #
 
+[ -n "$CI_FUNCTIONS_INCLUDED" ] && {
+	echo "ci.functions can't be included more than once"
+	exit 1
+}
+
+CI_FUNCTIONS_INCLUDED=1
+
 declare -a POSITIONAL_ARGS
 for a in "$@" ; do
 	OPTION_COUNT+=1
@@ -56,4 +63,12 @@ asterisk_corefile_glob() {
 		pattern=${pattern/\%E/${astpath//\//\!}}
 		echo "${pattern%%%*}*"
 	fi
+}
+
+export_to_github() {
+	out=${GITHUB_ENV:-/dev/stdout}
+	for var in "$@" ; do
+		declare -n vc=$var
+		echo "$var=$vc" >> "$out"
+	done
 }

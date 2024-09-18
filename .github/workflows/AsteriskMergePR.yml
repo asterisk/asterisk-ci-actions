@@ -1,4 +1,4 @@
-name: AsteriskMergePR
+name: MergePR
 on:
   workflow_call:
     inputs:
@@ -78,16 +78,15 @@ jobs:
         branch: ${{ fromJSON(needs.GetBranches.outputs.all_branches) }}
     uses: ./.github/workflows/AsteriskUnitGateTest.yml
     with:
-      test_type:         cherry-pick
+      test_type:         mergepr
       asterisk_repo:     ${{ github.repository }}
       pr_number:         ${{ github.event.number }}
       base_branch:       ${{ matrix.branch }}
       is_cherry_pick:    true
       build_options:     ${{ vars.BUILD_OPTIONS }}
       unittest_command:  ${{ vars.UNITTEST_COMMAND }}
-      testsuite_test_type: NONE
       testsuite_repo:    ${{ vars.TESTSUITE_REPO }}
-      gatetest_list:     ${{ vars.GATETEST_LIST }}
+      gatetest_list:     '[]'
       gatetest_commands: ${{ vars.GATETEST_COMMANDS }}
     secrets: inherit
 

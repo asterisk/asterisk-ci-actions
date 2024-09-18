@@ -3,7 +3,7 @@ on:
   workflow_call:
     inputs:
       test_type:
-        required: true
+        required: false
         type: string
       base_branch:
         required: true
@@ -28,12 +28,19 @@ on:
         description: 'Gate Commands'
         type: string
         required: true
+      realtime:
+        type: boolean
+        required: false
+        default: false
       build_cache_dir:
         type: string
         required: false
         default: build-cache
       build_cache_key:
         type: string
+        required: true
+    secrets:
+      TOKEN:
         required: true
 
 env:
@@ -48,7 +55,8 @@ env:
   OUTPUT_DIR:   ${{ github.workspace }}/${{ inputs.output_cache_dir }}/output
   REPO_DIR:     ${{ github.event.repository.name }}
   REPO_ORG:     ${{ github.event.repository.owner.login }}
-  CI_BRANCH:    main
+  REALTIME:     ${{ inputs.realtime }}
+  CI_BRANCH:    main-nightly-realtime
 
   TESTSUITE_REPO:     ${{ inputs.testsuite_repo }}
   TESTSUITE_TEST_PR:  ${{ inputs.testsuite_test_pr }}
@@ -57,7 +65,7 @@ env:
 
 jobs:
   RunGateTests:
-    name: ${{ inputs.base_branch }} ${{ inputs.gatetest_group }}
+    name: ${{ inputs.base_branch }}-${{ inputs.gatetest_group }}
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
@@ -67,7 +75,7 @@ jobs:
         shell: bash
     steps:
       - name: Restore Asterisk Cache
-        uses: asterisk/asterisk-ci-actions/RestoreAsteriskFromCache@main
+        uses: asterisk/asterisk-ci-actions/RestoreAsteriskFromCache@main-nightly-realtime
         with:
           repo_dir:        ${{ github.event.repository.name }}
           build_cache_dir: ${{ inputs.build_cache_dir }}
@@ -76,45 +84,19 @@ jobs:
 
       - name: Setup
         run: |
-          sysctl -w kernel.core_pattern=/tmp/core-%e-%t
-          chmod 1777 /tmp
-          echo "GC_TESTSUITE_DIR=$(basename ${TESTSUITE_REPO})" >> "${GITHUB_ENV}"
-          echo "GC_TEST_NAME=${TEST_TYPE}-${GATETEST_GROUP}-${BASE_BRANCH//\//-}" >> "${GITHUB_ENV}"
-
           echo "*** Cloning ${REPO_ORG}/${ACTION_DIR}"
           git clone ${GITHUB_SERVER_URL}/${REPO_ORG}/${ACTION_DIR}
           git -C ${ACTION_DIR} checkout ${CI_BRANCH:-main}
+          ${SCRIPT_DIR}/setupAsteriskGateTests.sh
 
-      - name: ${{ inputs.test_type }} Test ${{ inputs.base_branch }}-${{ inputs.gatetest_group }}
+      - name: Test
         run: |
-          TESTSUITE_DIR=${GITHUB_WORKSPACE}/${GC_TESTSUITE_DIR}
-          mkdir -p ${TESTSUITE_DIR}
-          git clone --depth 1 --no-tags -q -b ${BASE_BRANCH} \
-          	${GITHUB_SERVER_URL}/${TESTSUITE_REPO} ${TESTSUITE_DIR}
-          git config --global --add safe.directory ${TESTSUITE_DIR}
-
-          echo ${GATETEST_COMMAND} > /tmp/test_commands.json
-          TEST_NAME=$(jq -j '.name' /tmp/test_commands.json)
-          TEST_OPTIONS=$(jq -j '.options' /tmp/test_commands.json)
-          TEST_TIMEOUT=$(jq -j '.timeout' /tmp/test_commands.json)
-          TEST_CMD=$(jq -j '.testcmd' /tmp/test_commands.json)
-          TEST_DIR=$(jq -j '.dir' /tmp/test_commands.json)
-
-          cd ${TESTSUITE_DIR}
-
-          if [[ "${TESTSUITE_TEST_PR}" =~ [0-9]+ ]] ; then
-          	echo "Checking out testsuite PR ${TESTSUITE_TEST_PR}"
-          	gh pr checkout "${TESTSUITE_TEST_PR}" -b "pr-${TESTSUITE_TEST_PR}" || \
-          		{ echo "::error::Testsuite PR ${TESTSUITE_TEST_PR} not found" ; exit 1 ; }
-          	git --no-pager log -1 --oneline
-          fi
-
           TESTRC=0
           ${SCRIPT_DIR}/runAsteriskGateTests.sh \
-            --test-timeout=${TEST_TIMEOUT} \
+            --test-timeout=${TEST_TIMEOUT} --realtime=$REALTIME --stop-database=true \
             --testsuite-command="${TEST_OPTIONS} ${TEST_CMD}" || TESTRC=1
           exit $TESTRC
- 
+
       - name: Save Output
         id: save-output
         if: ${{ always() }}

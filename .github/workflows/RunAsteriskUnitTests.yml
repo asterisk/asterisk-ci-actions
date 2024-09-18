@@ -3,7 +3,7 @@ on:
   workflow_call:
     inputs:
       test_type:
-        required: true
+        required: false
         type: string
       base_branch:
         required: true
@@ -25,6 +25,9 @@ on:
         default: build-cache
       build_cache_key:
         type: string
+        required: true
+    secrets:
+      TOKEN:
         required: true
 
 env:
@@ -67,7 +70,7 @@ jobs:
         run: |
           sysctl -w kernel.core_pattern=/tmp/core-%e-%t
           chmod 1777 /tmp
-          echo "UNIT_TEST_NAME=${TEST_TYPE}-unit-${BASE_BRANCH//\//-}" >> "${GITHUB_ENV}"
+          echo "UNIT_TEST_NAME=unit-${BASE_BRANCH//\//-}" >> "${GITHUB_ENV}"
           echo "*** Cloning ${REPO_ORG}/${ACTION_DIR}"
           git clone ${GITHUB_SERVER_URL}/${REPO_ORG}/${ACTION_DIR}
           git -C ${ACTION_DIR} checkout ${CI_BRANCH:-main}

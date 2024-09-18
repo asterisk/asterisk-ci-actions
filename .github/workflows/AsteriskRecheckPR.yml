@@ -1,4 +1,4 @@
-name: AsteriskRecheckPR
+name: RecheckPR
 run-name: "${{ github.workflow }}-${{ github.event.label.name }}-${{ github.event.number }}"
 on:
   workflow_call:

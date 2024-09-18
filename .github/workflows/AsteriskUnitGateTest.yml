@@ -3,7 +3,7 @@ on:
   workflow_call:
     inputs:
       test_type:
-        description: 'nightly, prstatechange, prrecheck, cherry-pick'
+        description: 'weekly, nightly, prstatechange, prrecheck, cherry-pick, mergepr'
         required: true
         type: string
       asterisk_repo:
@@ -42,10 +42,6 @@ on:
       unittest_command:
         type: string
         required: true
-      testsuite_test_type:
-        required: false
-        type: string
-        default: Gate
       testsuite_repo:
         type: string
         required: false
@@ -63,6 +59,10 @@ on:
         required: false
         type: string
         default: asteriskci:users
+      realtime:
+        type: boolean
+        required: false
+        default: false
     secrets:
       TOKEN:
         required: true
@@ -86,7 +86,7 @@ jobs:
     needs: Build
     uses: ./.github/workflows/RunAsteriskUnitTests.yml
     with:
-      test_type:         ${{ inputs.testsuite_test_type }}
+      test_type:         ${{ inputs.test_type }}
       base_branch:       ${{ inputs.base_branch }}
       user_group:        ${{ inputs.user_group }}
       unittest_command:  ${{ inputs.unittest_command }}
@@ -98,14 +98,14 @@ jobs:
   Gate:
     needs: Build
     name: Gate
-    if: ${{ inputs.testsuite_test_type != 'NONE' && inputs.gatetest_list != '[]' }}
+    if: ${{ inputs.gatetest_list != '[]' }}
     strategy:
       fail-fast: false
       matrix:
         group: ${{ fromJSON(inputs.gatetest_list) }}
     uses: ./.github/workflows/RunAsteriskGateTests.yml
     with:
-      test_type:         ${{ inputs.testsuite_test_type }}
+      test_type:         ${{ inputs.test_type }}
       base_branch:       ${{ inputs.base_branch }}
       user_group:        ${{ inputs.user_group }}
       testsuite_repo:    ${{ inputs.testsuite_repo }}
@@ -114,6 +114,7 @@ jobs:
       gatetest_commands: ${{ inputs.gatetest_commands }}
       build_cache_dir:   ${{ inputs.build_cache_dir }}
       build_cache_key:   ${{ github.workflow }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
+      realtime:          ${{ inputs.realtime }}
     secrets: inherit
 
   Results:

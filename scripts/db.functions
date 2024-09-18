@@ -1,0 +1,78 @@
+
+[ -n "$CI_FUNCTIONS_INCLUDED" ] && {
+	echo "ci.functions can't be sourced directly when db.functions is"
+	exit 1
+}
+
+[ ! -f /etc/os-release ] && {
+	echo "No /etc/os-release found.  Can't determine distribution"
+	exit 1
+}
+
+HOST=127.0.0.1
+DATABASE=asterisk_test
+USER=asterisk_test
+PASSWORD=asterisk_test
+DSN=asterisk_test
+STOP_DATABASE=false
+
+source $SCRIPT_DIR/ci.functions
+
+: ${DATABASE_CDR:=cdr-${DATABASE##*-}}
+: ${DATABASE_VOICEMAIL:=voicemail-${DATABASE##*-}}
+
+DEBIAN=false
+source /etc/os-release
+{ [ "$ID" == "debian" ] || [ "$ID_LIKE" == "debian" ] ; } && DEBIAN=true
+
+if $DEBIAN ; then
+	export PGSQLCONF=$(find /etc/postgresql -name postgresql.conf | sort | tail -1)
+	[ -z "${PGSQLCONF}" ] && {
+		echo "No postgresql.conf file found"
+		exit 1
+	}
+	export PGDATA=$(sed -n -r -e "s/^\s*data_directory\s*=\s*[']?([^'#]+)[']?.*/\1/gp" ${PGSQLCONF})
+	cluster=$(sed -n -r -e "s/^\s*cluster_name\s*=\s*[']?([^'#]+)[']?.*/\1/gp" ${PGSQLCONF})
+	export PG_VERSION=${cluster%%/*}
+	export PGHBA=${PGSQLCONF/postgresql.conf/pg_hba.conf}
+else
+	export PGDATA=/var/lib/pgsql/data
+	export PGSQLCONF=${PGDATA}/postgresql.conf
+	export PGHBA=${PGSQLCONF/postgresql.conf/pg_hba.conf}
+fi
+
+_pg_ctl() {
+	[ "$1" != "initdb" ] && opts="-c config_file=${PGSQLCONF}"
+	[ "$1" == "start" ] && {
+		opts+=" -c listen_addresses=127.0.0.1 -c unix_socket_directories=/run/postgresql,/tmp"
+		sed -i -r -e "s/^local\s+all\s+postgres\s+peer/local all postgres trust/g" ${PGHBA}
+		[ ! -d /run/postgresql ] && {
+			mkdir /run/postgresql
+			chown postgres:postgres /run/postgresql
+		}
+	}
+	if [ -n "$opts" ] ; then
+		OPTS="-o '$opts'"
+	fi
+	
+	echo "Running pg_ctl $1 ${OPTS}"
+	if $DEBIAN ; then
+		eval sudo -E -u postgres /usr/lib/postgresql/${PG_VERSION}/bin/pg_ctl \
+			$1 ${OPTS} || return 1
+	else
+		eval sudo -E -u postgres pg_ctl \
+			$1 ${OPTS} || return 1
+	fi
+	return 0
+}
+
+[ ! -f ~/.pgpass ] && {
+	echo "Creating ~/.pgpass"
+	cat <<-EOF > ~/.pgpass
+	*:*:*:postgres:postgres
+	*:*:*:${USER}:${PASSWORD}
+	EOF
+	chmod go-rwx ~/.pgpass
+}
+export PGOPTS="-h ${HOST} -w --username=postgres"
+export PGPASSFILE=~/.pgpass

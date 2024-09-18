@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 SCRIPT_DIR=$(dirname $(readlink -fn $0))
 REALTIME=false
+STOP_DATABASE=false
 TEST_TIMEOUT=600
 source $SCRIPT_DIR/ci.functions
 ASTETCDIR="$DESTDIR/etc/asterisk"
 ASTERISK="$DESTDIR/usr/sbin/asterisk"
 CONFFILE="$ASTETCDIR/asterisk.conf"
 
+echo "Starting gate tests"
 [ ! -x "$ASTERISK" ] && { echo "Asterisk isn't installed." ; exit 1 ; }
 [ ! -f "$CONFFILE" ] && { echo "Asterisk samples aren't installed." ; exit 1 ; }
 
@@ -16,7 +18,7 @@ if [ x"$WORK_DIR" != x ] ; then
 fi
 
 if [ -n "$TESTSUITE_DIR" ] ; then
-	pushd $TESTSUITE_DIR
+	pushd $TESTSUITE_DIR  &>/dev/null
 fi
 
 ./cleanup-test-remnants.sh
@@ -33,14 +35,15 @@ if [ -n "$corefiles" ] ; then
 fi
 
 if $REALTIME ; then
-	$SCRIPT_DIR/setupRealtime.sh --initialize-db=${INITIALIZE_DB:?0} || exit 1
+	$SCRIPT_DIR/setupRealtime.sh --asterisk-dir=${ASTERISK_DIR} || exit 1
+	USE_REALTIME=--realtime
 fi
 
 # check to see if venv scripts exist so we can use them
 if [ -f ./setupVenv.sh ] ; then
 	echo "Running in Virtual Environment"
 	# explicitly invoking setupVenv to capture output in case of failure
-	./setupVenv.sh &>/tmp/setupVenv.out || { cat /tmp/setupVenv.out ; exit 1 ; }
+	./setupVenv.sh ${USE_REALTIME} &>/tmp/setupVenv.out || { cat /tmp/setupVenv.out ; exit 1 ; }
 	VENVPREFIX="runInVenv.sh python "
 else
 	echo "Running in Legacy Mode"
@@ -48,6 +51,8 @@ else
 fi
 
 TESTRC=0
+$REALTIME && TESTSUITE_COMMAND+=" -G realtime-incompatible"
+
 echo "Running tests ${TESTSUITE_COMMAND} ${AST_WORK_DIR:+with work directory ${AST_WORK_DIR}}"
 ./${VENVPREFIX}runtests.py --cleanup --timeout=${TEST_TIMEOUT} \
 	${TESTSUITE_COMMAND} \
@@ -66,7 +71,7 @@ else
 fi
 
 if $REALTIME ; then
-	$SCRIPT_DIR/teardownRealtime.sh --cleanup-db=${CLEANUP_DB:?0}
+	$SCRIPT_DIR/teardownRealtime.sh --stop-database=${STOP_DATABASE}
 fi
 
 coreglob=$(asterisk_corefile_glob)
@@ -83,6 +88,7 @@ if [ -n "$corefiles" ] ; then
 fi
 
 if [ -n "$TESTSUITE_DIR" ] ; then
-	popd
+	popd &>/dev/null
 fi
+echo "Exiting gate tests"
 exit $TESTRC

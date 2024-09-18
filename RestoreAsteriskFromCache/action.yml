@@ -17,9 +17,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: DumpEnvironment
-      uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
-
     - name: Restore Asterisk Cache
       uses: actions/cache/restore@v4
       with:
