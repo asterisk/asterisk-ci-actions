@@ -125,17 +125,22 @@ if ! $NO_MENUSELECT ; then
 	fi
 
 	cat_enables=""
+	cat_disables=""
 
 	if [[ ! "${BRANCH_NAME}" =~ ^certified ]] ; then
 		cat_enables+=" MENUSELECT_BRIDGES MENUSELECT_CEL MENUSELECT_CDR"
 		cat_enables+=" MENUSELECT_CHANNELS MENUSELECT_CODECS MENUSELECT_FORMATS MENUSELECT_FUNCS"
-		cat_enables+=" MENUSELECT_PBX MENUSELECT_RES MENUSELECT_UTILS"
+		cat_enables+=" MENUSELECT_PBX MENUSELECT_RES"
 	fi
 
 	if ! $NO_DEV_MODE ; then
 		cat_enables+=" MENUSELECT_TESTS"
 	fi
 	runner menuselect/menuselect `gen_cats enable $cat_enables` menuselect.makeopts || SUCCESS=false
+	if [ -n "$cat_disables" ] ; then
+		runner menuselect/menuselect `gen_cats disable $cat_disables` menuselect.makeopts || SUCCESS=false
+	fi
+	
 	cp menuselect.makedeps ${OUTPUT_DIR}/menuselect.makedeps.postcats
 	cp menuselect.makeopts ${OUTPUT_DIR}/menuselect.makeopts.postcats
 	$SUCCESS || exit 1

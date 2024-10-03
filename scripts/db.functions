@@ -35,10 +35,12 @@ if $DEBIAN ; then
 	cluster=$(sed -n -r -e "s/^\s*cluster_name\s*=\s*[']?([^'#]+)[']?.*/\1/gp" ${PGSQLCONF})
 	export PG_VERSION=${cluster%%/*}
 	export PGHBA=${PGSQLCONF/postgresql.conf/pg_hba.conf}
+	export STATS_TMP_DIR=$(sed -n -r -e "s/^\s*stats_temp_directory\s*=\s*[']?([^'#]+)[']?.*/\1/gp" ${PGSQLCONF})
 else
 	export PGDATA=/var/lib/pgsql/data
 	export PGSQLCONF=${PGDATA}/postgresql.conf
 	export PGHBA=${PGSQLCONF/postgresql.conf/pg_hba.conf}
+	export STATS_TMP_DIR=$(sed -n -r -e "s/^\s*stats_temp_directory\s*=\s*[']?([^'#]+)[']?.*/\1/gp" ${PGSQLCONF})
 fi
 
 _pg_ctl() {
@@ -50,6 +52,10 @@ _pg_ctl() {
 		[ ! -d /run/postgresql ] && {
 			mkdir /run/postgresql
 			chown postgres:postgres /run/postgresql
+		}
+		[ -n "${STATS_TMP_DIR}" ] && [ ! -d "${STATS_TMP_DIR}" ] && {
+			mkdir "${STATS_TMP_DIR}"
+			chown postgres:postgres "${STATS_TMP_DIR}"
 		}
 	}
 	if [ -n "$opts" ] ; then

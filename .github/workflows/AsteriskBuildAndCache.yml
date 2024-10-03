@@ -2,6 +2,10 @@ name: Build
 on:
   workflow_call:
     inputs:
+      actions_ref:
+        description: 'Reference to the actions: owner/repo@branch'
+        type: string
+        required: true
       test_type:
         description: 'nightly, prstatechange, prrecheck, cherry-pick'
         required: true
@@ -32,6 +36,10 @@ on:
         type: string
         default: ""
         required: false
+      sipp_version:
+        required: false
+        type: string
+        default: v3.6.1
       output_cache_dir:
         type: string
         required: false
@@ -61,6 +69,7 @@ env:
   BUILD_SCRIPT:      ${{ inputs.build_script }}
   BUILD_OPTIONS:     ${{ inputs.build_options }}
   MODULES_BLACKLIST: ${{ inputs.modules_blacklist }}
+  SIPP_VERSION:      ${{ inputs.sipp_version }}
   CACHE_DIR:         ${{ github.workspace }}/${{ inputs.output_cache_dir }}
   REPO_DIR:          ${{ github.event.repository.name }}
   REPO_ORG:          ${{ github.event.repository.owner.login }}
@@ -69,30 +78,39 @@ env:
   SCRIPT_DIR:        ${{ github.workspace }}/asterisk-ci-actions/scripts
   BUILD_CACHE_DIR:   ${{ github.workspace }}/${{ inputs.build_cache_dir }}
   BUILD_CACHE_KEY:   ${{ inputs.build_cache_key }}
-  CI_BRANCH:         main
+  CI_BRANCH:         main-test-native
 
 jobs:
   Build:
     name: ${{ inputs.base_branch }}-build
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
-      options: --privileged
     defaults:
       run:
         shell: bash
     steps:
-      - name: DumpEnvironment
-        if: ${{ inputs.debug }}
-        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+      - name: Checkout actions
+        run: |
+          ref="${{ inputs.actions_ref }}"
+          repo=${ref%%@*}
+          repo_owner=${repo%%/*}
+          repo_dir=${repo##*/}
+          branch=${ref##*@}
+          echo "*** Cloning ${repo} branch ${branch}"
+          git clone ${GITHUB_SERVER_URL}/${repo}
+          git -C ${repo_dir} checkout ${branch}
+          echo "actions_repo=$repo" >> "$GITHUB_OUTPUT"
+          echo "actions_repo_owner=$repo_owner" >> "$GITHUB_OUTPUT"
+          echo "actions_repo_dir=$repo_dir" >> "$GITHUB_OUTPUT"
+          echo "actions_branch=$branch" >> "$GITHUB_OUTPUT"
+        
+        
+      - name: Setup Runner
+        uses: asterisk/asterisk-ci-actions/SetupUbuntuRunner@main-test-native
 
       - name: BuildAsterisk
         run: |
-          sysctl -w kernel.core_pattern=/tmp/core-%e-%t
-          chmod 1777 /tmp
-          echo "*** Cloning ${REPO_ORG}/${ACTION_DIR}"
-          git clone ${GITHUB_SERVER_URL}/${REPO_ORG}/${ACTION_DIR}
-          git -C ${ACTION_DIR} checkout ${CI_BRANCH:-main}
+          # Building Asterisk
+          REPO_DIR=$(basename ${ASTERISK_REPO})
 
           mkdir -p ${REPO_DIR}
           mkdir -p ${CACHE_DIR}
@@ -106,9 +124,9 @@ jobs:
 
           cd ${REPO_DIR}
           echo "*** Running Alembic Tests"
-          ${SCRIPT_DIR}/setupDatabase.sh
-          ${SCRIPT_DIR}/runAlembicTests.sh
-          ${SCRIPT_DIR}/teardownDatabase.sh --stop-database
+          sudo ${SCRIPT_DIR}/setupDatabase.sh
+          sudo ${SCRIPT_DIR}/runAlembicTests.sh
+          sudo ${SCRIPT_DIR}/teardownDatabase.sh --stop-database
 
           echo "*** Starting build"
           ${SCRIPT_DIR}/${BUILD_SCRIPT} --github --branch-name=${BASE_BRANCH} \
@@ -133,6 +151,19 @@ jobs:
           echo "*** Deleting old cache (if any): ${BUILD_CACHE_KEY}"
           # We don't care if it fails
           gh cache delete ${BUILD_CACHE_KEY} || :
+
+      - name: BuildSipp
+        run: |
+          # Building sipp
+          cd ${GITHUB_WORKSPACE}
+          echo "*** Checking out sipp ${SIPP_VERSION}"
+          git clone ${GITHUB_SERVER_URL}/SIPp/sipp.git
+          cd sipp
+          git checkout ${SIPP_VERSION}
+          echo "*** Building sipp ${SIPP_VERSION}"
+          ./build.sh --full &>/tmp/sipp.build.out || { cat /tmp/sipp.build.out ; exit 1 ; }
+          echo "*** Installing sipp ${SIPP_VERSION} to ${BUILD_CACHE_DIR}"
+          install -D -t ${BUILD_CACHE_DIR}/usr/bin sipp 
 
       - id: cache-build-output
         name: CacheBuildProducts

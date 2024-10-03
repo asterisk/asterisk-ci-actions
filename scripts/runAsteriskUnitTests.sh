@@ -101,9 +101,9 @@ cat <<-EOF >> "$ASTETCDIR/sorcery.conf"
 	resource_list=memory
 EOF
 
-[ x"$USER_GROUP" != x ] && chown -R $USER_GROUP $OUTPUT_DIR
+[ x"$USER_GROUP" != x ] && sudo chown -R $USER_GROUP $OUTPUT_DIR
 
-rm -rf $ASTETCDIR/extensions.{ael,lua} || :
+sudo rm -rf $ASTETCDIR/extensions.{ael,lua} || :
 
 TESTRC=0
 
@@ -114,8 +114,6 @@ killall -qe -ABRT $ASTERISK
 
 runner rsync -vaH $DESTDIR/var/log/asterisk/. $OUTPUT_DIR
 
-[ x"$USER_GROUP" != x ] && chown -R $USER_GROUP $OUTPUT_DIR
-
 coreglob="/tmp/core-asterisk*"
 corefiles=$(find $(dirname $coreglob) -name $(basename $coreglob))
 if [ -n "$corefiles" ] ; then
@@ -123,7 +121,7 @@ if [ -n "$corefiles" ] ; then
 	echo "Search glob: ${coreglob}"
 	echo "Matching corefiles: ${corefiles}"
 	TESTRC=1
-	$SCRIPT_DIR/ast_coredumper.sh --no-conf-file --outputdir=$OUTPUT_DIR \
+	sudo $SCRIPT_DIR/ast_coredumper.sh --no-conf-file --outputdir=$OUTPUT_DIR \
 		--tarball-coredumps --delete-coredumps-after $coreglob
 	# If the return code was 2, none of the coredumps actually came from asterisk.
 	[ $? -eq 2 ] && TESTRC=0

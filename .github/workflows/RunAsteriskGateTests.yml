@@ -2,6 +2,10 @@ name: 'RunAsteriskGateTests'
 on:
   workflow_call:
     inputs:
+      actions_ref:
+        description: 'Reference to the actions: owner/repo@branch'
+        type: string
+        required: true
       test_type:
         required: false
         type: string
@@ -11,7 +15,6 @@ on:
       user_group:
         type: string
         required: false
-        default: asteriskci:users
       testsuite_repo:
         description: 'Testsuite Repo (default: asterisk/testsuite)'
         type: string
@@ -56,7 +59,7 @@ env:
   REPO_DIR:     ${{ github.event.repository.name }}
   REPO_ORG:     ${{ github.event.repository.owner.login }}
   REALTIME:     ${{ inputs.realtime }}
-  CI_BRANCH:    main
+  CI_BRANCH:    main-test-native
 
   TESTSUITE_REPO:     ${{ inputs.testsuite_repo }}
   TESTSUITE_TEST_PR:  ${{ inputs.testsuite_test_pr }}
@@ -67,32 +70,41 @@ jobs:
   RunGateTests:
     name: ${{ inputs.base_branch }}-${{ inputs.gatetest_group }}
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
-      options: --privileged
     defaults:
       run:
         shell: bash
     steps:
-      - name: Restore Asterisk Cache
-        uses: asterisk/asterisk-ci-actions/RestoreAsteriskFromCache@main
+      - name: "Setup Runner"
+        uses: asterisk/asterisk-ci-actions/SetupUbuntuRunner@main-test-native
+
+      - name: "Restore Asterisk Cache"
+        uses: asterisk/asterisk-ci-actions/RestoreAsteriskFromCache@main-test-native
         with:
           repo_dir:        ${{ github.event.repository.name }}
           build_cache_dir: ${{ inputs.build_cache_dir }}
           build_cache_key: ${{ inputs.build_cache_key }}
           user_group:      ${{ inputs.user_group }}
 
-      - name: Setup
+      - name: "Checkout CI"
         run: |
+          # Checkout CI
+          echo "UNIT_TEST_NAME=unit-${BASE_BRANCH//\//-}" >> "${GITHUB_ENV}"
           echo "*** Cloning ${REPO_ORG}/${ACTION_DIR}"
           git clone ${GITHUB_SERVER_URL}/${REPO_ORG}/${ACTION_DIR}
           git -C ${ACTION_DIR} checkout ${CI_BRANCH:-main}
-          ${SCRIPT_DIR}/setupAsteriskGateTests.sh
 
-      - name: Test
+      - name: "Setup testsuite"
         run: |
+          # Setup testsuite
+          ${SCRIPT_DIR}/setupAsteriskGateTests.sh
+          mkdir -p ${OUTPUT_DIR}
+
+      - name: "Run Gate Test ${{inputs.gatetest_group}}"
+        run: |
+          # Run Gate Test ${{inputs.gatetest_group}}
           TESTRC=0
-          ${SCRIPT_DIR}/runAsteriskGateTests.sh \
+          sudo ${SCRIPT_DIR}/runAsteriskGateTests.sh \
+            --testsuite-dir=${TESTSUITE_DIR} \
             --test-timeout=${TEST_TIMEOUT} --realtime=$REALTIME --stop-database=true \
             --testsuite-command="${TEST_OPTIONS} ${TEST_CMD}" || TESTRC=1
           exit $TESTRC

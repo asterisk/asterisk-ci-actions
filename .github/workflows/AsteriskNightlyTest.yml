@@ -2,6 +2,10 @@ name: NightlyTest
 on:
   workflow_call:
     inputs:
+      actions_ref:
+        description: 'Reference to the actions: owner/repo@branch'
+        type: string
+        required: true
       test_type:
         description: 'weekly, nightly, prstatechange, prrecheck, cherry-pick'
         type: string
@@ -23,15 +27,31 @@ on:
       TOKEN:
         required: true
 
+env:
+  ACTIONS_OWNER: ${{ fromJSON(inputs.actions_ref).owner }}
+  ACTIONS_REPO: ${{ fromJSON(inputs.actions_ref).repo }}
+  ACTIONS_BRANCH: ${{ fromJSON(inputs.actions_ref).branch }}
+
 jobs:
 
+  Setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ew
+        run: |
+          echo "ACTIONS_OWNER: ${ACTIONS_OWNER}"
+          echo "ACTIONS_REPO: ${ACTIONS_REPO}"
+          echo "ACTIONS_BRANCH: ${ACTIONS_BRANCH}"
+
   Test:
+    if: false
     strategy:
       fail-fast: false
       matrix:
         branch: ${{ fromJSON(inputs.branches) }}
     uses: ./.github/workflows/AsteriskUnitGateTest.yml
     with:
+      actions_ref:       ${{ inputs.actions_ref }}
       test_type:         ${{ inputs.test_type }}
       asterisk_repo:     ${{ github.repository }}
       pr_number:         0
@@ -53,6 +73,7 @@ jobs:
       - env:
           RESULT:    ${{ needs.Test.result }}
         run: |
+          # Cleanup
           case $RESULT in
             success)
               echo "All tests passed"

@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
 echo "Setting up database"
 
+[ $UID -ne 0 ] && { echo "This script must be run as root!" ; exit 1 ; }
+
 SCRIPT_DIR=$(dirname $(readlink -fn $0))
 source $SCRIPT_DIR/db.functions
 
+echo " PGSQLCONF: ${PGSQLCONF}"
+echo "    PGDATA: ${PGDATA}"
+echo "PG_VERSION: ${PG_VERSION}"
+echo "     PGHBA: ${PGHBA}"
+
 [ ! -f ${PGDATA}/PG_VERSION ] && {
-	echo "Initializing database"
+	echo "Initializing database in ${PGDATA}"
 	_pg_ctl initdb &>/tmp/pg_ctl_initdb.out || {
 		echo "FAILED"
 		cat /tmp/pg_ctl_initdb.out

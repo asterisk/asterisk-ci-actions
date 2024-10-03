@@ -2,6 +2,10 @@ name: 'RAUT'
 on:
   workflow_call:
     inputs:
+      actions_ref:
+        description: 'Reference to the actions: owner/repo@branch'
+        type: string
+        required: true
       test_type:
         required: false
         type: string
@@ -11,7 +15,6 @@ on:
       user_group:
         type: string
         required: false
-        default: asteriskci:users
       unittest_command:
         type: string
         required: true
@@ -42,7 +45,7 @@ env:
   OUTPUT_DIR:       ${{ github.workspace }}/${{ inputs.output_cache_dir }}/output
   REPO_DIR:         ${{ github.event.repository.name }}
   REPO_ORG:         ${{ github.event.repository.owner.login }}
-  CI_BRANCH:        main
+  CI_BRANCH:        main-test-native
   BUILD_CACHE_DIR:  ${{ inputs.build_cache_dir }}
   BUILD_CACHE_KEY:  ${{ inputs.build_cache_key }}
   UNITTEST_COMMAND: ${{ inputs.unittest_command }}
@@ -51,40 +54,40 @@ jobs:
   RunUnitTests:
     name: ${{ inputs.base_branch }}-unit
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/asterisk/asteriskci-agent-rocky8:latest
-      options: --privileged
     defaults:
       run:
         shell: bash
     steps:
+      - name: Setup Runner
+        uses: asterisk/asterisk-ci-actions/SetupUbuntuRunner@main-test-native
+
       - name: Restore Asterisk Cache
-        uses: asterisk/asterisk-ci-actions/RestoreAsteriskFromCache@main
+        uses: asterisk/asterisk-ci-actions/RestoreAsteriskFromCache@main-test-native
         with:
           repo_dir:        ${{ github.event.repository.name }}
           build_cache_dir: ${{ inputs.build_cache_dir }}
           build_cache_key: ${{ inputs.build_cache_key }}
           user_group:      ${{ inputs.user_group }}
 
-      - name: Setup
+      - name: Checkout CI
         run: |
-          sysctl -w kernel.core_pattern=/tmp/core-%e-%t
-          chmod 1777 /tmp
+          # Checkout CI
           echo "UNIT_TEST_NAME=unit-${BASE_BRANCH//\//-}" >> "${GITHUB_ENV}"
           echo "*** Cloning ${REPO_ORG}/${ACTION_DIR}"
           git clone ${GITHUB_SERVER_URL}/${REPO_ORG}/${ACTION_DIR}
           git -C ${ACTION_DIR} checkout ${CI_BRANCH:-main}
-          mkdir -p ${OUTPUT_DIR}
 
       - name: Run Unit Tests
         run: |
+          # Run Unit Tests
           if [ -d ${REPO_DIR} ] ; then
             echo "*** Found asterisk source cache '${REPO_DIR}'"
-            chown -R ${USER_GROUP} ${REPO_DIR}
+            [ -n "${USER_GROUP}" ] && chown -R ${USER_GROUP} ${REPO_DIR}
             cd ${REPO_DIR}
             [ -f tests/keys/rsa_key1.key ] && \
               chmod go-rw tests/keys/rsa_key1.key || :
           fi
+          mkdir -p ${OUTPUT_DIR}
           echo "*** Running asterisk unit tests"
           ${SCRIPT_DIR}/runAsteriskUnitTests.sh --no-expect --github \
             --user-group=${USER_GROUP} \

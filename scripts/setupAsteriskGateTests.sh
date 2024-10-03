@@ -4,8 +4,6 @@ source $SCRIPT_DIR/ci.functions
 
 echo "Running setup for testsuite tests"
 
-sysctl -w kernel.core_pattern=/tmp/core-%e-%t
-chmod 1777 /tmp
 GC_TESTSUITE_DIR=$(basename ${TESTSUITE_REPO})
 GC_TEST_NAME=${GATETEST_GROUP}-${BASE_BRANCH//\//-}
 

@@ -13,6 +13,7 @@ env:
   SHA:        ${{ github.event.workflow_run.head_sha }}
   HEAD_REPO:  ${{ github.event.workflow_run.head_repository.full_name }}
   WORKFLOW:   ${{ github.event.workflow.name }}
+  BUILD_CACHE_KEY_PREFIX: ${{ github.event.workflow.name }}-${{ github.event.workflow_run.run_number }}
 
 jobs:
   PRStateChangedPriv:
@@ -140,4 +141,6 @@ jobs:
       - name: PostComplete
         if: github.event.action == 'completed'
         run: |
-          gh cache delete -R ${REPO} ${WORKFLOW}-${PR_NUMBER}-${BASE_BRANCH} || :
+          if [ "${CONCLUSION}" == "success"] ; then
+            gh cache delete -R ${REPO} ${BUILD_CACHE_KEY_PREFIX}-${PR_NUMBER}-${BASE_BRANCH} || :
+          fi
