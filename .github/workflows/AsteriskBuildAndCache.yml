@@ -74,11 +74,12 @@ env:
   REPO_DIR:          ${{ github.event.repository.name }}
   REPO_ORG:          ${{ github.event.repository.owner.login }}
   OUTPUT_DIR:        ${{ github.workspace }}/${{ inputs.output_cache_dir }}/output
-  ACTION_DIR:        asterisk-ci-actions
-  SCRIPT_DIR:        ${{ github.workspace }}/asterisk-ci-actions/scripts
   BUILD_CACHE_DIR:   ${{ github.workspace }}/${{ inputs.build_cache_dir }}
   BUILD_CACHE_KEY:   ${{ inputs.build_cache_key }}
-  CI_BRANCH:         main-test-native
+  ACTIONS_OWNER:     ${{ fromJSON(inputs.actions_ref).owner }}
+  ACTIONS_REPO:      ${{ fromJSON(inputs.actions_ref).repo }}
+  ACTIONS_BRANCH:    ${{ fromJSON(inputs.actions_ref).branch }}
+  SCRIPT_DIR:        ${{ github.workspace }}/asterisk-ci-actions/scripts
 
 jobs:
   Build:
@@ -88,24 +89,13 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Checkout actions
-        run: |
-          ref="${{ inputs.actions_ref }}"
-          repo=${ref%%@*}
-          repo_owner=${repo%%/*}
-          repo_dir=${repo##*/}
-          branch=${ref##*@}
-          echo "*** Cloning ${repo} branch ${branch}"
-          git clone ${GITHUB_SERVER_URL}/${repo}
-          git -C ${repo_dir} checkout ${branch}
-          echo "actions_repo=$repo" >> "$GITHUB_OUTPUT"
-          echo "actions_repo_owner=$repo_owner" >> "$GITHUB_OUTPUT"
-          echo "actions_repo_dir=$repo_dir" >> "$GITHUB_OUTPUT"
-          echo "actions_branch=$branch" >> "$GITHUB_OUTPUT"
-        
-        
       - name: Setup Runner
-        uses: asterisk/asterisk-ci-actions/SetupUbuntuRunner@main-test-native
+        run: |
+          # Setup
+          wget -qO asterisk-ci-actions.tar.gz \
+            https://github.com/${ACTIONS_OWNER}/${ACTIONS_REPO}/archive/refs/heads/${ACTIONS_BRANCH}.tar.gz
+          tar -xf asterisk-ci-actions.tar.gz --transform="s/^${ACTIONS_REPO}-${ACTIONS_BRANCH}/asterisk-ci-actions/g"
+          sudo ${SCRIPT_DIR}/setupRunner.sh
 
       - name: BuildAsterisk
         run: |

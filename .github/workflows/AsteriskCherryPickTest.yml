@@ -1,12 +1,21 @@
 name: CherryPickTest
 on:
   workflow_call:
+    inputs:
+      actions_ref:
+        description: 'Reference to the actions: owner/repo@branch'
+        type: string
+        required: true
     secrets:
       TOKEN:
         required: true
 
 env:
   PR_NUMBER: ${{ github.event.number }}
+  ACTIONS_OWNER:    ${{ fromJSON(inputs.actions_ref).owner }}
+  ACTIONS_REPO:     ${{ fromJSON(inputs.actions_ref).repo }}
+  ACTIONS_BRANCH:   ${{ fromJSON(inputs.actions_ref).branch }}
+  SCRIPT_DIR:       ${{ github.workspace }}/asterisk-ci-actions/scripts
 
 jobs:
   GetBranches:
@@ -17,6 +26,13 @@ jobs:
       branch_count:       ${{ steps.getbranches.outputs.branch_count }}
       testsuite_test_pr:  ${{ steps.testsuitepr.outputs.testsuite_test_pr }}
     steps:
+      - name: Setup Runner
+        run: |
+          # Setup
+          wget -qO asterisk-ci-actions.tar.gz \
+            https://github.com/${ACTIONS_OWNER}/${ACTIONS_REPO}/archive/refs/heads/${ACTIONS_BRANCH}.tar.gz
+          tar -xf asterisk-ci-actions.tar.gz --transform="s/^${ACTIONS_REPO}-${ACTIONS_BRANCH}/asterisk-ci-actions/g"
+
       - name: Remove Trigger Label, Add InProgress Label
         env:
           GH_TOKEN: ${{ secrets.TOKEN }}
@@ -31,7 +47,7 @@ jobs:
             $PR_NUMBER || :
 
       - name: Get cherry-pick branches
-        uses: asterisk/asterisk-ci-actions/GetCherryPickBranchesFromPR@main
+        uses: ./asterisk-ci-actions/GetCherryPickBranchesFromPR
         id: getbranches
         with:
           repo:              ${{ github.repository }}
@@ -50,7 +66,7 @@ jobs:
 
       - name: GetTestsuitePR
         id: testsuitepr
-        uses: asterisk/asterisk-ci-actions/GetTestsuitePRFromAsteriskPR@main
+        uses: ./asterisk-ci-actions/GetTestsuitePRFromAsteriskPR
         with:
           repo:                            ${{ github.repository }}
           pr_number:                       ${{ github.event.number }}
@@ -81,6 +97,7 @@ jobs:
         branch: ${{ fromJSON(needs.GetBranches.outputs.branches) }}
     uses: ./.github/workflows/AsteriskUnitGateTest.yml
     with:
+      actions_ref:       ${{ inputs.actions_ref }}
       test_type:         cherry-pick
       asterisk_repo:     ${{ github.repository }}
       pr_number:         ${{ github.event.number }}

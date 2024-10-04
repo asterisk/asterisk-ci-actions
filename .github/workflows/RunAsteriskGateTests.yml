@@ -53,18 +53,18 @@ env:
   BASE_BRANCH:  ${{ inputs.base_branch }}
   CACHE_DIR:    ${{ inputs.output_cache_dir }}
   USER_GROUP:   ${{ inputs.user_group }}
-  ACTION_DIR:   asterisk-ci-actions
-  SCRIPT_DIR:   ${{ github.workspace }}/asterisk-ci-actions/scripts
   OUTPUT_DIR:   ${{ github.workspace }}/${{ inputs.output_cache_dir }}/output
   REPO_DIR:     ${{ github.event.repository.name }}
   REPO_ORG:     ${{ github.event.repository.owner.login }}
   REALTIME:     ${{ inputs.realtime }}
-  CI_BRANCH:    main-test-native
-
   TESTSUITE_REPO:     ${{ inputs.testsuite_repo }}
   TESTSUITE_TEST_PR:  ${{ inputs.testsuite_test_pr }}
   GATETEST_GROUP:     ${{ inputs.gatetest_group }}
   GATETEST_COMMAND:   ${{ toJSON(fromJSON(inputs.gatetest_commands)[inputs.gatetest_group]) }}
+  ACTIONS_OWNER:    ${{ fromJSON(inputs.actions_ref).owner }}
+  ACTIONS_REPO:     ${{ fromJSON(inputs.actions_ref).repo }}
+  ACTIONS_BRANCH:   ${{ fromJSON(inputs.actions_ref).branch }}
+  SCRIPT_DIR:       ${{ github.workspace }}/asterisk-ci-actions/scripts
 
 jobs:
   RunGateTests:
@@ -74,24 +74,21 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: "Setup Runner"
-        uses: asterisk/asterisk-ci-actions/SetupUbuntuRunner@main-test-native
+      - name: Setup Runner
+        run: |
+          # Setup
+          wget -qO asterisk-ci-actions.tar.gz \
+            https://github.com/${ACTIONS_OWNER}/${ACTIONS_REPO}/archive/refs/heads/${ACTIONS_BRANCH}.tar.gz
+          tar -xf asterisk-ci-actions.tar.gz --transform="s/^${ACTIONS_REPO}-${ACTIONS_BRANCH}/asterisk-ci-actions/g"
+          sudo ${SCRIPT_DIR}/setupRunner.sh
 
-      - name: "Restore Asterisk Cache"
-        uses: asterisk/asterisk-ci-actions/RestoreAsteriskFromCache@main-test-native
+      - name: Restore Asterisk Cache
+        uses: ./asterisk-ci-actions/RestoreAsteriskFromCache
         with:
           repo_dir:        ${{ github.event.repository.name }}
           build_cache_dir: ${{ inputs.build_cache_dir }}
           build_cache_key: ${{ inputs.build_cache_key }}
           user_group:      ${{ inputs.user_group }}
-
-      - name: "Checkout CI"
-        run: |
-          # Checkout CI
-          echo "UNIT_TEST_NAME=unit-${BASE_BRANCH//\//-}" >> "${GITHUB_ENV}"
-          echo "*** Cloning ${REPO_ORG}/${ACTION_DIR}"
-          git clone ${GITHUB_SERVER_URL}/${REPO_ORG}/${ACTION_DIR}
-          git -C ${ACTION_DIR} checkout ${CI_BRANCH:-main}
 
       - name: "Setup testsuite"
         run: |

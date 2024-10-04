@@ -2,6 +2,10 @@ name: 'RunCherryPickPrelimTest'
 on:
   workflow_call:
     inputs:
+      actions_ref:
+        description: 'Reference to the actions: owner/repo@branch'
+        type: string
+        required: true
       repo:
         required: true
         type: string
@@ -21,11 +25,12 @@ env:
   REPO:         ${{ inputs.repo }}
   PR_NUMBER:    ${{ inputs.pr_number }}
   BASE_BRANCH:  ${{ inputs.base_branch }}
-  ACTION_DIR:   asterisk-ci-actions
-  SCRIPT_DIR:   ${{ github.workspace }}/asterisk-ci-actions/scripts
   REPO_DIR:     ${{ github.event.repository.name }}
   REPO_ORG:     ${{ github.event.repository.owner.login }}
-  CI_BRANCH:    main
+  ACTIONS_OWNER:    ${{ fromJSON(inputs.actions_ref).owner }}
+  ACTIONS_REPO:     ${{ fromJSON(inputs.actions_ref).repo }}
+  ACTIONS_BRANCH:   ${{ fromJSON(inputs.actions_ref).branch }}
+  SCRIPT_DIR:       ${{ github.workspace }}/asterisk-ci-actions/scripts
 
 jobs:
   CherryPick:
@@ -34,12 +39,16 @@ jobs:
       run:
         shell: bash
     steps:
+      - name: Setup Runner
+        run: |
+          # Setup
+          wget -qO asterisk-ci-actions.tar.gz \
+            https://github.com/${ACTIONS_OWNER}/${ACTIONS_REPO}/archive/refs/heads/${ACTIONS_BRANCH}.tar.gz
+          tar -xf asterisk-ci-actions.tar.gz --transform="s/^${ACTIONS_REPO}-${ACTIONS_BRANCH}/asterisk-ci-actions/g"
+
       - name: Run Cherry Pick
         run: |
-          echo "*** Cloning ${REPO_ORG}/${ACTION_DIR}"
-          git clone ${GITHUB_SERVER_URL}/${REPO_ORG}/${ACTION_DIR}
-          git -C ${ACTION_DIR} checkout ${CI_BRANCH:-main}
-
+          # Cherry Pick
           mkdir -p ${REPO_DIR}
 
           echo "*** Checking out ${ASTERISK_REPO}"

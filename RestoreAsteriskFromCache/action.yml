@@ -30,10 +30,6 @@ runs:
         USER_GROUP:      ${{inputs.user_group}}
       run: |
         # Install from cache
-        echo "************* User Info ***************"
-        whoami
-        id
-        echo "***************************************"
         cd ${GITHUB_WORKSPACE}
         if [ -f ${BUILD_CACHE_DIR}/asterisk-source.tar.gz ] ; then
           echo "*** Found ${BUILD_CACHE_DIR}/asterisk-source.tar.gz"
@@ -46,5 +42,3 @@ runs:
         echo "*** Installing asterisk from cache"
         sudo rsync -aH . /
         [ -n "${USER_GROUP}" ] && sudo chown -R ${USER_GROUP} /etc/asterisk $(find /var/*/asterisk -maxdepth 0 -type d)
-        ls -al /etc/asterisk
-        ls -al /var/lib/asterisk

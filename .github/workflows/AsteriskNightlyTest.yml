@@ -27,24 +27,9 @@ on:
       TOKEN:
         required: true
 
-env:
-  ACTIONS_OWNER: ${{ fromJSON(inputs.actions_ref).owner }}
-  ACTIONS_REPO: ${{ fromJSON(inputs.actions_ref).repo }}
-  ACTIONS_BRANCH: ${{ fromJSON(inputs.actions_ref).branch }}
-
 jobs:
 
-  Setup:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Ew
-        run: |
-          echo "ACTIONS_OWNER: ${ACTIONS_OWNER}"
-          echo "ACTIONS_REPO: ${ACTIONS_REPO}"
-          echo "ACTIONS_BRANCH: ${ACTIONS_BRANCH}"
-
   Test:
-    if: false
     strategy:
       fail-fast: false
       matrix:
