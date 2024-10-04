@@ -62,6 +62,4 @@ runs:
           echo "::endgroup::"
         fi
 
-
-
         exit 0
