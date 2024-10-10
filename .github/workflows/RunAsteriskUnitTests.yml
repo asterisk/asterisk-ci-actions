@@ -1,4 +1,4 @@
-name: 'RAUT'
+name: RunUnitTests
 on:
   workflow_call:
     inputs:

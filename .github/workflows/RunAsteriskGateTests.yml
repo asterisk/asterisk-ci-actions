@@ -1,4 +1,4 @@
-name: 'RunAsteriskGateTests'
+name: 'RunGateTests'
 on:
   workflow_call:
     inputs:

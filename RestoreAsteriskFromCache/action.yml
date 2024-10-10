@@ -41,4 +41,4 @@ runs:
         cd ${BUILD_CACHE_DIR}
         echo "*** Installing asterisk from cache"
         sudo rsync -aH . /
-        [ -n "${USER_GROUP}" ] && sudo chown -R ${USER_GROUP} /etc/asterisk $(find /var/*/asterisk -maxdepth 0 -type d)
+        [ -n "${USER_GROUP}" ] && sudo chown -R ${USER_GROUP} /etc/asterisk $(find /var/*/asterisk -maxdepth 0 -type d) || :
