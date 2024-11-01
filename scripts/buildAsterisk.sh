@@ -145,7 +145,7 @@ if ! $NO_MENUSELECT ; then
 	cp menuselect.makeopts ${OUTPUT_DIR}/menuselect.makeopts.postcats
 	$SUCCESS || exit 1
 
-	mod_disables="codec_ilbc res_digium_phone"
+	mod_disables="codec_ilbc res_digium_phone res_pjsip_config_sangoma"
 	if $TESTED_ONLY ; then
 		# These modules are not tested at all.  They are loaded but nothing is ever done
 		# with them, no testsuite tests depend on them.
