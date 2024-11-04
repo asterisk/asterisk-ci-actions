@@ -101,8 +101,14 @@ jobs:
         run: |
           # Run Gate Test ${{inputs.gatetest_group}}
           TESTRC=0
+          # Because we're using sudo, the environment isn't
+          # passed to the script so we need to use the
+          # command line arguments.  We could use `sudo -E`
+          # to pass the complete environment but that's
+          # overkill and might cause other issues.
           sudo ${SCRIPT_DIR}/runAsteriskGateTests.sh \
             --testsuite-dir=${TESTSUITE_DIR} \
+            --asterisk-dir=${ASTERISK_DIR} \
             --test-timeout=${TEST_TIMEOUT} --realtime=$REALTIME --stop-database=true \
             --testsuite-command="${TEST_OPTIONS} ${TEST_CMD}" || TESTRC=1
           exit $TESTRC

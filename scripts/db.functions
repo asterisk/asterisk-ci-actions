@@ -54,7 +54,8 @@ _pg_ctl() {
 			chown postgres:postgres /run/postgresql
 		}
 		[ -n "${STATS_TMP_DIR}" ] && [ ! -d "${STATS_TMP_DIR}" ] && {
-			mkdir "${STATS_TMP_DIR}"
+			echo "Creating ${STATS_TMP_DIR}"
+			mkdir -p "${STATS_TMP_DIR}"
 			chown postgres:postgres "${STATS_TMP_DIR}"
 		}
 	}
@@ -64,6 +65,7 @@ _pg_ctl() {
 	
 	echo "Running pg_ctl $1 ${OPTS}"
 	if $DEBIAN ; then
+		[ -d /var/run/postgresql ] && chown -R postgres:postgres /var/run/postgresql
 		eval sudo -E -u postgres /usr/lib/postgresql/${PG_VERSION}/bin/pg_ctl \
 			$1 ${OPTS} || return 1
 	else

@@ -14,6 +14,10 @@ echo "Setting kernel.core_pattern=/tmp/core-%e-%t"
 sysctl -w kernel.core_pattern=/tmp/core-%e-%t
 chmod 1777 /tmp
 
+export DEBIAN_FRONTEND="noninteractive"
+apt-get update -y -qq >/dev/null
+apt-get install -y wget curl file apt-utils >/dev/null
+
 # Install packages
 if ! which gh &>/dev/null ; then
 	echo "Installing github cli repo"
@@ -24,8 +28,7 @@ if ! which gh &>/dev/null ; then
 fi
 
 echo "Installing dev packages"
-apt-get update -qq >/dev/null
-apt-get install -qq curl wget binutils-dev freetds-dev \
+apt-get install -qq sudo binutils-dev freetds-dev \
   libasound2-dev libbluetooth-dev libc-client2007e-dev \
   libcap-dev libcfg-dev libcodec2-dev libcorosync-common-dev \
   libcpg-dev libcurl4-openssl-dev libedit-dev libfftw3-dev \
@@ -35,11 +38,13 @@ apt-get install -qq curl wget binutils-dev freetds-dev \
   libradcli-dev libresample1-dev libsndfile1-dev libsnmp-dev \
   libspandsp-dev libspeex-dev libspeexdsp-dev libsrtp2-dev \
   libunbound-dev liburiparser-dev libvorbis-dev libxslt1-dev \
-  xmlstarlet python3-pystache >/dev/null
+  xmlstarlet python3-pystache sqlite3 sqlite3-tools\
+  libsqlite3-dev >/dev/null
 
 addons="cmake libsctp-dev python3-dev python3*-venv \
-  postgresql git libpcap-dev nano python3-pip alembic odbc-postgresql \
-  unixodbc unixodbc-dev python3-psycopg2 rsync"
+  postgresql libpq-dev git libpcap-dev nano python3-pip \
+  alembic odbc-postgresql unixodbc unixodbc-dev \
+  python3-psycopg2 rsync"
 
 if ! which gh &>/dev/null ; then
 	addons+=" gh"

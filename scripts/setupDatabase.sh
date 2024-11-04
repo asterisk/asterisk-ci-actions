@@ -30,6 +30,7 @@ _pg_ctl start || {
 	echo "FAILED"
 	exit 1
 }
+ls -al /var/run/postgresql
 
 echo "Dropping any existing objects"
 dropdb $PGOPTS --if-exists -e ${DATABASE_CDR} &>/dev/null || :

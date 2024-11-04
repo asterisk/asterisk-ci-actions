@@ -18,6 +18,7 @@ if [ x"$WORK_DIR" != x ] ; then
 fi
 
 if [ -n "$TESTSUITE_DIR" ] ; then
+	ls -al $TESTSUITE_DIR
 	pushd $TESTSUITE_DIR  &>/dev/null
 fi
 
