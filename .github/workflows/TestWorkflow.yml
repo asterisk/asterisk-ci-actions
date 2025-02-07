@@ -8,31 +8,76 @@ env:
   ACTIONS_REPO:      asterisk-ci-actions
   ACTIONS_BRANCH:    main-test-native
   SCRIPT_DIR:        ${{ github.workspace }}/asterisk-ci-actions/scripts
+  GH_TOKEN:          ${{secrets.GITHUB_TOKEN}}
+  RUN_ID:            ${{ github.id }}
 
 jobs:
-  Setup:
+  Job1:
     runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
     steps:
-      - name: Setup
-        run: |
-          # Setup
-          pwd
-          wget -qO asterisk-ci-actions.tar.gz \
-            https://github.com/${ACTIONS_OWNER}/${ACTIONS_REPO}/archive/refs/heads/${ACTIONS_BRANCH}.tar.gz
-          tar -xf asterisk-ci-actions.tar.gz --transform="s/^${ACTIONS_REPO}-${ACTIONS_BRANCH}/asterisk-ci-actions/g"
-          # jq -r '. | from_entries' ${ACTIONS_REPO}/.github/control/asterisk-gh-test.json
-          sed -i -r -e "s/^vars_/export vars_/g" ${ACTIONS_REPO}/.github/control/asterisk-gh-test.env
-          source ${ACTIONS_REPO}/.github/control/asterisk-gh-test.env
-          for VV in ${!vars_@} ; do
-            echo "$VV=${!VV}" >> "${GITHUB_ENV}"
-          done
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
 
-      - name: Printenv
+      - name: test
         run: |
-          printenv
+          mkdir logs
+          step_summary=""
+          step_summary+="FAILURE: rest_api/recording/duration\nFAILURE: rest_api/recording/nominal"
+          echo -e "$step_summary" >> logs/STEP_SUMMARY
+          exit 1
+      - name: Save Output
+        id: save-output
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: job1
+          path: |
+            logs
+
+
+  Job2:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: test
+        run: |
+          mkdir logs
+          step_summary=""
+          step_summary+="FAILURE: rest_api/recording/XXXXX\nFAILURE: rest_api/recording/YYYYYYY"
+          echo -e "$step_summary" >> logs/STEP_SUMMARY
+          exit 1
+      - name: Save Output
+        id: save-output
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: job2
+          path: |
+            logs
+
+  Cleanup:
+    needs: [Job1, Job2]
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: test
+        run: |
+          gh --repo ${{ github.repository }} \
+            run download ${RUN_ID} -D run-${RUN_ID}
+          find run-${RUN_ID} -name STEP_SUMMARY
+          for f in $(find run-${RUN_ID} -name STEP_SUMMARY) ; do
+            cat $f >> $GITHUB_STEP_SUMMARY
+          done
+          cat $GITHUB_STEP_SUMMARY
+
 
 #      - name: DumpEnvironment
 #        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
