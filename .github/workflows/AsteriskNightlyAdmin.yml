@@ -5,8 +5,15 @@ on:
       ASTERISKTEAM_PAT:
         required: true
 
-jobs:
+permissions:
+  actions: write
+  checks: read
+  contents: read
+  issues: write
+  pull-requests: write
+  statuses: read
 
+jobs:
   CloseStaleIssues:
     uses: ./.github/workflows/CloseStaleIssuesAndPRs.yml
     secrets: inherit

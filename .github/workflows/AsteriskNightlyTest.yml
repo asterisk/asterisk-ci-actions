@@ -2,11 +2,6 @@ name: NightlyTest
 on:
   workflow_call:
     inputs:
-      actions_ref:
-        description: 'JSON object reference to the actions: { "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
-        type: string
-        required: false
-        default: '{ "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
       test_type:
         description: 'weekly, nightly, prstatechange, prrecheck, cherry-pick'
         type: string
@@ -24,12 +19,16 @@ on:
         type: boolean
         required: false
         default: false
-    secrets:
-      TOKEN:
-        required: true
+
+permissions:
+  actions: write
+  checks: read
+  contents: read
+  issues: read
+  pull-requests: write
+  statuses: read
 
 jobs:
-
   Test:
     strategy:
       fail-fast: false
@@ -37,7 +36,6 @@ jobs:
         branch: ${{ fromJSON(inputs.branches) }}
     uses: ./.github/workflows/AsteriskUnitGateTest.yml
     with:
-      actions_ref:       ${{ inputs.actions_ref }}
       test_type:         ${{ inputs.test_type }}
       asterisk_repo:     ${{ github.repository }}
       pr_number:         0
@@ -49,4 +47,3 @@ jobs:
       gatetest_list:     ${{ inputs.group_list }}
       gatetest_commands: ${{ vars.GATETEST_COMMANDS }}
       realtime:          ${{ inputs.realtime }}
-    secrets: inherit

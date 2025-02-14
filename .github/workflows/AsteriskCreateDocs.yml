@@ -2,34 +2,28 @@ name: CreateDocs
 on:
   workflow_call:
     inputs:
-      actions_ref:
-        description: 'JSON object reference to the actions: { "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
-        type: string
-        required: false
-        default: '{ "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
       asterisk_repo:
         required: true
         type: string
       base_branch:
         required: true
         type: string
-    secrets:
-      TOKEN:
-        required: true
+
+permissions:
+  actions: read
+  checks: read
+  contents: read
+  issues: read
+  pull-requests: read
+  statuses: read
 
 env:
-  GH_TOKEN:         ${{ secrets.TOKEN }}
-  GITHUB_TOKEN:     ${{ secrets.TOKEN }}
   REPO:             ${{ github.event.repository.full_name }}
   BASE_BRANCH:      ${{ inputs.base_branch }}
   REPO_DIR:         ${{ github.event.repository.name }}
   REPO_ORG:         ${{ github.event.repository.owner.login }}
   LOG_DIR:          ${{ github.workspace }}/logs
   LOG_FILE:         ${{ github.workspace }}/logs/job_summary.txt
-  ACTIONS_OWNER:    ${{ fromJSON(inputs.actions_ref).owner }}
-  ACTIONS_REPO:     ${{ fromJSON(inputs.actions_ref).repo }}
-  ACTIONS_BRANCH:   ${{ fromJSON(inputs.actions_ref).branch }}
-  SCRIPT_DIR:       ${{ github.workspace }}/asterisk-ci-actions/scripts
 
 jobs:
   CreateDocs:
@@ -39,19 +33,18 @@ jobs:
       run:
         shell: bash
     steps:
+        # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
+      - name: GetActionsRepo
+        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main-pr-target
+
       - name: Setup Runner
         run: |
           # Setup
-          echo "::group::Getting actions repo"
-          wget -qO asterisk-ci-actions.tar.gz \
-            https://github.com/${ACTIONS_OWNER}/${ACTIONS_REPO}/archive/refs/heads/${ACTIONS_BRANCH}.tar.gz
-          tar -xf asterisk-ci-actions.tar.gz --transform="s/^${ACTIONS_REPO}-${ACTIONS_BRANCH}/asterisk-ci-actions/g"
-          echo "::endgroup::"
+
           echo "::group::Installing software"
           sudo ${SCRIPT_DIR}/setupRunner.sh ${SIPP_VERSION:+--sipp-version=${SIPP_VERSION}}
           echo "::endgroup::"
-          echo "NORMALIZED_BRANCH=${BASE_BRANCH/\//-}" >> ${GITHUB_ENV}
-          DOCS_DIR=${GITHUB_WORKSPACE}/docs_dir/${BASE_BRANCH/\//-}
+          DOCS_DIR=${GITHUB_WORKSPACE}/docs_dir/${NORMALIZED_BRANCH}
           echo "DOCS_DIR=${DOCS_DIR}" >> ${GITHUB_ENV}
           mkdir -p ${DOCS_DIR}
           mkdir -p ${LOG_DIR}
@@ -110,4 +103,3 @@ jobs:
           if-no-files-found: ignore
           path: |
             ${{ env.DOCS_DIR }}
-
