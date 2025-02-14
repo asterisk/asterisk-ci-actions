@@ -59,7 +59,7 @@ git fetch --depth 10 --no-tags origin refs/pull/${PR_NUMBER}/head
 
 # Get commits
 debug_out "Getting commits for PR ${PR_NUMBER}"
-mapfile -t COMMITS < <(gh api repos/${REPO}/pulls/${PR_NUMBER}/commits --jq '.[] | .sha + "|" + (.commit.message | split("\n")[0]) + "|" + .commit.author.name + "|" + .commit.author.email + "|"' || echo "@_ERROR_@")
+mapfile -t COMMITS < <(curl -s https://api.github.com/repos/${REPO}/pulls/${PR_NUMBER}/commits | jq -r '.[] | .sha + "|" + (.commit.message | split("\n")[0]) + "|" + .commit.author.name + "|" + .commit.author.email + "|"' || echo "@_ERROR_@")
 [[ "${COMMITS[0]}" =~ @_ERROR_@ ]] && {
 	log_error_msg "No commits for PR ${PR_NUMBER}"
 	exit 1

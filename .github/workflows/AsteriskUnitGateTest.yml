@@ -2,11 +2,6 @@ name: UnitGateTest
 on:
   workflow_call:
     inputs:
-      actions_ref:
-        description: 'JSON object reference to the actions: { "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
-        type: string
-        required: false
-        default: '{ "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
       test_type:
         description: 'weekly, nightly, prstatechange, prrecheck, cherry-pick, mergepr'
         required: true
@@ -67,15 +62,11 @@ on:
         type: boolean
         required: false
         default: false
-    secrets:
-      TOKEN:
-        required: true
 
 jobs:
   Build:
     uses: ./.github/workflows/AsteriskBuildAndCache.yml
     with:
-      actions_ref:       ${{ inputs.actions_ref }}
       test_type:         ${{ inputs.test_type }}
       asterisk_repo:     ${{ inputs.asterisk_repo }}
       pr_number:         ${{ inputs.pr_number }}
@@ -85,13 +76,11 @@ jobs:
       modules_blacklist: ${{ inputs.modules_blacklist }}
       build_cache_dir:   ${{ inputs.build_cache_dir }}
       build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
-    secrets: inherit
 
   BuildNoDevmode:
     uses: ./.github/workflows/AsteriskBuildAndCache.yml
     with:
       job_name_extra:    -no-dev-mode
-      actions_ref:       ${{ inputs.actions_ref }}
       test_type:         ${{ inputs.test_type }}
       asterisk_repo:     ${{ inputs.asterisk_repo }}
       pr_number:         ${{ inputs.pr_number }}
@@ -101,13 +90,11 @@ jobs:
       no_alembic:        true
       modules_blacklist: ${{ inputs.modules_blacklist }}
       build_cache_dir:
-    secrets: inherit
 
   Unit:
     needs: Build
     uses: ./.github/workflows/RunAsteriskUnitTests.yml
     with:
-      actions_ref:       ${{ inputs.actions_ref }}
       test_type:         ${{ inputs.test_type }}
       base_branch:       ${{ inputs.base_branch }}
       user_group:        ${{ inputs.user_group }}
@@ -115,7 +102,6 @@ jobs:
       output_cache_dir:  ${{ inputs.output_cache_dir }}
       build_cache_dir:   ${{ inputs.build_cache_dir }}
       build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
-    secrets: inherit
 
   Gate:
     needs: Build
@@ -127,7 +113,6 @@ jobs:
         group: ${{ fromJSON(inputs.gatetest_list) }}
     uses: ./.github/workflows/RunAsteriskGateTests.yml
     with:
-      actions_ref:       ${{ inputs.actions_ref }}
       test_type:         ${{ inputs.test_type }}
       base_branch:       ${{ inputs.base_branch }}
       user_group:        ${{ inputs.user_group }}
@@ -138,5 +123,4 @@ jobs:
       build_cache_dir:   ${{ inputs.build_cache_dir }}
       build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
       realtime:          ${{ inputs.realtime }}
-    secrets: inherit
 

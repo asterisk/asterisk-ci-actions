@@ -29,6 +29,10 @@ runs:
     - name: "Dump github context"
       shell: bash
       run: |
+        ACTION_PATH=$(dirname ${GITHUB_ACTION_PATH})
+        echo "ACTION_PATH=${ACTION_PATH}" >> ${GITHUB_ENV}
+        echo "SCRIPT_DIR=${ACTION_PATH}/scripts" >> ${GITHUB_ENV}
+        
         OUTPUT_DIR=/tmp/DumpEnvironment
         echo "SAVE_NAME=${SAVE_NAME}" >> ${GITHUB_ENV}
         echo "OUTPUT_DIR=${OUTPUT_DIR}" >> ${GITHUB_ENV}
@@ -110,10 +114,20 @@ runs:
         ls -al ${RUNNER_WORKSPACE} | tee -a ${OUTPUT_DIR}/RUNNER_WORKSPACE.txt
         echo "::endgroup::"
 
+        echo "::group::RUNNER_WORK: ${HOME}/work"
+        echo "${HOME}/work" > ${OUTPUT_DIR}/RUNNER_WORK.txt
+        find "${HOME}/work" | tee -a ${OUTPUT_DIR}/RUNNER_WORK.txt
+        echo "::endgroup::"
+
         if [ -n "${GITHUB_ACTION_PATH}" ] ; then
           echo "::group::GITHUB_ACTION_PATH: ${GITHUB_ACTION_PATH}"
           echo "${GITHUB_ACTION_PATH}" > ${OUTPUT_DIR}/GITHUB_ACTION_PATH.txt
           ls -al ${GITHUB_ACTION_PATH} | tee -a ${OUTPUT_DIR}/GITHUB_ACTION_PATH.txt
+          echo "::endgroup::"
+          GITHUB_ACTION_DIR=$(dirname ${GITHUB_ACTION_PATH})
+          echo "::group::GITHUB_ACTION_DIR: ${GITHUB_ACTION_DIR}"
+          echo "${GITHUB_ACTION_DIR}" > ${OUTPUT_DIR}/GITHUB_ACTION_DIR.txt
+          ls -al ${GITHUB_ACTION_DIR} | tee -a ${OUTPUT_DIR}/GITHUB_ACTION_DIR.txt
           echo "::endgroup::"
         fi
         exit 0

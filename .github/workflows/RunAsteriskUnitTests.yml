@@ -2,11 +2,6 @@ name: RunUnitTests
 on:
   workflow_call:
     inputs:
-      actions_ref:
-        description: 'JSON object reference to the actions: { "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
-        type: string
-        required: false
-        default: '{ "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
       test_type:
         required: false
         type: string
@@ -34,13 +29,8 @@ on:
         required: false
         type: string
         default: v3.6.1
-    secrets:
-      TOKEN:
-        required: true
 
 env:
-  GH_TOKEN:         ${{ secrets.TOKEN }}
-  GITHUB_TOKEN:     ${{ secrets.TOKEN }}
   TEST_TYPE:        ${{ inputs.test_type }}
   BASE_BRANCH:      ${{ inputs.base_branch }}
   CACHE_DIR:        ${{ inputs.output_cache_dir }}
@@ -54,10 +44,6 @@ env:
   UNITTEST_COMMAND: ${{ inputs.unittest_command }}
   LOG_DIR:          ${{ github.workspace }}/logs
   LOG_FILE:         ${{ github.workspace }}/logs/job_summary.txt
-  ACTIONS_OWNER:    ${{ fromJSON(inputs.actions_ref).owner }}
-  ACTIONS_REPO:     ${{ fromJSON(inputs.actions_ref).repo }}
-  ACTIONS_BRANCH:   ${{ fromJSON(inputs.actions_ref).branch }}
-  SCRIPT_DIR:       ${{ github.workspace }}/asterisk-ci-actions/scripts
 
 jobs:
   RunUnitTests:
@@ -67,23 +53,21 @@ jobs:
       run:
         shell: bash
     steps:
+        # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
+      - name: GetActionsRepo
+        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main-pr-target
+
       - name: Setup Runner
         run: |
           # Setup
-          echo "::group::Getting actions repo"
-          wget -qO asterisk-ci-actions.tar.gz \
-            https://github.com/${ACTIONS_OWNER}/${ACTIONS_REPO}/archive/refs/heads/${ACTIONS_BRANCH}.tar.gz
-          tar -xf asterisk-ci-actions.tar.gz --transform="s/^${ACTIONS_REPO}-${ACTIONS_BRANCH}/asterisk-ci-actions/g"
-          echo "::endgroup::"
           echo "::group::Installing software"
           sudo ${SCRIPT_DIR}/setupRunner.sh --sipp-version=${SIPP_VERSION}
           echo "::endgroup::"
-          echo "NORMALIZED_BRANCH=${BASE_BRANCH/\//-}" >> ${GITHUB_ENV}
           mkdir -p ${LOG_DIR}
           mkdir -p ${OUTPUT_DIR}
 
       - name: Restore Asterisk Cache
-        uses: ./asterisk-ci-actions/RestoreAsteriskFromCache
+        uses: asterisk/asterisk-ci-actions/RestoreAsteriskFromCache@main
         with:
           repo_dir:        ${{ github.event.repository.name }}
           build_cache_dir: ${{ inputs.build_cache_dir }}

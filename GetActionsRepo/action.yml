@@ -1,0 +1,35 @@
+name: GetActionsPaths
+
+outputs:
+  action_path:
+    description: "ActionsPath"
+    value: ${{ steps.getpaths.outputs.action_path }}
+  script_dir:
+    description: "ScriptDir"
+    value: ${{ steps.getpaths.outputs.script_dir }}
+  normnalized_branch:
+    description: "Normalized Branch (no '/')"
+    value: ${{ steps.getpaths.outputs.normalized_branch }}
+
+runs:
+  using: "composite"
+  steps:
+    - id: "getpaths"
+      shell: bash
+      run: |
+        ACTION_PATH=$(dirname ${GITHUB_ACTION_PATH})
+        echo "ACTION_PATH=${ACTION_PATH}" >> ${GITHUB_ENV}
+        echo "action_path=${ACTION_PATH}" >> ${GITHUB_OUTPUT}
+        echo "SCRIPT_DIR=${ACTION_PATH}/scripts" >> ${GITHUB_ENV}
+        echo "script_dir=${SCRIPT_DIR}/scripts" >> ${GITHUB_OUTPUT}
+        if [ -n "${BASE_BRANCH}" ] ; then
+          prenorm=${BASE_BRANCH}
+        elif [ -n "${{ github.event.pull_request.base.ref }}" ] ; then
+          prenorm=${{ github.event.pull_request.base.ref }}
+        fi
+        if [ -n "$prenorm" ] ; then
+          norm="${prenorm/\//-}"
+          echo "NORMALIZED_BRANCH=${norm}" >> ${GITHUB_ENV}
+          echo "normalized_branch=${norm}" >> ${GITHUB_OUTPUT}
+        fi
+

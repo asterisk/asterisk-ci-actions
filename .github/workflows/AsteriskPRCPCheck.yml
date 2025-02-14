@@ -1,30 +1,27 @@
 name: PRCPCheck
 on:
   workflow_call:
-    inputs:
-      actions_ref:
-        description: 'JSON object reference to the actions: { "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
-        type: string
-        required: false
-        default: '{ "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
-    secrets:
-      TOKEN:
-        required: true
+
+permissions:
+  actions: write
+  checks: read
+  contents: read
+  issues: read
+  pull-requests: write
+  statuses: read
 
 env:
   REPO:            ${{ github.repository }}
   REPO_DIR:        ${{ github.workspace }}/${{ github.event.repository.name }}
   REPO_ORG:        ${{ github.event.repository.owner.login }}
   PR_NUMBER:       ${{ github.event.number }}
+  BASE_BRANCH:     ${{ github.event.pull_request.base.ref }}
   WORKFLOW_NAME:   ${{ github.workflow }}
   WORKFLOW_RUN_ID: ${{ github.run_id }}
-  SCRIPT_DIR:      ${{ github.workspace }}/asterisk-ci-actions/scripts
-  GH_TOKEN:        ${{ secrets.TOKEN }}
+  GH_TOKEN:        ${{ github.token }}
   LOG_DIR:         ${{ github.workspace }}/logs
   LOG_FILE:        ${{ github.workspace }}/logs/job_summary.txt
-  ACTIONS_OWNER:   asterisk
-  ACTIONS_REPO:    asterisk-ci-actions
-  ACTIONS_BRANCH:  main
+  BUILD_CACHE_KEY_PREFIX: ${{ github.workflow }}-${{ github.run_number }}-${{ github.event.number }}
   TESTING_IN_PROGRESS: ${{ vars.CHERRY_PICK_TESTING_IN_PROGRESS }}
   TESTS_PASSED:        ${{ vars.CHERRY_PICK_CHECKS_PASSED_LABEL }}
   TESTS_FAILED:        ${{ vars.CHERRY_PICK_CHECKS_FAILED_LABEL }}
@@ -38,16 +35,23 @@ jobs:
       branch_count:       ${{ steps.setup.outputs.BRANCH_COUNT }}
       testsuite_test_pr:  ${{ steps.setup.outputs.TESTSUITE_TEST_PR }}
     steps:
+        # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
+      - name: GetActionsRepo
+        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main-pr-target
+
       - id: setup
         env:
           CHERRY_PICK_TEST_LABEL:          ${{ vars.CHERRY_PICK_TEST_LABEL }}
           CHERRY_PICK_REGEX:               ${{ vars.CHERRY_PICK_REGEX }}
           TESTSUITE_TEST_PR_REGEX:         ${{ vars.TESTSUITE_TEST_PR_REGEX }}
         run: |
-          # Setup
-          wget -qO asterisk-ci-actions.tar.gz \
-            https://github.com/${ACTIONS_OWNER}/${ACTIONS_REPO}/archive/refs/heads/${ACTIONS_BRANCH}.tar.gz
-          tar -xf asterisk-ci-actions.tar.gz --transform="s/^${ACTIONS_REPO}-${ACTIONS_BRANCH}/asterisk-ci-actions/g"
+
+          # The script will populate TESTSUITE_TEST_PR in both
+          # GITHUB_ENV and GITHUB_OUTPUT.
+          ${SCRIPT_DIR}/getTestsuitePRfromAsteriskPR.sh \
+            --repo=${REPO} \
+            --pr-number=${PR_NUMBER} \
+            --testsuite-pr-regex="${TESTSUITE_TEST_PR_REGEX}"
 
           gh pr edit --repo ${REPO} \
             --remove-label ${CHERRY_PICK_TEST_LABEL} \
@@ -73,16 +77,14 @@ jobs:
             exit 0
           fi
 
+          branches=$(echo $BRANCHES | jq -r '.[]')
+          for b in $branches ; do
+            gh cache delete -R ${REPO} ${BUILD_CACHE_KEY_PREFIX}-$b || :
+          done
+
           gh pr edit --repo ${REPO} \
             --add-label ${TESTING_IN_PROGRESS} \
             ${PR_NUMBER} || :
-
-          # The script will populate TESTSUITE_TEST_PR in both
-          # GITHUB_ENV and GITHUB_OUTPUT.
-          ${SCRIPT_DIR}/getTestsuitePRfromAsteriskPR.sh \
-            --repo=${REPO} \
-            --pr-number=${PR_NUMBER} \
-            --testsuite-pr-regex="${TESTSUITE_TEST_PR_REGEX}"
 
       - name: CheckCherryPicks
         env:
@@ -107,11 +109,18 @@ jobs:
   Check:
     needs: [Setup]
     if: ${{ needs.Setup.outputs.branch_count > 0 && ( success() ) }}
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      issues: read
+      pull-requests: read
+      statuses: read
     strategy:
       fail-fast: false
       matrix:
         branch: ${{ fromJSON(needs.Setup.outputs.branches) }}
-    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskUnitGateTest.yml@main
+    uses: ./.github/workflows/AsteriskUnitGateTest.yml
     with:
       test_type:         cherry-pick
       asterisk_repo:     ${{ github.repository }}
@@ -124,22 +133,28 @@ jobs:
       testsuite_test_pr: ${{ needs.Setup.outputs.testsuite_test_pr }}
       gatetest_list:     ${{ vars.GATETEST_LIST }}
       gatetest_commands: ${{ vars.GATETEST_COMMANDS }}
-    secrets: inherit
 
   PostWorkflow:
     if: ${{ success() || failure() || cancelled() }}
     runs-on: ubuntu-latest
     needs: [Setup,Check]
     env:
-      RESULT:              ${{ needs.Check.result }}
-      BUILD_CACHE_KEY_PREFIX:  ${{ github.workflow }}-${{ github.run_number }}-${{ github.event.number }}
+      RESULT_SETUP:   ${{ needs.Setup.result }}
+      RESULT_CHECK:   ${{ needs.Check.result }}
       BRANCHES: ${{ needs.Setup.outputs.branches }}
     steps:
+        # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
+      - name: GetActionsRepo
+        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main-pr-target
+
       - name: Check status
         run: |
           label=""
+          RESULT=$RESULT_CHECK
           branches=$(echo $BRANCHES | jq -r '.[]')
-          case $RESULT in
+          echo "Branches: ${branches}"
+          echo "Setup status: $RESULT_SETUP Check status: $RESULT_CHECK"
+          case $RESULT_CHECK in
             success)
               label=$TESTS_PASSED
               for b in $branches ; do
@@ -155,32 +170,32 @@ jobs:
               done
               ;;
             skipped)
+              if [ "$RESULT_SETUP" == "failure" ] ; then
+                  RESULT=failure
+                  label=$TESTS_FAILED
+              fi
               ;;
             *)
               ;;
           esac
+
+          echo "RESULT: '${RESULT}'  Setting label: '$label'"
           gh pr edit --repo ${REPO} \
             --remove-label ${TESTING_IN_PROGRESS} \
             ${label:+--add-label $label} \
               $PR_NUMBER || :
-          exit 0
 
-      - name: Create Job Summary
-        if: ${{ success() || failure() }}
-        run: |
-          wget -qO asterisk-ci-actions.tar.gz \
-            https://github.com/${ACTIONS_OWNER}/${ACTIONS_REPO}/archive/refs/heads/${ACTIONS_BRANCH}.tar.gz
-          tar -xf asterisk-ci-actions.tar.gz --transform="s/^${ACTIONS_REPO}-${ACTIONS_BRANCH}/asterisk-ci-actions/g"
-
-          ${SCRIPT_DIR}/createJobSummary.sh \
-            --result=${RESULT} \
-            --repo=${REPO} \
-            --workflow-name="${WORKFLOW_NAME}" \
-            --pr-number=${PR_NUMBER} \
-            --workflow-run=${WORKFLOW_RUN_ID} \
-            --tmp-dir=./run-${WORKFLOW_RUN_ID} \
-            --job-summary-output=job_summary.txt \
-            --write-step-summary \
-            --add-pr-comment \
-            --verbose || :
+          if [[ $RESULT =~ (success|failure) ]] ; then
+            ${SCRIPT_DIR}/createJobSummary.sh \
+              --result=${RESULT} \
+              --repo=${REPO} \
+              --workflow-name="${WORKFLOW_NAME}" \
+              --pr-number=${PR_NUMBER} \
+              --workflow-run=${WORKFLOW_RUN_ID} \
+              --tmp-dir=./run-${WORKFLOW_RUN_ID} \
+              --job-summary-output=job_summary.txt \
+              --write-step-summary \
+              --add-pr-comment \
+              --verbose || :
+          fi
           exit 0
