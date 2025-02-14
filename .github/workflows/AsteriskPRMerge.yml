@@ -1,18 +1,14 @@
 name: PRMerge
 on:
   workflow_call:
-    inputs:
-      actions_ref:
-        description: 'JSON object reference to the actions: { "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
-        type: string
-        required: false
-        default: '{ "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
-      dry_run:
-        type: boolean
-        default: false
-    secrets:
-      TOKEN:
-        required: true
+
+permissions:
+  actions: write
+  checks: read
+  contents: write
+  issues: read
+  pull-requests: write
+  statuses: read
 
 env:
   REPO:            ${{ github.repository }}
@@ -22,11 +18,7 @@ env:
   BASE_BRANCH:     ${{ github.event.pull_request.base.ref }}
   LOG_DIR:         ${{ github.workspace }}/logs
   LOG_FILE:        ${{ github.workspace }}/logs/job_summary.txt
-  ACTIONS_OWNER:   ${{ fromJSON(inputs.actions_ref).owner }}
-  ACTIONS_REPO:    ${{ fromJSON(inputs.actions_ref).repo }}
-  ACTIONS_BRANCH:  ${{ fromJSON(inputs.actions_ref).branch }}
-  SCRIPT_DIR:      ${{ github.workspace }}/asterisk-ci-actions/scripts
-  GH_TOKEN:        ${{ secrets.TOKEN }}
+  GH_TOKEN:        ${{ github.token }}
 
 jobs:
   Setup:
@@ -37,14 +29,14 @@ jobs:
       branch_count: ${{ steps.setup.outputs.BRANCH_COUNT }}
       all_branches: ${{ steps.setup.outputs.all_branches }}
     steps:
+        # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
+      - name: GetActionsRepo
+        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main-pr-target
+
       - id: setup
         env:
           CHERRY_PICK_REGEX:  ${{ vars.CHERRY_PICK_REGEX }}
         run: |
-          # Setup
-          wget -qO asterisk-ci-actions.tar.gz \
-            https://github.com/${ACTIONS_OWNER}/${ACTIONS_REPO}/archive/refs/heads/${ACTIONS_BRANCH}.tar.gz
-          tar -xf asterisk-ci-actions.tar.gz --transform="s/^${ACTIONS_REPO}-${ACTIONS_BRANCH}/asterisk-ci-actions/g"
 
           gh pr edit --repo ${REPO} \
             --remove-label ${{ github.event.label.name }} \
@@ -84,13 +76,19 @@ jobs:
   PreMergeTest:
     needs: [ Setup ]
     if: success()
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      issues: read
+      pull-requests: read
+      statuses: read
     strategy:
       fail-fast: false
       matrix:
         branch: ${{ fromJSON(needs.Setup.outputs.all_branches) }}
     uses: ./.github/workflows/AsteriskUnitGateTest.yml
     with:
-      actions_ref:       ${{ inputs.actions_ref }}
       test_type:         mergepr
       asterisk_repo:     ${{ github.repository }}
       pr_number:         ${{ github.event.number }}
@@ -101,7 +99,6 @@ jobs:
       testsuite_repo:    ${{ vars.TESTSUITE_REPO }}
       gatetest_list:     '[]'
       gatetest_commands: ${{ vars.GATETEST_COMMANDS }}
-    secrets: inherit
 
   PreMergeTestResults:
     if: ${{ success() || failure() || cancelled() }}
@@ -135,6 +132,10 @@ jobs:
     if: success() && !inputs.dry_run
     runs-on: ubuntu-latest
     steps:
+        # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
+      - name: GetActionsRepo
+        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main-pr-target
+
       - name: Start Merge
         run: |
             gh pr edit --repo ${REPO} \
@@ -145,10 +146,6 @@ jobs:
         env:
           BRANCHES: ${{ needs.Setup.outputs.branches }}
         run: |
-          wget -qO asterisk-ci-actions.tar.gz \
-            https://github.com/${ACTIONS_OWNER}/${ACTIONS_REPO}/archive/refs/heads/${ACTIONS_BRANCH}.tar.gz
-          tar -xf asterisk-ci-actions.tar.gz --transform="s/^${ACTIONS_REPO}-${ACTIONS_BRANCH}/asterisk-ci-actions/g"
-
           ${SCRIPT_DIR}/cherryPick.sh \
             --repo=${REPO} \
             --repo-dir=${REPO_DIR} \
