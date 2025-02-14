@@ -67,9 +67,6 @@ on:
         type: boolean
         required: false
         default: false
-    secrets:
-      TOKEN:
-        required: true
 
 jobs:
   Build:
@@ -85,7 +82,6 @@ jobs:
       modules_blacklist: ${{ inputs.modules_blacklist }}
       build_cache_dir:   ${{ inputs.build_cache_dir }}
       build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
-    secrets: inherit
 
   BuildNoDevmode:
     uses: ./.github/workflows/AsteriskBuildAndCache.yml
@@ -101,7 +97,6 @@ jobs:
       no_alembic:        true
       modules_blacklist: ${{ inputs.modules_blacklist }}
       build_cache_dir:
-    secrets: inherit
 
   Unit:
     needs: Build
@@ -115,7 +110,6 @@ jobs:
       output_cache_dir:  ${{ inputs.output_cache_dir }}
       build_cache_dir:   ${{ inputs.build_cache_dir }}
       build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
-    secrets: inherit
 
   Gate:
     needs: Build
@@ -138,5 +132,4 @@ jobs:
       build_cache_dir:   ${{ inputs.build_cache_dir }}
       build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
       realtime:          ${{ inputs.realtime }}
-    secrets: inherit
 

@@ -67,6 +67,13 @@ jobs:
   Check:
     name: Check
     needs: [ Setup ]
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      issues: read
+      pull-requests: read
+      statuses: read
     uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskUnitGateTest.yml@main
     with:
       test_type:         prrecheck
@@ -80,7 +87,6 @@ jobs:
       testsuite_test_pr: ${{ needs.Setup.outputs.testsuite_test_pr }}
       gatetest_list:     ${{ vars.GATETEST_LIST }}
       gatetest_commands: ${{ vars.GATETEST_COMMANDS }}
-    secrets: inherit
 
   PostWorkflow:
     if: ${{ success() || failure() || cancelled() }}

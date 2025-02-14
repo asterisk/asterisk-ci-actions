@@ -8,9 +8,6 @@ on:
         type: string
         required: false
         default: '{ "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
-    secrets:
-      TOKEN:
-        required: true
 
 env:
   REPO:            ${{ github.repository }}
@@ -21,34 +18,55 @@ env:
   WORKFLOW_NAME:   ${{ github.workflow }}
   WORKFLOW_RUN_ID: ${{ github.run_id }}
   SCRIPT_DIR:      ${{ github.workspace }}/asterisk-ci-actions/scripts
-  GH_TOKEN:        ${{ secrets.TOKEN }}
+  GH_TOKEN:        ${{ github.token }}
   LOG_DIR:         ${{ github.workspace }}/logs
+  BUILD_CACHE_KEY: ${{ github.workflow }}-${{ github.run_number }}-${{ github.event.number }}-${{ github.event.pull_request.base.ref }}
   ACTIONS_OWNER:   asterisk
   ACTIONS_REPO:    asterisk-ci-actions
   ACTIONS_BRANCH:  main
+  TESTING_IN_PROGRESS: ${{ vars.PR_SUBMIT_TESTING_IN_PROGRESS }}
+  TESTS_PASSED:        ${{ vars.PR_SUBMIT_TESTS_PASSED }}
+  TESTS_FAILED:        ${{ vars.PR_SUBMIT_TESTS_FAILED }}
 
 jobs:
-#
-# Pull requests created from forked respositories don't have access
-# to the "Action Variables" ('vars' context) so we need to retrieve
-# control data from an action that's located in asterisk-ci-actions.
-#
   Setup:
     runs-on: ubuntu-latest
     outputs:
-      vars:  ${{ steps.setvars.outputs.control_data }}
       testsuite_test_pr: ${{ steps.setup.outputs.TESTSUITE_TEST_PR }}
       normalized_branch: ${{ steps.setup.outputs.NORMALIZED_BRANCH }}
     steps:
-      - id: setvars
-        uses: asterisk/asterisk-ci-actions/GetRepoControlData@main
-        with:
-          repo: ${{ github.event.repository.name }}
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main-pr-target
+    
+      - name: DumpEnvironmentRWF
+        run: |
+        
+          echo "::group::env_context"
+          cat <<%%EOF%%
+          ${{toJSON(env)}}
+          %%EOF%%
+          echo "::endgroup::"
+
+          echo "::group::github_context"
+          cat <<%%EOF%%
+          ${{toJSON(github)}}
+          %%EOF%%
+          echo "::endgroup::"
+
+          echo "::group::shell_env"
+          printenv | sort
+          echo "::endgroup::"
+
+          if [ -n "${ACTION_PATH}" ] ; then
+            echo "::group::ACTION_PATH: ${ACTION_PATH}"
+            ls -al ${ACTION_PATH}
+            echo "::endgroup::"
+          fi
 
       - id: setup
         env:
-          PR_STATE_CHANGE_DELAY_SEC: ${{ fromJSON(steps.setvars.outputs.control_data).PR_STATE_CHANGE_DELAY_SEC || 120 }}
-          TESTSUITE_TEST_PR_REGEX: ${{ fromJSON(steps.setvars.outputs.control_data).TESTSUITE_TEST_PR_REGEX }}
+          PR_STATE_CHANGE_DELAY_SEC: ${{ vars.PR_STATE_CHANGE_DELAY_SEC || 120 }}
+          TESTSUITE_TEST_PR_REGEX: ${{ vars.TESTSUITE_TEST_PR_REGEX }}
         run: |
           # Wait then get testsuite PR
           echo "Waiting for ${PR_STATE_CHANGE_DELAY_SEC} seconds to give user a chance to add PR comments"
@@ -69,43 +87,102 @@ jobs:
             --pr-number=${PR_NUMBER} \
             --testsuite-pr-regex="${TESTSUITE_TEST_PR_REGEX}"
 
+          gh cache delete -R ${REPO} ${BUILD_CACHE_KEY} &> /dev/null || :
+          #
+          gh pr edit --repo ${REPO} \
+            --remove-label ${TESTS_PASSED} \
+            --remove-label ${TESTS_FAILED} \
+            --add-label ${TESTING_IN_PROGRESS} \
+            $PR_NUMBER || :
+
   Check:
     name: Check
+    runs-on: ubuntu-latest
     needs: Setup
-    uses: asterisk/asterisk-ci-actions/.github/workflows/AsteriskUnitGateTest.yml@main
-    with:
-      test_type:         prstatechange
-      asterisk_repo:     ${{ github.repository }}
-      pr_number:         ${{ github.event.number }}
-      base_branch:       ${{ github.event.pull_request.base.ref }}
-      build_options:     ${{ fromJSON(needs.Setup.outputs.vars).BUILD_OPTIONS }}
-      unittest_command:  ${{ fromJSON(needs.Setup.outputs.vars).UNITTEST_COMMAND }}
-      testsuite_repo:    ${{ fromJSON(needs.Setup.outputs.vars).TESTSUITE_REPO }}
-      testsuite_test_pr: ${{ needs.Setup.outputs.testsuite_test_pr }}
-      gatetest_list:     ${{ fromJSON(needs.Setup.outputs.vars).GATETEST_LIST }}
-      gatetest_commands: ${{ fromJSON(needs.Setup.outputs.vars).GATETEST_COMMANDS }}
-    secrets: inherit
+    steps:
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main-pr-target
+
+#    permissions:
+#      actions: read
+#      checks: read
+#      contents: read
+#      issues: read
+#      pull-requests: read
+#      statuses: read
+#    uses: ./.github/workflows/AsteriskUnitGateTest.yml
+#    with:
+#      test_type:         prstatechange
+#      asterisk_repo:     ${{ github.repository }}
+#      pr_number:         ${{ github.event.number }}
+#      base_branch:       ${{ github.event.pull_request.base.ref }}
+#      is_cherry_pick:    false
+#      build_options:     ${{ vars.BUILD_OPTIONS }}
+#      unittest_command:  ${{ vars.UNITTEST_COMMAND }}
+#      testsuite_repo:    ${{ vars.TESTSUITE_REPO }}
+#      testsuite_test_pr: ${{ needs.Setup.outputs.testsuite_test_pr }}
+#      gatetest_list:     ${{ vars.GATETEST_LIST }}
+#      gatetest_commands: ${{ vars.GATETEST_COMMANDS }}
 
   PostWorkflow:
-    if: ${{ success() || failure() }}
+    if: ${{ success() || failure() || cancelled() }}
     runs-on: ubuntu-latest
     needs: [Setup,Check]
     env:
-      RESULT:  ${{ needs.Check.result }}
+      RESULT: ${{ needs.Check.result }}
+      CHERRY_PICK_REGEX:       ${{ vars.CHERRY_PICK_REGEX }}
+      CHERRY_PICK_REMINDER:    ${{ vars.CHERRY_PICK_REMINDER }}
+      SQUASH_COMMITS_REMINDER: ${{ vars.SQUASH_COMMITS_REMINDER }}
+      USER_NOTE_REMINDER:      ${{ vars.USER_NOTE_REMINDER }}
+      UPGRADE_NOTE_REMINDER:   ${{ vars.UPGRADE_NOTE_REMINDER }}
     steps:
-      - name: Create Job Summary
+      - name: Add labels, reminders and summary
         run: |
+        
+          [ -d ${ACTION_PATH} ] && find ${ACTION_PATH}
+        
           wget -qO asterisk-ci-actions.tar.gz \
             https://github.com/${ACTIONS_OWNER}/${ACTIONS_REPO}/archive/refs/heads/${ACTIONS_BRANCH}.tar.gz
           tar -xf asterisk-ci-actions.tar.gz --transform="s/^${ACTIONS_REPO}-${ACTIONS_BRANCH}/asterisk-ci-actions/g"
 
-          ${SCRIPT_DIR}/createJobSummary.sh \
-            --result=${RESULT} \
-            --repo=${REPO} \
-            --workflow-name="${WORKFLOW_NAME}" \
-            --workflow-run=${WORKFLOW_RUN_ID} \
-            --tmp-dir=./run-${WORKFLOW_RUN_ID} \
-            --job-summary-output=job_summary.txt \
-            --write-step-summary \
-            --verbose || :
+          label=""
+          case $RESULT in
+            success)
+              label=$TESTS_PASSED
+              gh cache delete -R ${REPO} ${BUILD_CACHE_KEY} || :
+              ;;
+            failure)
+              label=$TESTS_FAILED
+              ;;
+            cancelled)
+              gh cache delete -R ${REPO} ${BUILD_CACHE_KEY} || :
+              ;;
+            skipped)
+              ;;
+            *)
+              ;;
+          esac
+          gh pr edit --repo ${REPO} \
+            --remove-label ${TESTING_IN_PROGRESS} \
+            ${label:+--add-label $label} \
+              $PR_NUMBER || :
+
+          if [[ $RESULT =~ (success|failure) ]] ; then
+            ${SCRIPT_DIR}/addCherryPickReminderIfNeeded.sh \
+              --repo=${REPO} \
+              --pr-number=${PR_NUMBER} \
+              --cherry-pick-regex="${CHERRY_PICK_REGEX}" \
+              --cherry-pick-reminder="${CHERRY_PICK_REMINDER}"
+
+            ${SCRIPT_DIR}/createJobSummary.sh \
+              --result=${RESULT} \
+              --repo=${REPO} \
+              --workflow-name="${WORKFLOW_NAME}" \
+              --pr-number=${PR_NUMBER} \
+              --workflow-run=${WORKFLOW_RUN_ID} \
+              --tmp-dir=./run-${WORKFLOW_RUN_ID} \
+              --job-summary-output=job_summary.txt \
+              --add-pr-comment \
+              --verbose || :
+          fi
           exit 0

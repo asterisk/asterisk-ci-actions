@@ -47,13 +47,8 @@ on:
         required: false
         type: string
         default: v3.6.1
-    secrets:
-      TOKEN:
-        required: true
 
 env:
-  GH_TOKEN:     ${{ secrets.TOKEN }}
-  GITHUB_TOKEN: ${{ secrets.TOKEN }}
   TEST_TYPE:    ${{ inputs.test_type }}
   BASE_BRANCH:  ${{ inputs.base_branch }}
   CACHE_DIR:    ${{ inputs.output_cache_dir }}

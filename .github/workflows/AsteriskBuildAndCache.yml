@@ -65,9 +65,6 @@ on:
         required: false
         type: string
         default: ""
-    secrets:
-      TOKEN:
-        required: true
 
 env:
   GH_TOKEN:          ${{ secrets.TOKEN }}
