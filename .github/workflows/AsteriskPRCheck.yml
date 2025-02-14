@@ -1,4 +1,4 @@
-name: PRChanged
+name: PRCheck
 on:
   workflow_call:
 
@@ -22,6 +22,7 @@ env:
   LOG_DIR:         ${{ github.workspace }}/logs
   LOG_FILE:        ${{ github.workspace }}/logs/job_summary.txt
   BUILD_CACHE_KEY: ${{ github.workflow }}-${{ github.run_number }}-${{ github.event.number }}-${{ github.event.pull_request.base.ref }}
+  TRIGGER:         ${{ github.event.action }}
   TESTING_IN_PROGRESS: ${{ vars.PR_SUBMIT_TESTING_IN_PROGRESS }}
   TESTS_PASSED:        ${{ vars.PR_SUBMIT_TESTS_PASSED }}
   TESTS_FAILED:        ${{ vars.PR_SUBMIT_TESTS_FAILED }}
@@ -39,11 +40,15 @@ jobs:
       - id: setup
         env:
           PR_STATE_CHANGE_DELAY_SEC: ${{ vars.PR_STATE_CHANGE_DELAY_SEC || 120 }}
-          TESTSUITE_TEST_PR_REGEX: ${{ vars.TESTSUITE_TEST_PR_REGEX }}
+          RECHECKPR_LABEL:           ${{ vars.RECHECKPR_LABEL }}
+          TESTSUITE_TEST_PR_REGEX:   ${{ vars.TESTSUITE_TEST_PR_REGEX }}
         run: |
-          # Wait then get testsuite PR
-          echo "Waiting for ${PR_STATE_CHANGE_DELAY_SEC} seconds to give user a chance to add PR comments"
-          sleep ${PR_STATE_CHANGE_DELAY_SEC}
+        
+          if [ "$TRIGGER" != "labeled" ] ; then
+            # Wait then get testsuite PR
+            echo "Waiting for ${PR_STATE_CHANGE_DELAY_SEC} seconds to give user a chance to add PR comments"
+            sleep ${PR_STATE_CHANGE_DELAY_SEC}
+          fi
 
           # Testsuite PR will be placed in TESTSUITE_TEST_PR in both
           # GITHUB_ENV and GITHUB_OUTPUT by the script.
@@ -55,12 +60,13 @@ jobs:
           echo "Attempting to delete any existing cache"
           gh cache delete -R ${REPO} ${BUILD_CACHE_KEY} || :
 
-          echo "Labelling"
+          echo "Labeling"
           gh pr edit --repo ${REPO} \
+            --remove-label ${RECHECKPR_LABEL} \
             --remove-label ${TESTS_PASSED} \
             --remove-label ${TESTS_FAILED} \
             --add-label ${TESTING_IN_PROGRESS} \
-            $PR_NUMBER || :
+            ${PR_NUMBER} || :
 
   Check:
     name: Check
