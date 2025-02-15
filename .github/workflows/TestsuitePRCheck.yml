@@ -60,7 +60,7 @@ jobs:
       issues: read
       pull-requests: read
       statuses: read
-    uses: ./.github/workflows/RunTestsuiteUnitTest.yml
+    uses: ./.github/workflows/TestsuiteRunUnitTests.yml
     with:
       pr_number:         ${{ github.event.number }}
       base_branch:       ${{ github.event.pull_request.base.ref }}

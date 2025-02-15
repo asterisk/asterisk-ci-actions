@@ -111,7 +111,7 @@ jobs:
       fail-fast: false
       matrix:
         branch: ${{ fromJSON(needs.Setup.outputs.branches) }}
-    uses: ./.github/workflows/RunTestsuiteUnitTest.yml
+    uses: ./.github/workflows/TestsuiteRunUnitTests.yml
     with:
       pr_number:         ${{ github.event.number }}
       base_branch:       ${{ matrix.branch }}

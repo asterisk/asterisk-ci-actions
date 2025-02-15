@@ -93,7 +93,7 @@ jobs:
 
   Unit:
     needs: Build
-    uses: ./.github/workflows/RunAsteriskUnitTests.yml
+    uses: ./.github/workflows/AsteriskRunUnitTests.yml
     with:
       test_type:         ${{ inputs.test_type }}
       base_branch:       ${{ inputs.base_branch }}
@@ -111,7 +111,7 @@ jobs:
       fail-fast: false
       matrix:
         group: ${{ fromJSON(inputs.gatetest_list) }}
-    uses: ./.github/workflows/RunAsteriskGateTests.yml
+    uses: ./.github/workflows/AsteriskRunGateTests.yml
     with:
       test_type:         ${{ inputs.test_type }}
       base_branch:       ${{ inputs.base_branch }}
