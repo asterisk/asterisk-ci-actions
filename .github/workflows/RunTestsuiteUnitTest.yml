@@ -11,13 +11,9 @@ on:
       unittest_command:
         type: string
         required: true
-    secrets:
-      TOKEN:
-        required: true
 
 env:
-  GH_TOKEN:         ${{ secrets.TOKEN }}
-  GITHUB_TOKEN:     ${{ secrets.TOKEN }}
+  GH_TOKEN:         ${{ github.token }}
   BASE_BRANCH:      ${{ inputs.base_branch }}
   PR_NUMBER:        ${{ inputs.pr_number }}
   REPO_DIR:         ${{ github.event.repository.name }}

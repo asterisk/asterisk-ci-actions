@@ -87,18 +87,11 @@ jobs:
       fail-fast: false
       matrix:
         branch: ${{ fromJSON(needs.Setup.outputs.all_branches) }}
-    uses: ./.github/workflows/AsteriskUnitGateTest.yml
+    uses: ./.github/workflows/RunTestsuiteUnitTest.yml
     with:
-      test_type:         mergepr
-      asterisk_repo:     ${{ github.repository }}
       pr_number:         ${{ github.event.number }}
       base_branch:       ${{ matrix.branch }}
-      is_cherry_pick:    true
-      build_options:     ${{ vars.BUILD_OPTIONS }}
       unittest_command:  ${{ vars.UNITTEST_COMMAND }}
-      testsuite_repo:    ${{ vars.TESTSUITE_REPO }}
-      gatetest_list:     '[]'
-      gatetest_commands: ${{ vars.GATETEST_COMMANDS }}
 
   PreMergeTestResults:
     if: ${{ success() || failure() || cancelled() }}
