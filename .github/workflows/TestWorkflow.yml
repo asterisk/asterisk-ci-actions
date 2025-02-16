@@ -7,31 +7,31 @@ on:
         description: "JSON array of branches: ['18','20'] (no spaces) or leave blank for all current branches."
         required:    false
         type:        string
-  schedule:
-#           Times are UTC
-    - cron: '5,15,25,35,45,55 * * * *'
 
 env:
-  ACTIONS_OWNER:     asterisk
-  ACTIONS_REPO:      asterisk-ci-actions
-  ACTIONS_BRANCH:    main-test-native
-  SCRIPT_DIR:        ${{ github.workspace }}/asterisk-ci-actions/scripts
-  GH_TOKEN:          ${{secrets.GITHUB_TOKEN}}
-  RUN_ID:            ${{ github.id }}
-  WIKIDOC_BRANCHES:  ${{ inputs.branches || vars.WIKIDOC_BRANCHES }}
+  FROM_WF: "from workflow"
 
 jobs:
   Job1:
     runs-on: ubuntu-latest
+    env:
+      FROM_JOB: "from job"
     defaults:
       run:
         shell: bash
     steps:
+        # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
+      - name: GetActionsRepo
+        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main-pr-target
+
       - name: DumpEnvironment
         uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
-        with:
-          save_output: true
 
-      - name: test
+      - name: printenv
+        env:
+          FROM_STEP: "from step"
+          SSS: ${{ secrets.SOME_SUPER_SECRET }}
         run: |
-          echo "BRANCHES: ${WIKIDOC_BRANCHES}"
+          FROM_STEP_SHELL="from step shell"
+          export FROM_STEP_SHELL_EXPORTED="from step shell exported"
+          ${SCRIPT_DIR}/printEnv.sh
