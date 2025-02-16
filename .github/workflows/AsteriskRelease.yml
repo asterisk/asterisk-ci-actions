@@ -1,0 +1,164 @@
+name: Release
+on:
+  workflow_call:
+    inputs:
+      new_version:
+        description: |
+          New Version
+          Examples:
+            21.4.0-rc1, 21.4.0-rc2, 21.4.0, 21.4.1
+            certified/21.4-cert1-rc1, certified/21.4-cert1
+        required: true
+        type: string
+      is_security:
+        description: |
+          Security?
+          (Implies no RCs)
+        required: true
+        type: boolean
+        default: false
+      advisories:
+        description: |
+          Comma separated list of advisories.
+          NO SPACES
+          Example: GHSA-4xjp-22g4-9fxm,GHSA-4xjp-22g4-zzzz
+        required: false
+        type: string
+      is_hotfix:
+        description: |
+          Hotfix?
+          (A patch release but not security.  No RCs)
+        required: true
+        type: boolean
+        default: false
+      force_cherry_pick:
+        description: |
+          Force cherry-pick for non-RC1 releases?
+        required: true
+        type: boolean
+        default: false
+      push_release_branches:
+        description: |
+          Push release branches live?
+        required: true
+        type: boolean
+        default: false
+      create_github_release:
+        description: |
+          Create the GitHub release?
+        required: true
+        type: boolean
+        default: false
+      push_tarballs:
+        description: |
+          Push tarballs to downloads server?
+        required: true
+        type: boolean
+        default: false
+      send_email:
+        description: 'Send announcement emails?'
+        required: true
+        type: boolean
+        default: false
+    secrets:
+      asteriskteam_gh_token:
+        required: true
+      gpg_private_key:
+        required: true
+      asteriskteamsa_username:
+        required: true
+      asteriskteamsa_token:
+        required: true
+      deploy_ssh_priv_key:
+        required: true
+      deploy_ssh_username:
+        required: true
+
+permissions:
+  actions: write
+  checks: read
+  contents: write
+  issues: read
+  pull-requests: write
+  statuses: read
+
+env:
+  REPO:            ${{ github.repository }}
+  REPO_DIR:        ${{ github.workspace }}/${{ github.event.repository.name }}
+  REPO_ORG:        ${{ github.event.repository.owner.login }}
+  WORKFLOW_NAME:   ${{ github.workflow }}
+  WORKFLOW_RUN_ID: ${{ github.run_id }}
+
+  NEW_VERSION:           ${{inputs.new_version}}
+  SECURITY:              ${{inputs.is_security}}
+  ADVISORIES:            ${{inputs.advisories}}
+  HOTFIX:                ${{inputs.is_hotfix}}
+  FORCE_CHERRY_PICK:     ${{inputs.force_cherry_pick}}
+  PUSH_BRANCHES:         ${{inputs.push_release_branches}}
+  CREATE_GITHUB_RELEASE: ${{inputs.create_github_release}}
+  PUSH_TARBALLS:         ${{inputs.push_tarballs}}
+  SEND_EMAIL:            ${{inputs.send_email}}
+
+  PRODUCT:           ${{vars.PRODUCT_NAME}}
+  MAIL_LIST_GA:      ${{vars.MAIL_LIST_GA}}
+  MAIL_LIST_RC:      ${{vars.MAIL_LIST_RC}}
+  MAIL_LIST_CERT_GA: ${{vars.MAIL_LIST_CERT_GA}}
+  MAIL_LIST_CERT_RC: ${{vars.MAIL_LIST_CERT_RC}}
+  MAIL_LIST_SEC:     ${{vars.MAIL_LIST_SEC_ADV}}
+  ADV_URL_BASE:      ${{vars.SEC_ADV_URL_BASE}}
+  DEPLOY_HOST:       ${{vars.DEPLOY_HOST}}
+  DEPLOY_DIR:        ${{vars.DEPLOY_DIR}}
+  FPBX_ISSUE_REPO:   ${{vars.FPBX_ISSUE_REPO}}
+
+jobs:
+  Release:
+    name: Setup
+    runs-on: ubuntu-latest
+    steps:
+        # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
+      - name: GetActionsRepo
+        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main-pr-target
+
+      - name: Release
+        id: releaser
+        env:
+          GH_TOKEN: ${{ secrets.asteriskteam_gh_token }}
+          GPG_PRIVATE_KEY: ${{ secrets.gpg_private_key }}
+          DEPLOY_SSH_PRIV_KEY: ${{ secrets.deploy_ssh_priv_key }}
+          DEPLOY_SSH_USERNAME: ${{ secrets.deploy_ssh_username }}
+        run: |
+
+      - name: Save Output
+        id: save-output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{inputs.product}}-${{inputs.new_version}}
+          path: ${{inputs.product}}-${{inputs.new_version}}
+
+      - name: Send Release Announcements
+        if: inputs.send_email && steps.releaser.outputs.mail_list != 'none'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.asteriskteamsa_username }}
+          password: ${{ secrets.asteriskteamsa_token }}
+          subject: ${{ steps.releaser.outputs.subject }}
+          to: ${{ steps.releaser.outputs.mail_list }}
+          from: Asterisk Development Team <asteriskteamsa@sangoma.com>
+          body: "file://${{github.workspace}}/${{steps.releaser.outputs.email_announcement}}"
+          reply_to: no-reply@sangoma.com
+          ignore_cert: true
+          convert_markdown: false
+  
+      - name: Open FPBX Issue
+        if: inputs.send_email && steps.releaser.outputs.release_type == 'ga'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.asteriskteam_gh_token }}
+        run: |
+          gh issue create -R ${FPBX_ISSUE_REPO} \
+            --title "Asterisk Version ${NEW_VERSION} Has Been Released" \
+            --body "Release Notes: https://github.com/asterisk/asterisk/releases/tag/${NEW_VERSION}" 

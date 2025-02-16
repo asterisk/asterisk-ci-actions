@@ -104,7 +104,6 @@ print_help() {
 	exit 1
 }
 
-export PRODUCT=asterisk
 VERSION_TYPE=
 RELEASE_TYPE=
 START_TAG=
@@ -113,30 +112,23 @@ SRC_REPO=
 GH_REPO=
 DST_DIR=
 BRANCH=
-NORC=false
-SECURITY=false
-ADVISORIES=
-ADV_URL_BASE=
-HOTFIX=false
-CHERRY_PICK=false
-FORCE_CHERRY_PICK=false
-ALEMBIC=false
-CHANGELOG=false
-COMMIT=false
-TAG=false
-PUSH=false
-TARBALL=false
-PATCHFILE=false
-SIGN=false
-LABEL_ISSUES=false
-PUSH_LIVE=false
-PUSH_TARBALLS=false
-CREATE_RELEASE=false
-PUSH_BRANCHES=false
-FULL_MONTY=false
-HELP=false
-DRY_RUN=false
-DEBUG=false
+: ${CHERRY_PICK:=false}
+: ${ALEMBIC:=false}
+: ${CHANGELOG:=false}
+: ${COMMIT:=false}
+: ${TAG:=false}
+: ${PUSH:=false}
+: ${TARBALL:=false}
+: ${PATCHFILE:=false}
+: ${SIGN:=false}
+: ${LABEL_ISSUES:=false}
+: ${PUSH_LIVE:=false}
+: ${PUSH_TARBALLS:=false}
+: ${CREATE_RELEASE:=false}
+: ${FULL_MONTY:=false}
+: ${HELP:=false}
+: ${DRY_RUN:=false}
+: ${DEBUG:=false}
 ECHO_CMD=
 
 declare -a args
@@ -182,7 +174,7 @@ $HELP && print_help
 for opt in "${needs[@]}" ; do
 	declare -n var=${opt^^}
 	if [ -z "${var}" ] ; then
-		print_help "You must supply --${opt//_/-}"
+		print_help "You must supply --${opt//_/-} or {opt^^} in the environment"
 	fi
 done
 

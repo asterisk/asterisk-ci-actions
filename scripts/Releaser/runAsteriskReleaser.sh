@@ -1,32 +1,19 @@
 #!/usr/bin/bash
-#set -x
 set -e
+SCRIPT_DIR=$(dirname $(readlink -fn $0))
+STAGING_DIR=${GITHUB_WORKSPACE}/${PRODUCT}-${NEW_VERSION}
 
-export GITHUB_TOKEN=${INPUT_GITHUB_TOKEN}
-export GH_TOKEN=${INPUT_GITHUB_TOKEN}
-
-echo "ACTION_PATH: ${GITHUB_ACTION_PATH}"
-[ -n "${GITHUB_ACTION_PATH}" ] && [ -d "${GITHUB_ACTION_PATH}" ] && ls -al ${GITHUB_ACTION_PATH}
-
-SCRIPT_DIR=${GITHUB_WORKSPACE}/$(basename ${GITHUB_ACTION_REPOSITORY})/scripts/Releaser
-REPO_DIR=${GITHUB_WORKSPACE}/$(basename ${INPUT_REPO})
-STAGING_DIR=${GITHUB_WORKSPACE}/${INPUT_PRODUCT}-${INPUT_NEW_VERSION}
+declare needs=( repo repo_dir product new_version security hotfix 
+				force_cherry_pick push_branches create_github_release
+				push_tarball send_email mail_list_ga mail_list_rc
+				mail_list_cert_ga mail_list_cert_rc mail_list_sec
+				adv_url_base deploy_host deploy_dir 
+				gpg_private_key deploy_ssh_username deploy_ssh_priv_key
+				gh_token )
 
 source ${SCRIPT_DIR}/common.sh
-export PRODUCT=${INPUT_PRODUCT}
 
-END_TAG="${INPUT_NEW_VERSION}"
-START_TAG="${INPUT_START_VERSION}"
-SECURITY=${INPUT_IS_SECURITY}
-HOTFIX=${INPUT_IS_HOTFIX}
-FORCE_CHERRY_PICK=${INPUT_FORCE_CHERRY_PICK}
-PUSH_BRANCHES=${INPUT_PUSH_RELEASE_BRANCHES}
-PUSH_TARBALLS=${INPUT_PUSH_TARBALLS}
-ADVISORIES="${INPUT_ADVISORIES}"
-ADV_URL_BASE=${INPUT_SEC_ADV_URL_BASE}
-export DEPLOY_SSH_USERNAME=${INPUT_DEPLOY_SSH_USERNAME}
-export DEPLOY_HOST=${INPUT_DEPLOY_HOST}
-export DEPLOY_DIR=${INPUT_DEPLOY_DIR}
+END_TAG="${NEW_VERSION}"
 
 declare -A end_tag_array
 tag_parser ${END_TAG} end_tag_array || bail "Unable to parse end tag '${END_TAG}'"
@@ -44,7 +31,7 @@ if [ -n "${ADVISORIES}" ] ; then
 	echo "Checking security advisories"
 	declare -i failed=0
 	for a in ${ADVISORIES} ; do
-		summary=$(gh api /repos/${INPUT_REPO}/security-advisories/$a --jq '.summary' 2>/dev/null || echo "FAILED")
+		summary=$(gh api /repos/${REPO}/security-advisories/$a --jq '.summary' 2>/dev/null || echo "FAILED")
 		if [[ "$summary" =~ FAILED$ ]] ; then
 			echo "Security advisory $a not found. Bad ID or maybe not published yet."
 			failed=1
@@ -60,7 +47,7 @@ cd ${GITHUB_WORKSPACE}
 mkdir -p ${REPO_DIR}
 mkdir -p ${STAGING_DIR}
 
-git clone ${GITHUB_SERVER_URL}/${INPUT_REPO} ${REPO_DIR}
+git clone ${GITHUB_SERVER_URL}/${REPO} ${REPO_DIR}
 git config --global --add safe.directory $(realpath ${REPO_DIR})
 
 git -C ${REPO_DIR} checkout ${end_tag_array[source_branch]} >/dev/null 2>&1
@@ -83,17 +70,17 @@ echo "Tags valid: ${START_TAG} Release Type: ${start_tag_array[release_type]} ->
 
 gh auth setup-git -h github.com
 
-echo $"${INPUT_GPG_PRIVATE_KEY}" > gpg.key
+echo $"${GPG_PRIVATE_KEY}" > gpg.key
 gpg --import gpg.key
 rm gpg.key
 
 eval $(ssh-agent -s)
-echo $"${INPUT_DEPLOY_SSH_PRIV_KEY}" | ssh-add -
+echo $"${DEPLOY_SSH_PRIV_KEY}" | ssh-add -
 
 echo "Running create_release_artifacts.sh"
 ${SCRIPT_DIR}/create_release_artifacts.sh \
 	--src-repo=${REPO_DIR} --dst-dir=${STAGING_DIR} \
-	--gh-repo=${INPUT_REPO} --debug \
+	--gh-repo=${REPO} --debug \
 	$(booloption security) $(booloption hotfix) $(booloption norc) \
 	$(stringoption advisories) $(stringoption adv-url-base) \
 	$(booloption force-cherry-pick) \
@@ -104,7 +91,7 @@ ${SCRIPT_DIR}/create_release_artifacts.sh \
 	--changelog --commit --tag \
 	--sign --tarball --patchfile $(booloption push-branches)
 
-if ${INPUT_CREATE_GITHUB_RELEASE} ; then
+if ${CREATE_GITHUB_RELEASE} ; then
 	${SCRIPT_DIR}/push_live.sh \
 		--product=${PRODUCT} \
 		--src-repo=${REPO_DIR} --dst-dir=${STAGING_DIR} --debug \
@@ -118,7 +105,7 @@ echo "email_announcement=${PRODUCT}-${END_TAG}/email_announcement.md" >> ${GITHU
 
 # Determine the correct email list to send the announcement
 # to (if any).
-if ! ${INPUT_SEND_EMAIL} ; then
+if ! ${SEND_EMAIL} ; then
 	echo "subject=none" >> ${GITHUB_OUTPUT}
 	echo "mail_list=none" >> ${GITHUB_OUTPUT}
 	exit 0
@@ -126,28 +113,28 @@ fi
 
 echo "release_type=${end_tag_array[release_type]}" >> ${GITHUB_OUTPUT}
 
-if ${INPUT_IS_SECURITY} ; then
+if ${SECURITY} ; then
 	if ${end_tag_array[certified]} ; then
 		echo "subject=Certified ${PRODUCT^} Security Release ${END_TAG}" >> ${GITHUB_OUTPUT}
 	else
 		echo "subject=${PRODUCT^} Security Release ${END_TAG}" >> ${GITHUB_OUTPUT}
 	fi
-	echo "mail_list=${INPUT_MAIL_LIST_SEC}" >> ${GITHUB_OUTPUT}
+	echo "mail_list=${MAIL_LIST_SEC}" >> ${GITHUB_OUTPUT}
 elif [ "${end_tag_array[release_type]}" == "rc" ] ; then
 	if ${end_tag_array[certified]} ; then
 		echo "subject=Certified ${PRODUCT^} Release Candidate ${END_TAG}" >> ${GITHUB_OUTPUT}
-		echo "mail_list=${INPUT_MAIL_LIST_CERT_RC}" >> ${GITHUB_OUTPUT}
+		echo "mail_list=${MAIL_LIST_CERT_RC}" >> ${GITHUB_OUTPUT}
 	else
 		echo "subject=${PRODUCT^} Release Candidate ${END_TAG}" >> ${GITHUB_OUTPUT}
-		echo "mail_list=${INPUT_MAIL_LIST_RC}" >> ${GITHUB_OUTPUT}
+		echo "mail_list=${MAIL_LIST_RC}" >> ${GITHUB_OUTPUT}
 	fi
 elif [ "${end_tag_array[release_type]}" == "ga" ] ; then
 	if ${end_tag_array[certified]} ; then
 		echo "subject=Certified ${PRODUCT^} Release ${END_TAG}" >> ${GITHUB_OUTPUT}
-		echo "mail_list=${INPUT_MAIL_LIST_CERT_GA}" >> ${GITHUB_OUTPUT}
+		echo "mail_list=${MAIL_LIST_CERT_GA}" >> ${GITHUB_OUTPUT}
 	else
 		echo "subject=${PRODUCT^} Release ${END_TAG}" >> ${GITHUB_OUTPUT}
-		echo "mail_list=${INPUT_MAIL_LIST_GA}" >> ${GITHUB_OUTPUT}
+		echo "mail_list=${MAIL_LIST_GA}" >> ${GITHUB_OUTPUT}
 	fi
 else
 	echo "subject=none" >> ${GITHUB_OUTPUT}
