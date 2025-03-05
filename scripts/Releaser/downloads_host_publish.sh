@@ -22,9 +22,9 @@ ${DEBUG} && declare -p end_tag_array
 # Set up what to fetch from github
 
 if ${end_tag_array[no_patches]} ; then
-	patterns1="{${end_tag_array[artifact_prefix]}-${END_TAG}.{md5,sha1,sha256,tar.gz,tar.gz.asc},{ChangeLog,README}-${END_TAG}.md}"
+	patterns1="{${end_tag_array[artifact_prefix]}-${END_TAG}.{md5,sha1,sha256,tar.gz,tar.gz.asc},{ChangeLog,README}-${END_TAG}.{md,html}}"
 else
-	patterns1="{${end_tag_array[artifact_prefix]}-${END_TAG}{.{md5,sha1,sha256,tar.gz,tar.gz.asc},-patch.{md5,sha1,sha256,tar.gz,tar.gz.asc}},{ChangeLog,README}-${END_TAG}.md}"
+	patterns1="{${end_tag_array[artifact_prefix]}-${END_TAG}{.{md5,sha1,sha256,tar.gz,tar.gz.asc},-patch.{md5,sha1,sha256,tar.gz,tar.gz.asc}},{ChangeLog,README}-${END_TAG}.{md,html}}"
 fi
 
 files=$(eval echo $patterns1)
@@ -34,8 +34,6 @@ echo $files
 echo ------------
 echo $urls
 echo ------------
-
-
 
 cd $DST_DIR
 mkdir -p telephony/${end_tag_array[download_dir]}/pending

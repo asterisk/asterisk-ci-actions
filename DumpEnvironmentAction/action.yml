@@ -22,6 +22,9 @@ inputs:
   artifact_id:
     type: string
     default: 'DumpEnvironment'
+  dump_dirs:
+    type: boolean
+    default: false
 
 runs:
   using: "composite"
@@ -103,6 +106,10 @@ runs:
         echo "${GITHUB_WORKSPACE}" > ${OUTPUT_DIR}/GITHUB_WORKSPACE.txt
         ls -al ${GITHUB_WORKSPACE} | tee -a ${OUTPUT_DIR}/GITHUB_WORKSPACE.txt
         echo "::endgroup::"
+
+        if ! ${{ inputs.dump_dirs }} ; then
+          exit 0
+        fi
 
         echo "::group::HOME: ${HOME}"
         echo "${HOME}" > ${OUTPUT_DIR}/HOME.txt

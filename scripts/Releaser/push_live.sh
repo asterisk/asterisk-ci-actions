@@ -1,7 +1,7 @@
 #!/bin/bash
 
 declare needs=( end_tag )
-declare wants=( product src_repo dst_dir start_tag push_tarballs )
+declare wants=( product src_repo dst_dir start_tag push_branches push_tarballs )
 declare tests=( src_repo dst_dir )
 
 progdir="$(dirname $(realpath $0) )"
@@ -13,6 +13,20 @@ ${DEBUG} && declare -p end_tag
 
 debug "Pushing ${PRODUCT} release ${END_TAG} live"
 cd "${SRC_REPO}"
+
+echo "
+************************************************
+    FUTURE FAILURES NOW REQUIRE RECOVERY
+************************************************
+"
+
+if ${PUSH_BRANCHES} ; then
+	debug "Pushing commits upstream"
+	$ECHO_CMD git -C "${SRC_REPO}" checkout ${end_tag[branch]}
+	$ECHO_CMD git -C "${SRC_REPO}" push
+	debug "Pushing tag upstream"
+	$ECHO_CMD git -C "${SRC_REPO}" push origin ${END_TAG}:${END_TAG}
+fi
 
 # Creating the release with all the assets seems to
 # fail much of the time so we'll create first, then
@@ -43,8 +57,8 @@ fi
 
 RC=0
 for f in ${DST_DIR}/${PRODUCT}-${END_TAG}* \
-	${DST_DIR}/ChangeLog-${END_TAG}.md \
-	${DST_DIR}/README-${END_TAG}.md ; do
+	${DST_DIR}/ChangeLog-${END_TAG}.md ${DST_DIR}/ChangeLog-${END_TAG}.html \
+	${DST_DIR}/README-${END_TAG}.md ${DST_DIR}/README-${END_TAG}.html ; do
 	gh release upload ${END_TAG} --clobber $f || \
 		{ echo "Retrying..." ; gh release upload ${END_TAG} --clobber $f ; } || { RC=1 ; break ; }
 done

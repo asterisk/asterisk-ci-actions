@@ -33,9 +33,14 @@ if [ -f ${PRODUCT}-*-summary.html ] ; then
 	git rm -f ${PRODUCT}-*-summary.html ${PRODUCT}-*-summary.txt >/dev/null 2>&1 || :
 fi
 
-cp ${DST_DIR}/ChangeLog-${END_TAG}.md ChangeLogs/
+cp ${DST_DIR}/ChangeLog-${END_TAG}.{md,html} ChangeLogs/
 ln -sf ChangeLogs/ChangeLog-${END_TAG}.md CHANGES.md
-git add ChangeLogs/ChangeLog-${END_TAG}.md CHANGES.md
+ln -sf ChangeLogs/ChangeLog-${END_TAG}.html CHANGES.html
+
+sed -i -r -e "/<!--\s+CHANGELOGS/,/<!--\s+END-CHANGELOGS/s@\]\([^)]+\)@](ChangeLogs/ChangeLog-${END_TAG}.html)@g" "README.md"
+mdtohtml "Readme for ${PRODUCT}-${END_TAG}" "README.md" > "README.html"
+
+git add ChangeLogs/ChangeLog-${END_TAG}.{md,html} CHANGES.{md,html} README.{md,html}
 
 if [ "${end_tag_array[release_type]}" == "ga" ] ; then
 	if ! { $SECURITY || $NORC || $HOTFIX ; }; then

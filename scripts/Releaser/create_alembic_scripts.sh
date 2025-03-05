@@ -21,7 +21,7 @@ for schema in config voicemail queue_log cdr ; do
 		echo "alembic -c ./${schema}.ini.sample upgrade --sql head > ../realtime/mysql/mysql_${schema}.sql"
 	else
 		alembic -c ./${schema}.ini.sample upgrade --sql head \
-			2>/dev/null > ../realtime/mysql/mysql_${schema}.sql
+			> ../realtime/mysql/mysql_${schema}.sql
 	fi
 done
 
@@ -39,7 +39,7 @@ for schema in config voicemail queue_log cdr ; do
 		# temp sample ini file.
 		sed -r -e "s/^#(sqlalchemy.url\s*=\s*postgresql)/\1/g" -e "s/^(sqlalchemy.url\s*=\s*mysql)/#\1/g" ./${schema}.ini.sample > /tmp/${schema}.ini.sample	
 		alembic -c /tmp/${schema}.ini.sample upgrade --sql head \
-			2>/dev/null > ../realtime/postgresql/postgresql_${schema}.sql
+			> ../realtime/postgresql/postgresql_${schema}.sql
 	fi
 done
 

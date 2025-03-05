@@ -12,7 +12,7 @@ CI_FUNCTIONS_INCLUDED=1
 PROGNAME=$(basename $(readlink -fn $0))
 
 echo "====== Entering ${PROGNAME}" >&2
-trap 'echo "====== Exiting ${PROGNAME}" >&2' EXIT
+trap 'echo "====== Exiting ${PROGNAME} Exit code $?" >&2' EXIT
 
 declare -a POSITIONAL_ARGS
 for a in "$@" ; do

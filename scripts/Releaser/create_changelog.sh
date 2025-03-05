@@ -107,7 +107,7 @@ cat <<-EOF >"${SUMMARY_FILE}"
 
 ### Links:
 
- - [Full ChangeLog](https://downloads.asterisk.org/pub/telephony/${end_tag_array[download_dir]}/releases/ChangeLog-${END_TAG}.md)  
+ - [Full ChangeLog](https://downloads.asterisk.org/pub/telephony/${end_tag_array[download_dir]}/releases/ChangeLog-${END_TAG}.html)  
  - [GitHub Diff](https://github.com/asterisk/${PRODUCT}/compare/${START_TAG}...${END_TAG})  
  - [Tarball](https://downloads.asterisk.org/pub/telephony/${end_tag_array[download_dir]}/${PRODUCT}-${END_TAG}.tar.gz)  
  - [Downloads](https://downloads.asterisk.org/pub/telephony/${end_tag_array[download_dir]})  
@@ -340,5 +340,14 @@ fi
 
 debug "Create the README"
 cp "${SRC_REPO}/README.md" "${DST_DIR}/README-${END_TAG}.md"
+
+debug "Convert markdown to html"
+sed -i -r -e "/<!--\s+CHANGELOGS/,/<!--\s+END-CHANGELOGS/s@\]\([^)]+\)@](ChangeLog-${END_TAG}.html)@g" "${DST_DIR}/README-${END_TAG}.md"
+
+debug "Converting ChangeLog markdown to html"
+mdtohtml "ChangeLog for ${PRODUCT}-${END_TAG}" "${FULL_CHANGELOG_FILE}" >"${DST_DIR}/ChangeLog-${END_TAG}.html"
+debug "Converting README markdown to html"
+mdtohtml "Readme for ${PRODUCT}-${END_TAG}" "${DST_DIR}/README-${END_TAG}.md" >"${DST_DIR}/README-${END_TAG}.html"
+
 
 debug "Done"

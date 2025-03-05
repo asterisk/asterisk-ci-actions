@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-
+FOR_RELEASE=false
 : ${SIPP_VERSION:=v3.6.1}
 : ${GITHUB_SERVER_URL:=https://github.com}
 SCRIPT_DIR=$(dirname $(readlink -fn $0))
@@ -47,16 +47,19 @@ addons="cmake libsctp-dev python3-dev python3*-venv \
   alembic odbc-postgresql unixodbc unixodbc-dev \
   python3-psycopg2 rsync"
 
-if ! which gh &>/dev/null ; then
-	addons+=" gh"
-fi
-
 if ! which jq &>/dev/null ; then
 	addons+=" jq"
 fi
 
 debug_out "Installing addons" 
 apt-get install -qq ${addons} >/dev/null
+
+if $FOR_RELEASE ; then
+	debug_out "Installing release packages"
+	apt-get install -qq python3-markdown python3-markdown-* >/dev/null
+	debug_out "Installed release packages.  sipp not needed."
+	exit 0
+fi
 
 debug_out "Building and installing sipp"
 SIPPDIR=$(mktemp -d -p /opt/ -t sipp.XXXXXXXX)

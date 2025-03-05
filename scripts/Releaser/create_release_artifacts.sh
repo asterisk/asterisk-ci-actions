@@ -5,7 +5,7 @@ declare needs=( end_tag dst_dir )
 declare wants=( product src_repo gh_repo dst_dir security hotfix norc advisories
 				adv_url_base force_cherry_pick alembic
 				changelog commit tag push_branches tarball patchfile
-				close_issues sign full_monty dry_run )
+				sign full_monty dry_run )
 declare tests=( src_repo dst_dir )
 
 progdir="$(dirname $(realpath $0) )"
@@ -98,17 +98,3 @@ if ${PATCHFILE} && [ "${start_tag[release_type]}" != "pre" ] ; then
 		--product=${PRODUCT} \
 		$(booloption sign) $(booloption debug)
 fi
-
-if ${PUSH_BRANCHES} ; then
-echo "
-************************************************
-    FUTURE FAILURES NOW REQUIRE RECOVERY
-************************************************
-"
-	debug "Pushing commits upstream"
-	$ECHO_CMD git -C "${SRC_REPO}" checkout ${end_tag[branch]}
-	$ECHO_CMD git -C "${SRC_REPO}" push
-	debug "Pushing tag upstream"
-	$ECHO_CMD git -C "${SRC_REPO}" push origin ${END_TAG}:${END_TAG}
-fi
-

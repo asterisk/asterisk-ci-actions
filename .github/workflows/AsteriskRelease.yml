@@ -112,12 +112,18 @@ env:
 
 jobs:
   Release:
-    name: Setup
+    name: Release
     runs-on: ubuntu-latest
     steps:
         # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
       - name: GetActionsRepo
         uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
+
+      - name: Setup
+        run: |
+          echo "::group::Installing software"
+          sudo ${SCRIPT_DIR}/setupRunner.sh --for-release
+          echo "::endgroup::"
 
       - name: Release
         id: releaser
@@ -127,18 +133,20 @@ jobs:
           DEPLOY_SSH_PRIV_KEY: ${{ secrets.deploy_ssh_priv_key }}
           DEPLOY_SSH_USERNAME: ${{ secrets.deploy_ssh_username }}
         run: |
+          # Run the release script
+          ${SCRIPT_DIR}/Releaser/runAsteriskReleaser.sh
 
       - name: Save Output
         id: save-output
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{inputs.product}}-${{inputs.new_version}}
-          path: ${{inputs.product}}-${{inputs.new_version}}
+          name: ${{env.PRODUCT}}-${{env.NEW_VERSION}}
+          path: ${{env.PRODUCT}}-${{env.NEW_VERSION}}
 
       - name: Send Release Announcements
         if: inputs.send_email && steps.releaser.outputs.mail_list != 'none'
-        uses: dawidd6/action-send-mail@v3
+        uses: dawidd6/action-send-mail@v4
         with:
           server_address: smtp.gmail.com
           server_port: 465
