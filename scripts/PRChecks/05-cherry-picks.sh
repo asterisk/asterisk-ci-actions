@@ -21,7 +21,7 @@ if [ "$value" == "[]" ] ; then
 	- [ ] The are no \`cherry-pick-to\` headers in any comment in this PR. 
 	If the PR applies to more than just the branch it was submitted against, 
 	please add a comment with one or more \`cherry-pick-to: <branch>\` headers or a 
-	comment with \`cherry-pick-to: none\` to indicate that this PR shouldn't
+	comment with \`cherry-pick-to: none\` to indicate that this PR shouldn't 
 	be cherry-picked to any other branch. See the 
 	[Code Contribution](https://docs.asterisk.org/Development/Policies-and-Procedures/Code-Contribution/) 
 	documentation for more information.
