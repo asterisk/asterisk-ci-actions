@@ -84,11 +84,13 @@ jobs:
           fi
           [ -n "${USER_GROUP}" ] && chown -R ${USER_GROUP} ${REPO_DIR}
           cd ${REPO_DIR}
-          if [ -f tests/keys/rsa_key1.key ] ; then
-              chmod go-rw tests/keys/rsa_key1.key || :
-          else
-            echo "Didn't find crypto keys" >> ${LOG_FILE}
-            exit 1
+          if [ -f tests/test_crypto.c ] ; then
+            if [ -f tests/keys/rsa_key1.key ] ; then
+                chmod go-rw tests/keys/rsa_key1.key || :
+            else
+              echo "Didn't find crypto keys" >> ${LOG_FILE}
+              exit 1
+            fi
           fi
           mkdir -p ${OUTPUT_DIR}
           echo "*** Running asterisk unit tests"
