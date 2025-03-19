@@ -7,7 +7,9 @@ NO_CLONE=false
 
 source ${SCRIPT_DIR}/ci.functions
 
-assert_env_variables --print REPO REPO_DIR PR_NUMBER || exit 1
+assert_env_variables REPO REPO_DIR PR_NUMBER || exit 1
+
+printvars REPO REPO_DIR PR_NUMBER BRANCH BRANCHES NO_CLONE PUSH
 
 if [ -z "${BRANCH}" ] && [ -z "${BRANCHES}" ] ; then
 	error_out "Either --branch or --branches must be specified"
@@ -41,7 +43,7 @@ if $NO_CLONE ; then
 else
 	debug_out "Cloning ${REPO} to ${REPO_DIR}"
 	mkdir -p ${REPO_DIR}
-	git clone -q --depth 10 --no-tags \
+	git clone -q --no-tags \
 		${GITHUB_SERVER_URL}/${REPO} ${REPO_DIR}
 fi
 
@@ -52,11 +54,13 @@ fi
 
 cd ${REPO_DIR}
 
-git config get --global --value=${REPO_DIR} safe.directory &>/dev/null || \
+git config get --global --value=${REPO_DIR} safe.directory &>/dev/null || {
+	debug_out "Setting safe.directory to ${REPO_DIR}"
 	git config set --global --append safe.directory ${REPO_DIR}
+}
 
 debug_out "Fetching PR ${PR_NUMBER}"
-git fetch --depth 10 --no-tags origin refs/pull/${PR_NUMBER}/head
+git fetch --no-tags origin refs/pull/${PR_NUMBER}/head
 
 # Get commits
 debug_out "Getting commits for PR ${PR_NUMBER}"
@@ -83,7 +87,7 @@ for commit in "${COMMITS[@]}" ; do
 done
 
 branches=$(echo ${BRANCHES} | jq -c -r '.[]' | tr '\n' ' ')
-debug_out "***** Cherry-picking to branches: $branches"
+debug_out "Cherry-picking to branches: $branches"
 
 declare -a error_msgs
 RC=0
@@ -91,8 +95,20 @@ RC=0
 for BRANCH in $branches ; do
 
 	debug_out "***** Cherry-picking commits to branch $BRANCH"
-	$NO_CLONE || git fetch --no-tags --depth 10 origin refs/heads/$BRANCH:$BRANCH
-	git checkout $BRANCH
+	current_branch=$(git branch --show-current)
+	if [ "${current_branch}" != "${BRANCH}" ] ; then
+		remote_branch=$(git branch -r --list origin/${BRANCH})
+		if [ -z "${remote_branch}" ] ; then
+			debug_out "Branch ${BRANCH} does not exist in the repository.  Fetching"
+			git fetch --no-tags origin refs/heads/$BRANCH:$BRANCH
+		fi
+		debug_out "Checking out branch $BRANCH"
+		git checkout ${BRANCH}
+	else
+		debug_out "Already on branch ${BRANCH}"
+	fi
+	debug_out "Pulling branch $BRANCH"
+	git pull
 
 	for commit in "${COMMITS[@]}" ; do
 		[[ "$commit" =~ ([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\| ]] || {
@@ -121,6 +137,7 @@ for BRANCH in $branches ; do
 			break
 		fi
 	done
+	debug_out "***** Cherry-picked commits to branch $BRANCH"
 done
 
 if [ $RC -ne 0 ] ; then
