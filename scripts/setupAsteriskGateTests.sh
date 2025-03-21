@@ -28,10 +28,8 @@ cd ${TESTSUITE_DIR}
 
 if [[ "${TESTSUITE_TEST_PR}" =~ [0-9]+ ]] ; then
 	echo "Checking out testsuite PR ${TESTSUITE_TEST_PR}"
-	gh pr checkout "${TESTSUITE_TEST_PR}" -b "pr-${TESTSUITE_TEST_PR}" || {
-		log_error_msgs "Testsuite PR ${TESTSUITE_TEST_PR} not found"
-		exit 1
-	}
+	git fetch origin refs/pull/${TESTSUITE_TEST_PR}/head || exit 1
+	git checkout FETCH_HEAD	-b "pr-${TESTSUITE_TEST_PR}"
 	git --no-pager log -1 --oneline
 fi
 
