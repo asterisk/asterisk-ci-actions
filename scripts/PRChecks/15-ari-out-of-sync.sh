@@ -49,13 +49,13 @@ if [ $json_files_changed -ne 0 ] && [ $resource_files_changed -eq 0 ] ; then
 	files that are generated from them. You must run \`make ari-stubs\` after 
 	modifying any file in rest-api/api-docs and include the changes in your commit.
 	EOF
-	needed_checklist=true
+	checklist_added=true
 fi
 
 debug_out "    Checking for UpgradeNote mentioning ARI in commit message."
 upgrade_note=$(jq -r '.[].commit.message' ${PR_COMMITS_PATH} | \
 	tr -d '\r' | sed -n -r -e '/^UpgradeNote:/,/^$/p' | \
-	 tr '[:upper:]' '[:lower:]' | sed -n -r -e 's/.*(ARI).*/\1/p')
+	 tr '[:upper:]' '[:lower:]' | sed -n -r -e 's/.*(ari).*/\1/p')
 
 if [ -z "$upgrade_note" ] ; then
 debug_out "    No UpgradeNote mentioning 'ARI' found.  Adding checklist item."
@@ -67,7 +67,7 @@ debug_out "    No UpgradeNote mentioning 'ARI' found.  Adding checklist item."
 	checklist_added=true
 fi
 
-$checkist_added && exit $EXIT_CHECKLIST_ADDED
+$checklist_added && exit $EXIT_CHECKLIST_ADDED
 debug_out "No issues found."
 
 exit $EXIT_OK
