@@ -29,7 +29,7 @@ fi
 
 ./cleanup-test-remnants.sh
 coreglob=$(asterisk_corefile_glob)
-corefiles=$(find $(dirname $coreglob) -name $(basename $coreglob))
+corefiles=$(find $(dirname $coreglob) -name $(basename $coreglob) 2>&1)
 if [ -n "$corefiles" ] ; then
 	debug_out "*** Found one or more core files before running tests ***" \
 		"Search glob: ${coreglob}" \
@@ -84,7 +84,7 @@ if $REALTIME ; then
 fi
 
 coreglob=$(asterisk_corefile_glob)
-corefiles=$(find $(dirname $coreglob) -name $(basename $coreglob))
+corefiles=$(find $(dirname $coreglob) -name $(basename $coreglob) >&2)
 if [ -n "$corefiles" ] ; then
 	debug_out "*** Found one or more core files after running tests ***" \
 		"Search glob: ${coreglob}" \

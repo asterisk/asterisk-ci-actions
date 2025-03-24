@@ -60,7 +60,7 @@ asterisk_corefile_glob() {
 
 	# If core_pattern is a pipe there isn't much we can do
 	if [[ "${pattern:0:1}" == "|" ]] ; then
-		echo "logs/core*"
+		debug_out "kernel.core_pattern: ${pattern}"
 	else
 		astpath=$(which asterisk)
 		pattern=${pattern/\%e/asterisk}
