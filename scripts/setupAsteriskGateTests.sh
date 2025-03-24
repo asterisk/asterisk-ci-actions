@@ -27,10 +27,11 @@ TEST_DIR=$(jq -j '.dir' /tmp/test_commands.json)
 cd ${TESTSUITE_DIR}
 
 if [[ "${TESTSUITE_TEST_PR}" =~ [0-9]+ ]] ; then
-	echo "Checking out testsuite PR ${TESTSUITE_TEST_PR}"
-	git fetch origin refs/pull/${TESTSUITE_TEST_PR}/head || exit 1
-	git checkout FETCH_HEAD	-b "pr-${TESTSUITE_TEST_PR}"
-	git --no-pager log -1 --oneline
+	echo "Checking out testsuite PR ${TESTSUITE_TEST_PR} to branch ${BRANCH}"
+	${SCRIPT_DIR}/cherryPick.sh --repo="${TESTSUITE_REPO}" \
+		--repo-dir="${TESTSUITE_DIR}" \
+		--pr-number="${TESTSUITE_TEST_PR}" \
+		--branch="${BRANCH}" --no-clone || exit 1
 fi
 
 export_to_github TEST_NAME TEST_OPTIONS TEST_TIMEOUT TEST_CMD TEST_DIR
