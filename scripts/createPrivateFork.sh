@@ -152,7 +152,7 @@ fi
 
 # Disable the workflows we never want to run in the private repo.
 echo "Disabling workflows in asterisk/${DST_REPO}"
-declare -a DISABLE_WORKFLOWS=( CreateDocs "Issue Opened" MergePR NightlyAdmin NightlyTests Releaser WeeklyTests )
+declare -a DISABLE_WORKFLOWS=( CreateDocs "Issue Opened" PRMerge NightlyAdmin NightlyTests Releaser WeeklyTests )
 for w in "${DISABLE_WORKFLOWS[@]}" ; do
 	gh -R asterisk/${DST_REPO} workflow disable "$w" || :
 done
