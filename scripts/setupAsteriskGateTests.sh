@@ -1,21 +1,27 @@
 #!/usr/bin/env bash
 SCRIPT_DIR=$(dirname $(readlink -fn $0))
+
 source $SCRIPT_DIR/ci.functions
 
-mkdir -p ${TESTSUITE_DIR}
-debug_out "Checking out testsuite"
-git clone --depth 1 --no-tags -q -b ${BASE_BRANCH} \
-	${GITHUB_SERVER_URL}/${TESTSUITE_REPO} ${TESTSUITE_DIR} || {
-	log_error_msgs "Failed to clone ${TESTSUITE_REPO} to ${TESTSUITE_DIR}"
-	exit 1
-}
+: ${GITHUB_SERVER_URL:="https://github.com"}
+: ${PR_NUMBER:=-1}
 
-if [ ! -d ${TESTSUITE_DIR}/.git ] ; then
-	log_error_msgs "Failed to clone ${TESTSUITE_REPO} to ${TESTSUITE_DIR}"
-	exit 1
+assert_env_variables REPO REPO_DIR BRANCH GATETEST_COMMAND || exit 1
+
+printvars REPO_DIR BRANCH REPO PR_NUMBER GATETEST_COMMAND
+
+PR_OPTIONS=""
+if [ ${PR_NUMBER} -gt 0 ] ; then
+	PR_OPTIONS="--pr-number=${PR_NUMBER} --is-cherry-pick"
 fi
+exit 0
 
-git config --global --add safe.directory ${TESTSUITE_DIR}
+debug_out "Checking out testsuite"
+${SCRIPT_DIR}/checkoutRepo.sh --repo="${REPO}" \
+	--repo-dir="${REPO_DIR}" --branch="${BRANCH}" \
+	${PR_OPTIONS} || exit 1
+
+exit 0
 
 echo ${GATETEST_COMMAND} > /tmp/test_commands.json
 TEST_NAME=$(jq -j '.name' /tmp/test_commands.json)
@@ -24,15 +30,6 @@ TEST_TIMEOUT=$(jq -j '.timeout' /tmp/test_commands.json)
 TEST_CMD=$(jq -j '.testcmd' /tmp/test_commands.json)
 TEST_DIR=$(jq -j '.dir' /tmp/test_commands.json)
 
-cd ${TESTSUITE_DIR}
-
-if [[ "${TESTSUITE_TEST_PR}" =~ [0-9]+ ]] ; then
-	echo "Checking out testsuite PR ${TESTSUITE_TEST_PR} to branch ${BRANCH}"
-	${SCRIPT_DIR}/cherryPick.sh --repo="${TESTSUITE_REPO}" \
-		--repo-dir="${TESTSUITE_DIR}" \
-		--pr-number="${TESTSUITE_TEST_PR}" \
-		--branch="${BRANCH}" --no-clone || exit 1
-fi
 
 export_to_github TEST_NAME TEST_OPTIONS TEST_TIMEOUT TEST_CMD TEST_DIR
 echo "Testsuite setup complete"

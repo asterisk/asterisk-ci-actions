@@ -4,10 +4,12 @@ SCRIPT_DIR=$(dirname $(readlink -fn $0))
 
 IS_CHERRY_PICK=false
 NO_TAGS=false
-GITHUB_SERVER_URL="https://github.com"
 PR_NUMBER=-1
 
 source ${SCRIPT_DIR}/ci.functions
+
+: ${GITHUB_SERVER_URL:="https://github.com"}
+: ${BRANCH:="master"}
 
 assert_env_variables REPO REPO_DIR BRANCH || exit 1
 

@@ -19,6 +19,7 @@ on:
       testsuite_test_pr:
         type: string
         required: false
+        default: '-1'
       gatetest_group:
         description: 'Gate Group'
         type: string
@@ -98,7 +99,10 @@ jobs:
         run: |
           echo "::group::Setting up testsuite"
           # This scripts exports variables to GITHUB_ENV
-          ${SCRIPT_DIR}/setupAsteriskGateTests.sh
+          ${SCRIPT_DIR}/setupAsteriskGateTests.sh \
+          --repo=${TESTSUITE_REPO} --repo-dir=${TESTSUITE_DIR} \
+          --pr-number=${TESTSUITE_TEST_PR} --branch=${BASE_BRANCH} \
+          --gatetest-command="${GATETEST_COMMAND}"
           echo "::endgroup::"
 
       - name: "Run Gate Test ${{inputs.gatetest_group}}"
