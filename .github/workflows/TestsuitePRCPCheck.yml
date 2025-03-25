@@ -18,7 +18,7 @@ env:
   BASE_BRANCH:     ${{ github.event.pull_request.base.ref }}
   WORKFLOW_NAME:   ${{ github.workflow }}
   WORKFLOW_RUN_ID: ${{ github.run_id }}
-  GH_TOKEN:        ${{ github.token }}
+  GH_TOKEN:        ${{ secrets.GITHUB_TOKEN }}
   LOG_DIR:         ${{ github.workspace }}/logs
   LOG_FILE:        ${{ github.workspace }}/logs/job_summary.txt
   TESTING_IN_PROGRESS: ${{ vars.CHERRY_PICK_TESTING_IN_PROGRESS }}

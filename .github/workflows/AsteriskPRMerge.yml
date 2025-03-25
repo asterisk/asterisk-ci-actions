@@ -18,7 +18,7 @@ env:
   BASE_BRANCH:     ${{ github.event.pull_request.base.ref }}
   LOG_DIR:         ${{ github.workspace }}/logs
   LOG_FILE:        ${{ github.workspace }}/logs/job_summary.txt
-  GH_TOKEN:        ${{ github.token }}
+  GH_TOKEN:        ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   Setup:

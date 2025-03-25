@@ -57,6 +57,7 @@ env:
   TESTSUITE_TEST_PR:  ${{ inputs.testsuite_test_pr }}
   GATETEST_GROUP:     ${{ inputs.gatetest_group }}
   GATETEST_COMMAND:   ${{ toJSON(fromJSON(inputs.gatetest_commands)[inputs.gatetest_group]) }}
+  GH_TOKEN:     ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   RunGateTests:

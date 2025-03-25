@@ -81,6 +81,7 @@ env:
   BUILD_CACHE_KEY:   ${{ inputs.build_cache_key }}
   LOG_DIR:           ${{ github.workspace }}/logs
   LOG_FILE:          ${{ github.workspace }}/logs/job_summary.txt
+  GH_TOKEN:          ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   Build:
