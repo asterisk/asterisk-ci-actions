@@ -8,6 +8,7 @@ permissions:
   contents: read
   issues: read
   pull-requests: write
+  repository-projects: read
   statuses: read
 
 env:
