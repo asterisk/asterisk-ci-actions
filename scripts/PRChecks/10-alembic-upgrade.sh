@@ -6,11 +6,11 @@ source ${SCRIPT_DIR}/ci.functions
 source ${CHECKS_DIR}/checks.functions
 set -e
 
-assert_env_variables --print PR_DIFF_PATH PR_COMMITS_PATH || exit $EXIT_ERROR
+assert_env_variables --print PR_FILES_PATH PR_COMMITS_PATH || exit $EXIT_ERROR
 
 : ${PR_CHECKLIST_PATH:=/dev/stderr}
 
-declare -a files=( $(sed -n -r -e "s/^diff\s+--git\s+a\/[^[:blank:]]+\s+b\/(.+)/\1/gp" ${PR_DIFF_PATH}) )
+declare -a files=( $(jq '.[].filename' ${PR_FILES_PATH}) )
 
 debug_out "Checking for Alembic changes"
 found_alembic_changes=false

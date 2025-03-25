@@ -6,28 +6,29 @@ source ${SCRIPT_DIR}/ci.functions
 source ${CHECKS_DIR}/checks.functions
 set -e
 
-assert_env_variables --print PR_DIFF_PATH || exit $EXIT_ERROR
+assert_env_variables --print PR_FILES_PATH || exit $EXIT_ERROR
 
 : ${PR_CHECKLIST_PATH:=/dev/stderr}
 
 debug_out "Checking for configure/configure.ac changes."
 
-declare -a files=( $(sed -n -r -e "s/^diff\s+--git\s+a\/[^[:blank:]]+\s+b\/(.+)/\1/gp" ${PR_DIFF_PATH} | grep -E "(configure|configure.ac|.*m4|bootstrap.sh)$") )
-
-if [ ${#files[@]} -eq 0 ] ; then
- 	debug_out "No Autoconf related files found in commit. No checklist item needed."
-	exit $EXIT_OK
-fi
+declare -a files=( $(jq '.[].filename' ${PR_FILES_PATH}) )
 
 declare -i configure_changed=0
 declare -i other_changed=0
 for f in "${files[@]}" ; do
-	if [[ $f =~ (configure)$ ]] ; then
+	[[ ! "$f" =~ (configure|configure.ac|.*m4|bootstrap.sh)$ ]] && continue
+	if [[ "$f" =~ (configure)$ ]] ; then
 		configure_changed+=1
 	else 
 		other_changed+=1
 	fi
 done
+
+if [ $configure_changed -eq 0 ] && [ $other_changed -eq 0 ] ; then
+	debug_out "No Autoconf related files found in commit. No checklist item needed."
+	exit $EXIT_OK
+fi
 
 checklist_added=false
 if [ $configure_changed -eq 0 ] && [ $other_changed -ne 0 ] ; then

@@ -6,28 +6,29 @@ source ${SCRIPT_DIR}/ci.functions
 source ${CHECKS_DIR}/checks.functions
 set -e
 
-assert_env_variables --print PR_DIFF_PATH PR_COMMITS_PATH || exit $EXIT_ERROR
+assert_env_variables --print PR_FILES_PATH PR_COMMITS_PATH || exit $EXIT_ERROR
 
 : ${PR_CHECKLIST_PATH:=/dev/stderr}
 
 debug_out "Checking for ARI changes"
 
-declare -a files=( $(sed -n -r -e "s/^diff\s+--git\s+a\/[^[:blank:]]+\s+b\/(.+)/\1/gp" ${PR_DIFF_PATH} | grep -E "(rest-api/api-docs|res/ari/resource_.*[.]h|res/res_ari_.*[.]c)") )
-
-if [ ${#files[@]} -eq 0 ] ; then
-	debug_out "No ARI files found in commit.  No checklist item needed."
-	exit $EXIT_OK
-fi
+declare -a files=( $(jq '.[].filename' ${PR_FILES_PATH}) )
 
 declare -i json_files_changed=0
 declare -i resource_files_changed=0
 for f in "${files[@]}" ; do
+	[[ ! "$f" =~ (rest-api/api-docs|res/ari/resource_.*[.]h|res/res_ari_.*[.]c) ]] && continue
 	if [[ $f =~ (res_ari_|resource_) ]] ; then
 		resource_files_changed+=1
 	else 
 		json_files_changed+=1
 	fi
 done
+
+if [ $json_files_changed -eq 0 ] && [ $resource_files_changed -eq 0 ] ; then
+	debug_out "No ARI related files found in commit. No checklist item needed."
+	exit $EXIT_OK
+fi
 
 checklist_added=false
 if [ $json_files_changed -eq 0 ] && [ $resource_files_changed -ne 0 ] ; then

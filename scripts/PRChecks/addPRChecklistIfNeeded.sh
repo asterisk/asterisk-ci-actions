@@ -10,10 +10,11 @@ QUIET_CHECKS=false
 source ${SCRIPT_DIR}/ci.functions
 source ${CHECKS_DIR}/checks.functions
 
-assert_env_variables --print REPO PR_NUMBER || exit 1
+assert_env_variables REPO PR_NUMBER || exit 1
+printvars REPO PR_NUMBER DRY_RUN DOWNLOAD_ONLY DONT_DOWNLOAD QUIET_CHECKS
 
 pr_path=/tmp/pr-${PR_NUMBER}.json
-pr_diff_path=/tmp/pr-${PR_NUMBER}.diff
+pr_files_path=/tmp/pr-files-${PR_NUMBER}.json
 pr_commits_path=/tmp/pr-commits-${PR_NUMBER}.json
 pr_comments_path=/tmp/pr-comments-${PR_NUMBER}.json
 pr_status_path=/tmp/pr-status-${PR_NUMBER}.json
@@ -21,16 +22,16 @@ pr_status_path=/tmp/pr-status-${PR_NUMBER}.json
 if ! $DONT_DOWNLOAD ; then
 	debug_out "Downloading PR,  diff, commits, comments"
 
-	curl -sL https://api.github.com/repos/${REPO}/pulls/${PR_NUMBER} > ${pr_path}
+	gh api /repos/${REPO}/pulls/${PR_NUMBER} > ${pr_path}
 
-	curl -sL https://github.com/${REPO}/pull/${PR_NUMBER}.diff > ${pr_diff_path}
+	gh api /repos/${REPO}/pulls/${PR_NUMBER}/files > ${pr_files_path}
 
-	curl -sL https://api.github.com/repos/${REPO}/pulls/${PR_NUMBER}/commits > ${pr_commits_path}
+	gh api /repos/${REPO}/pulls/${PR_NUMBER}/commits > ${pr_commits_path}
 
-	curl -sL https://api.github.com/repos/${REPO}/issues/${PR_NUMBER}/comments > ${pr_comments_path}
+	gh api /repos/${REPO}/issues/${PR_NUMBER}/comments > ${pr_comments_path}
 	
 	status_url=$(jq -r '.statuses_url' ${pr_path})
-	curl -sL ${status_url} > ${pr_status_path}
+	gh api /repos/${status_url##*/repos/} > ${pr_status_path}
 fi
 
 if $DOWNLOAD_ONLY ; then
@@ -43,7 +44,7 @@ pr_checklist_path=/tmp/pr-checklist-${PR_NUMBER}.md
 
 SCRIPT_ARGS="--repo=${REPO} --pr-number=${PR_NUMBER} \
 --pr-path=${pr_path} \
---pr-diff-path=${pr_diff_path} \
+--pr-files-path=${pr_files_path} \
 --pr-commits-path=${pr_commits_path} \
 --pr-comments-path=${pr_comments_path} \
 --pr-status-path=${pr_status_path} \
