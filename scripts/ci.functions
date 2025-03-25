@@ -39,7 +39,26 @@ for a in "$@" ; do
 	esac
 done
 
+debug_out() {
+	[ ${#@} -eq 0 ] && return 0
+	_IFS=$"$IFS"
+	IFS=$'\n'
+	echo "${*/#*/${PROGNAME}: &}" >&2
+	unset IFS
+	IFS=$"$_IFS"
+}
+
+error_out() {
+	[ ${#@} -eq 0 ] && return 0
+	_IFS=$"$IFS"
+	IFS=$'\n'
+	echo "::error::${*/#*/${PROGNAME}: &}" >&2
+	unset IFS
+	IFS=$"$_IFS"
+}
+
 if [ -n "$GH_TOKEN" ] ; then
+	debug_out "Setting up git for gh auth"
 	gh auth setup-git -h github.com >/dev/stderr
 fi
 
@@ -85,6 +104,8 @@ printvars() {
 	for var in "$@" ; do
 		debug_out "$var=${!var}" >&2
 	done
+	debug_out "kernel.core_pattern=$(/sbin/sysctl -n kernel.core_pattern)"
+	
 }
 
 assert_env_variable() {
@@ -106,25 +127,8 @@ assert_env_variables() {
 		fi
 		$printit && echo "$var=${!var}" >&2
 	done
+	$printit && debug_out "kernel.core_pattern=$(/sbin/sysctl -n kernel.core_pattern)"
 	return $rc
-}
-
-debug_out() {
-	[ ${#@} -eq 0 ] && return 0
-	_IFS=$"$IFS"
-	IFS=$'\n'
-	echo "${*/#*/${PROGNAME}: &}" >&2
-	unset IFS
-	IFS=$"$_IFS"
-}
-
-error_out() {
-	[ ${#@} -eq 0 ] && return 0
-	_IFS=$"$IFS"
-	IFS=$'\n'
-	echo "::error::${*/#*/${PROGNAME}: &}" >&2
-	unset IFS
-	IFS=$"$_IFS"
 }
 
 log_error_msgs() {

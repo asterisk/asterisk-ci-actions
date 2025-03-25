@@ -33,7 +33,7 @@ runs:
         cd ${GITHUB_WORKSPACE}
         if [ -f ${BUILD_CACHE_DIR}/asterisk-source.tar.gz ] ; then
           echo "*** Found ${BUILD_CACHE_DIR}/asterisk-source.tar.gz"
-          tar -xvf ${BUILD_CACHE_DIR}/asterisk-source.tar.gz
+          tar -xf ${BUILD_CACHE_DIR}/asterisk-source.tar.gz
           ls -al
           rm ${BUILD_CACHE_DIR}/asterisk-source.tar.gz
         else

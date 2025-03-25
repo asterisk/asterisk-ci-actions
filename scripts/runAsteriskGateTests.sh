@@ -29,14 +29,16 @@ fi
 
 ./cleanup-test-remnants.sh
 coreglob=$(asterisk_corefile_glob)
-corefiles=$(find $(dirname $coreglob) -name $(basename $coreglob) 2>&1)
-if [ -n "$corefiles" ] ; then
-	debug_out "*** Found one or more core files before running tests ***" \
-		"Search glob: ${coreglob}" \
-		"Corefiles: ${corefiles}"
-	if [[ "$coreglob" =~ asterisk ]] ; then
-		debug_out "Removing matching corefiles: $corefiles"
-		rm -rf $corefiles || :
+if [ -n "$coreglob" ] ; then
+	corefiles=$(find $(dirname $coreglob) -name $(basename $coreglob))
+	if [ -n "$corefiles" ] ; then
+		debug_out "*** Found one or more core files before running tests ***" \
+			"Search glob: ${coreglob}" \
+			"Corefiles: ${corefiles}"
+		if [[ "$coreglob" =~ asterisk ]] ; then
+			debug_out "Removing matching corefiles: $corefiles"
+			rm -rf $corefiles || :
+		fi
 	fi
 fi
 
@@ -84,16 +86,18 @@ if $REALTIME ; then
 fi
 
 coreglob=$(asterisk_corefile_glob)
-corefiles=$(find $(dirname $coreglob) -name $(basename $coreglob) >&2)
-if [ -n "$corefiles" ] ; then
-	debug_out "*** Found one or more core files after running tests ***" \
-		"Search glob: ${coreglob}" \
-		"Matching corefiles: ${corefiles}"
-	TESTRC=1
-	$SCRIPT_DIR/ast_coredumper.sh --no-conf-file --outputdir=./logs/ \
-		--tarball-coredumps --delete-coredumps-after $coreglob
-	# If the return code was 2, none of the coredumps actually came from asterisk.
-	[ $? -eq 2 ] && TESTRC=0 || log_error_msgs "Coredumps found after running tests"
+if [ -n "$coreglob" ] ; then
+	corefiles=$(find $(dirname $coreglob) -name $(basename $coreglob) >&2)
+	if [ -n "$corefiles" ] ; then
+		debug_out "*** Found one or more core files after running tests ***" \
+			"Search glob: ${coreglob}" \
+			"Matching corefiles: ${corefiles}"
+		TESTRC=1
+		$SCRIPT_DIR/ast_coredumper.sh --no-conf-file --outputdir=./logs/ \
+			--tarball-coredumps --delete-coredumps-after $coreglob
+		# If the return code was 2, none of the coredumps actually came from asterisk.
+		[ $? -eq 2 ] && TESTRC=0 || log_error_msgs "Coredumps found after running tests"
+	fi
 fi
 
 if [ -n "$TESTSUITE_DIR" ] ; then

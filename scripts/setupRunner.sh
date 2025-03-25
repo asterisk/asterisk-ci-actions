@@ -11,10 +11,6 @@ SCRIPT_DIR=$(dirname $(readlink -fn $0))
 	exit 1
 }
 
-debug_out "Setting kernel.core_pattern=/tmp/core-%e-%t"
-sysctl -w kernel.core_pattern=/tmp/core-%e-%t
-chmod 1777 /tmp
-
 export DEBIAN_FRONTEND="noninteractive"
 apt-get update -y -qq >/dev/null
 apt-get install -y -qq wget curl file apt-utils >/dev/null
@@ -58,6 +54,9 @@ if $FOR_RELEASE ; then
 	debug_out "Installing release packages"
 	apt-get install -qq python3-markdown python3-markdown-* >/dev/null
 	debug_out "Installed release packages.  sipp not needed."
+	debug_out "Setting kernel.core_pattern=/tmp/core-%e-%t"
+	sysctl -w kernel.core_pattern=/tmp/core-%e-%t
+	chmod 1777 /tmp
 	exit 0
 fi
 
@@ -77,5 +76,9 @@ debug_out "*** Building sipp ${SIPP_VERSION}"
 }
 debug_out "*** Installing sipp ${SIPP_VERSION} to /usr/bin"
 install -D -t /usr/bin sipp
+
+debug_out "Setting kernel.core_pattern=/tmp/core-%e-%t"
+sysctl -w kernel.core_pattern=/tmp/core-%e-%t
+chmod 1777 /tmp
 
 exit 0
