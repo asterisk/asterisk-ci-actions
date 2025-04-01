@@ -11,6 +11,8 @@ SCRIPT_DIR=$(dirname $(readlink -fn $0))
 	exit 1
 }
 
+cat /etc/os-release
+
 export DEBIAN_FRONTEND="noninteractive"
 apt-get update -y -qq >/dev/null
 apt-get install -y -qq wget curl file apt-utils >/dev/null
@@ -23,6 +25,9 @@ if ! which gh &>/dev/null ; then
 	debug_out "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /tmp/github-cli.list
 	install --mode=0644 -D -t /etc/apt/sources.list.d /tmp/github-cli.list
 fi
+
+debug_out "Pre-update cmake version:"
+cmake --version >&2 || :
 
 debug_out "Installing dev packages"
 apt-get install -qq sudo build-essential gdb binutils-dev freetds-dev \
@@ -38,7 +43,7 @@ apt-get install -qq sudo build-essential gdb binutils-dev freetds-dev \
   xmlstarlet python3-pystache sqlite3 sqlite3-tools\
   libsqlite3-dev >/dev/null
 
-addons="cmake libsctp-dev python3-dev python3*-venv \
+addons="cmake libsctp-dev libgsl-dev python3-dev python3*-venv \
   postgresql libpq-dev git libpcap-dev nano python3-pip \
   alembic odbc-postgresql unixodbc unixodbc-dev \
   python3-psycopg2 rsync"
@@ -69,9 +74,11 @@ wget -q https://github.com/SIPp/sipp/releases/download/${SIPP_VERSION}/sipp-${SI
 tar -xf sipp-${SIPP_VERSION/v/}.tar.gz
 cd sipp-${SIPP_VERSION/v/}
 debug_out "*** Building sipp ${SIPP_VERSION}"
-./build.sh --full &>/tmp/sipp.build.out || {
+debug_out "Using cmake version:"
+cmake --version >&2
+cmake . -DUSE_GSL=1 -DUSE_PCAP=1 -DUSE_SSL=1 -DUSE_SCTP=1 -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+make -j$(nproc --all 2>/dev/null || echo 1) || {
 	log_error_msgs "Failed to build sipp ${SIPP_VERSION}"
-	cat /tmp/sipp.build.out
 	exit 1
 }
 debug_out "*** Installing sipp ${SIPP_VERSION} to /usr/bin"
