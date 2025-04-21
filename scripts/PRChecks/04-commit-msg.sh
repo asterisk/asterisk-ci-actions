@@ -5,6 +5,7 @@ SCRIPT_DIR=$(dirname ${CHECKS_DIR})
 source ${SCRIPT_DIR}/ci.functions
 source ${CHECKS_DIR}/checks.functions
 #set -e
+shopt -s extglob
 
 assert_env_variables --print PR_PATH PR_COMMITS_PATH PR_COMMENTS_PATH || exit 1
 
@@ -42,7 +43,10 @@ if [ $commit_count -eq 1 ] && [ "$pr_title" != "${commit_titles[0]}" ] ; then
 	checklist_added=true
 fi
 
-if [ $commit_count -eq 1 ] && [ "${pr_body//[[:cntrl:]]/ }" != "${commit_bodies[0]//[[:cntrl:]]/ }" ] ; then
+pb="${pr_body//+([[:cntrl:]]|[[:blank:]])/ }"
+cb="${commit_bodies[0]//+([[:cntrl:]]|[[:blank:]])/ }"
+
+if [ $commit_count -eq 1 ] && [ "${pb}" != "${cb}" ] ; then
 	debug_out "PR description and commit message body mismatch."
 	cat <<-EOF | print_checklist_item --append-newline
 	- [ ] The PR description does not match the commit message body. 

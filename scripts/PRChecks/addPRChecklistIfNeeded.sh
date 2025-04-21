@@ -22,16 +22,16 @@ pr_status_path=/tmp/pr-status-${PR_NUMBER}.json
 if ! $DONT_DOWNLOAD ; then
 	debug_out "Downloading PR,  diff, commits, comments"
 
-	gh api /repos/${REPO}/pulls/${PR_NUMBER} > ${pr_path}
+	gh api /repos/${REPO}/pulls/${PR_NUMBER} | jq . > ${pr_path}
 
-	gh api /repos/${REPO}/pulls/${PR_NUMBER}/files > ${pr_files_path}
+	gh api /repos/${REPO}/pulls/${PR_NUMBER}/files | jq . > ${pr_files_path}
 
-	gh api /repos/${REPO}/pulls/${PR_NUMBER}/commits > ${pr_commits_path}
+	gh api /repos/${REPO}/pulls/${PR_NUMBER}/commits | jq . > ${pr_commits_path}
 
-	gh api /repos/${REPO}/issues/${PR_NUMBER}/comments > ${pr_comments_path}
-	
+	gh api /repos/${REPO}/issues/${PR_NUMBER}/comments | jq . > ${pr_comments_path}
+
 	status_url=$(jq -r '.statuses_url' ${pr_path})
-	gh api /repos/${status_url##*/repos/} > ${pr_status_path}
+	gh api /repos/${status_url##*/repos/} | jq . > ${pr_status_path}
 fi
 
 if $DOWNLOAD_ONLY ; then
