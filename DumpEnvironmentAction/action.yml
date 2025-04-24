@@ -44,6 +44,15 @@ runs:
         fi
         mkdir ${OUTPUT_DIR}
         set +e +v +x
+        echo "::group::network"
+        set -x
+        ip link || :
+        ip addr || :
+        cat /etc/hosts || :
+        hostname || :
+        host localhost
+        set +x
+        echo "::endgroup::"
         echo "::group::inputs"
         cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${OUTPUT_DIR}/inputs.json
         ${{toJSON(fromJSON(inputs.action-inputs))}}
