@@ -76,8 +76,8 @@ cd sipp-${SIPP_VERSION/v/}
 debug_out "*** Building sipp ${SIPP_VERSION}"
 debug_out "Using cmake version:"
 cmake --version >&2
-cmake . -DUSE_GSL=1 -DUSE_PCAP=1 -DUSE_SSL=1 -DUSE_SCTP=1 -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-make -j$(nproc --all 2>/dev/null || echo 1) || {
+cmake . -DUSE_GSL=1 -DUSE_PCAP=1 -DUSE_SSL=1 -DUSE_SCTP=1 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 >/dev/null
+make -j$(nproc --all 2>/dev/null || echo 1) >/dev/null || {
 	log_error_msgs "Failed to build sipp ${SIPP_VERSION}"
 	exit 1
 }

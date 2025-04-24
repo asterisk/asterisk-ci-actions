@@ -17,8 +17,8 @@ declare -a files=( $(jq '.[].filename' ${PR_FILES_PATH}) )
 declare -i json_files_changed=0
 declare -i resource_files_changed=0
 for f in "${files[@]}" ; do
-	[[ ! "$f" =~ (rest-api/api-docs|res/ari/resource_.*[.]h|res/res_ari_.*[.]c) ]] && continue
-	if [[ $f =~ (res_ari_|resource_) ]] ; then
+	[[ ! "$f" =~ (rest-api/api-docs|res/ari/resource_.*[.]h|res/ari/ari_model_validators|res/res_ari_.*[.]c) ]] && continue
+	if [[ $f =~ (res_ari_|resource_|ari_model_validators) ]] ; then
 		resource_files_changed+=1
 	else 
 		json_files_changed+=1
@@ -55,13 +55,14 @@ fi
 
 debug_out "    Checking for UpgradeNote mentioning ARI in commit message."
 upgrade_note=$(jq -r '.[].commit.message' ${PR_COMMITS_PATH} | \
-	tr -d '\r' | sed -n -r -e '/^UpgradeNote:/,/^$/p' | \
+	tr -d '\r' | sed -n -r -e '/^(User|Upgrade)Note:/,/^$/p' | \
 	 tr '[:upper:]' '[:lower:]' | sed -n -r -e 's/.*(ari).*/\1/p')
 
 if [ -z "$upgrade_note" ] ; then
 debug_out "    No UpgradeNote mentioning 'ARI' found.  Adding checklist item."
 	cat <<-EOF | print_checklist_item --append-newline
-	- [ ] An ARI change was detected but a commit message UpgradeNote mentioning ARI wasn't found. 
+	- [ ] An ARI change was detected but a commit message UpgradeNote 
+	or UserNote mentioning ARI wasn't found. 
 	Please add an UpgradeNote to the commit message that mentions ARI 
 	notifying users that there's been a change to the REST resources.
 	EOF

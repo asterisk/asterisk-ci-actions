@@ -28,7 +28,7 @@ readarray -d "" -t commit_blanks < <( jq --raw-output0 '.[].commit.message | sub
 # The rest of the commit message is the body.
 readarray -d "" -t commit_bodies < <( jq --raw-output0 '.[].commit.message | sub("\r";"";"g") | split("\n")[2:] | join("\n")' ${PR_COMMITS_PATH})
 
-debug_out "Checking for PR description/Commit msg mismatches"
+debug_out "Checking for PR description/Commit msg title mismatches"
 checklist_added=false
 
 if [ $commit_count -eq 1 ] && [ "$pr_title" != "${commit_titles[0]}" ] ; then
@@ -43,8 +43,10 @@ if [ $commit_count -eq 1 ] && [ "$pr_title" != "${commit_titles[0]}" ] ; then
 	checklist_added=true
 fi
 
-pb="${pr_body//+([[:cntrl:]]|[[:blank:]])/ }"
-cb="${commit_bodies[0]//+([[:cntrl:]]|[[:blank:]])/ }"
+cb=$(sed -r -e '/^$/d' -e $'s/[[:space:]]+/ /g' <<< $"${commit_bodies[0]}")
+pb=$(sed -r -e '/^$/d' -e $'s/[[:space:]]+/ /g' <<< $"${pr_body}")
+
+debug_out "Checking for PR description/Commit msg body mismatches"
 
 if [ $commit_count -eq 1 ] && [ "${pb}" != "${cb}" ] ; then
 	debug_out "PR description and commit message body mismatch."
@@ -57,6 +59,8 @@ if [ $commit_count -eq 1 ] && [ "${pb}" != "${cb}" ] ; then
 	EOF
 	checklist_added=true
 fi
+
+debug_out "Checking for Commit msg blank line"
 
 no_blank_line=false
 for (( commit=0 ; commit < commit_count ; commit+=1 )) ; do
