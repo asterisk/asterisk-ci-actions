@@ -43,8 +43,8 @@ if [ $commit_count -eq 1 ] && [ "$pr_title" != "${commit_titles[0]}" ] ; then
 	checklist_added=true
 fi
 
-cb=$(sed -r -e '/^$/d' -e $'s/[[:space:]]+/ /g' <<< $"${commit_bodies[0]}")
-pb=$(sed -r -e '/^$/d' -e $'s/[[:space:]]+/ /g' <<< $"${pr_body}")
+cb=$(tr '[:cntrl:]' ' ' <<< $"${commit_bodies[0]}" | sed -r -e '/^$/d' -e $'s/[[:blank:]]+/ /g')
+pb=$(tr '[:cntrl:]' ' ' <<< $"${pr_body}" | sed -r -e '/^$/d' -e $'s/[[:blank:]]+/ /g')
 
 debug_out "Checking for PR description/Commit msg body mismatches"
 
