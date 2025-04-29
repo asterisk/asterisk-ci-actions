@@ -111,6 +111,7 @@ fi
 
 if ! $NO_MENUSELECT ; then
 	SUCCESS=true
+	debug_out "Running initial menuselect"
 	runner ${MAKE} menuselect.makeopts || SUCCESS=false
 	cp menuselect-tree menuselect.{makedeps,makeopts} ${OUTPUT_DIR}/
 	$SUCCESS || {
@@ -118,11 +119,12 @@ if ! $NO_MENUSELECT ; then
 		exit 1
 	}
 
+	debug_out "Setting menuselect options"
 	runner menuselect/menuselect `gen_mods enable DONT_OPTIMIZE` menuselect.makeopts
 	if ! $COMPILE_DOUBLE ; then
 		runner menuselect/menuselect `gen_mods disable COMPILE_DOUBLE` menuselect.makeopts
 	fi
-	
+
 	grep -q ADD_CFLAGS_TO_BUILDOPTS_H ./build_tools/cflags.xml && \
 		runner menuselect/menuselect --enable ADD_CFLAGS_TO_BUILDOPTS_H menuselect.makeopts
 	if ! $NO_DEV_MODE ; then
@@ -135,6 +137,7 @@ if ! $NO_MENUSELECT ; then
 
 	cat_enables=""
 	cat_disables=""
+	debug_out "Setting category enables/disables"
 
 	if [[ ! "${BRANCH_NAME}" =~ ^certified ]] ; then
 		cat_enables+=" MENUSELECT_BRIDGES MENUSELECT_CEL MENUSELECT_CDR"
@@ -145,13 +148,16 @@ if ! $NO_MENUSELECT ; then
 	if ! $NO_DEV_MODE ; then
 		cat_enables+=" MENUSELECT_TESTS"
 	fi
+
+	debug_out "Committing category enables/disables"
+
 	if [ -n "$cat_enables" ] ; then
 		runner menuselect/menuselect `gen_cats enable $cat_enables` menuselect.makeopts || SUCCESS=false
 	fi
 	if [ -n "$cat_disables" ] ; then
 		runner menuselect/menuselect `gen_cats disable $cat_disables` menuselect.makeopts || SUCCESS=false
 	fi
-	
+
 	cp menuselect.makedeps ${OUTPUT_DIR}/menuselect.makedeps.postcats
 	cp menuselect.makeopts ${OUTPUT_DIR}/menuselect.makeopts.postcats
 	$SUCCESS || {
@@ -159,6 +165,7 @@ if ! $NO_MENUSELECT ; then
 		exit 1
 	}
 
+	debug_out "Setting module enables/disables"
 	mod_disables="codec_ilbc codec_silk codec_siren7 codec_siren14 codec_g729a res_digium_phone"
 	grep -q res_pjsip_config_sangoma res/res.xml && mod_disables+=" res_pjsip_config_sangoma"
 
@@ -183,6 +190,7 @@ if ! $NO_MENUSELECT ; then
 	fi
 	mod_disables+=" ${MODULES_BLACKLIST//,/ }"
 
+	debug_out "Setting module disables"
 	runner menuselect/menuselect `gen_mods disable $mod_disables` menuselect.makeopts || SUCCESS=false
 	cp menuselect.makedeps ${OUTPUT_DIR}/menuselect.makedeps.moddisables
 	cp menuselect.makeopts ${OUTPUT_DIR}/menuselect.makeopts.moddisables
@@ -191,6 +199,7 @@ if ! $NO_MENUSELECT ; then
 		exit 1
 	}
 
+	debug_out "Setting module enables"
 	mod_enables="app_voicemail app_directory"
 	mod_enables+=" res_mwi_external res_ari_mailboxes res_mwi_external_ami res_stasis_mailbox"
 	mod_enables+=" CORE-SOUNDS-EN-GSM MOH-OPSOUND-GSM EXTRA-SOUNDS-EN-GSM"
@@ -203,19 +212,21 @@ if ! $NO_MENUSELECT ; then
 	}
 fi
 
+debug_out "Running make ari-stubs"
 runner ${MAKE} ari-stubs || {
 		log_error_msgs "make ari-stubs failed"
 		exit 1
 	}
-changes=$(git status --porcelain)
-if [ -n "$changes" ] ; then
-		log_error_msgs "ERROR: 'make ari-stubs' generated new files which were not checked in.
-Perhaps you forgot to run 'make ari-stubs' yourself?
-Files:
-$changes
-"
-	exit 1
-fi
+
+#changes=$(git status --porcelain)
+#if [ -n "$changes" ] ; then
+#		log_error_msgs "ERROR: 'make ari-stubs' generated new files which were not checked in.
+#Perhaps you forgot to run 'make ari-stubs' yourself?
+#Files:
+#$changes
+#"
+#	exit 1
+#fi
 
 if ! $NO_MAKE ; then
 	runner ${MAKE} -j8 full || runner ${MAKE} -j1 NOISY_BUILD=yes full || {

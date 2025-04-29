@@ -55,7 +55,7 @@ fi
 debug_out "Installing addons" 
 apt-get install -qq ${addons} >/dev/null
 
-if [ "$RUNNER_ENVIRONMENT" == "github-hosted" ] ; then
+if [ -n "$RUNNER_ENVIRONMENT" ] ; then
 	debug_out "Setting kernel.core_pattern=/tmp/core-%e-%t"
 	sysctl -w kernel.core_pattern=/tmp/core-%e-%t
 	chmod 1777 /tmp
@@ -67,6 +67,11 @@ if $FOR_RELEASE ; then
 	debug_out "Installed release packages.  sipp not needed."
 	exit 0
 fi
+
+debug_out "Removing bison"
+apt-get remove -y -qq bison || :
+apt-get remove -y -qq byacc || :
+
 
 debug_out "Building and installing sipp"
 SIPPDIR=$(mktemp -d -p /opt/ -t sipp.XXXXXXXX)
