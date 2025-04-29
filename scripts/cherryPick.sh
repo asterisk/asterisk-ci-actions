@@ -54,9 +54,9 @@ fi
 
 cd ${REPO_DIR}
 
-git config get --global --value=${REPO_DIR} safe.directory &>/dev/null || {
+git config --global --get safe.directory ${REPO_DIR} &>/dev/null || {
 	debug_out "Setting safe.directory to ${REPO_DIR}"
-	git config set --global --append safe.directory ${REPO_DIR}
+	git config --global --add safe.directory ${REPO_DIR}
 }
 
 debug_out "Fetching PR ${PR_NUMBER}"

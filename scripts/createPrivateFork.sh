@@ -65,7 +65,11 @@ cd "${GITHUB_WORKSPACE}"
 # numbered one.
 echo "Cloning asterisk/${SRC_REPO} to ./${DST_REPO}"
 gh repo clone "asterisk/${SRC_REPO}" "./${DST_REPO}" -- --branch master
-git config --global --add safe.directory "${REPO_DIR}"
+
+git config --global --get safe.directory ${REPO_DIR} &>/dev/null || {
+	debug_out "Setting safe.directory to ${REPO_DIR}"
+	git config --global --add safe.directory ${REPO_DIR}
+}
 
 # gh repo create tries to set origin in the source
 # directory so we need to rename the current origin

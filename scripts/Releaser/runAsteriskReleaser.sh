@@ -62,9 +62,9 @@ git clone ${GITHUB_SERVER_URL}/${REPO} ${REPO_DIR} || bail "Unable to clone ${RE
 cd ${REPO_DIR}
 
 debug "Checking safe.directory"
-git config get --global --value=${REPO_DIR} safe.directory &>/dev/null || {
-	debug "Setting safe.directory to ${REPO_DIR}"
-	git config set --global --append safe.directory ${REPO_DIR}
+git config --global --get safe.directory ${REPO_DIR} &>/dev/null || {
+	debug_out "Setting safe.directory to ${REPO_DIR}"
+	git config --global --add safe.directory ${REPO_DIR}
 }
 
 debug "Checking out ${end_tag_array[source_branch]}"
