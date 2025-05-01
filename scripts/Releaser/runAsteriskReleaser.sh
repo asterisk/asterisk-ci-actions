@@ -63,7 +63,7 @@ cd ${REPO_DIR}
 
 debug "Checking safe.directory"
 git config --global --get safe.directory ${REPO_DIR} &>/dev/null || {
-	debug_out "Setting safe.directory to ${REPO_DIR}"
+	debug "Setting safe.directory to ${REPO_DIR}"
 	git config --global --add safe.directory ${REPO_DIR}
 }
 
