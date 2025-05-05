@@ -149,6 +149,10 @@ if ! $NO_MENUSELECT ; then
 		cat_enables+=" MENUSELECT_TESTS"
 	fi
 
+	if [ -f "main/channelstorage_makeopts.xml" ] ; then
+		cat_enables+=" MENUSELECT_CHANNELSTORAGE"
+	fi
+
 	debug_out "Committing category enables/disables"
 
 	if [ -n "$cat_enables" ] ; then
@@ -218,18 +222,19 @@ runner ${MAKE} ari-stubs || {
 		exit 1
 	}
 
-#changes=$(git status --porcelain)
-#if [ -n "$changes" ] ; then
-#		log_error_msgs "ERROR: 'make ari-stubs' generated new files which were not checked in.
-#Perhaps you forgot to run 'make ari-stubs' yourself?
-#Files:
-#$changes
-#"
-#	exit 1
-#fi
+changes=$(git status --porcelain)
+if [ -n "$changes" ] ; then
+		log_error_msgs "ERROR: 'make ari-stubs' generated new files which were not checked in.
+Perhaps you forgot to run 'make ari-stubs' yourself?
+Files:
+$changes
+"
+	exit 1
+fi
 
 if ! $NO_MAKE ; then
-	runner ${MAKE} -j8 full || runner ${MAKE} -j1 NOISY_BUILD=yes full || {
+	np=$(nproc 2>/dev/null || echo 8)
+	runner ${MAKE} -j ${np} full || runner ${MAKE} -j1 NOISY_BUILD=yes full || {
 		log_error_msgs "compile failed"
 		exit 1
 	}
