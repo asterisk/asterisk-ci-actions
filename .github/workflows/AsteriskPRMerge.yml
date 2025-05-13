@@ -54,15 +54,17 @@ jobs:
             --repo=${REPO} \
             --pr-number=${PR_NUMBER} \
             --cherry-pick-regex="${CHERRY_PICK_REGEX}")
-          BRANCH_COUNT=$(echo ${result} | jq -c '.branch_count')
-          BRANCHES=$(echo ${result} | jq -c '.branches')
-          FORCED_NONE=$(echo ${result} | jq -c '.forced_none')
+          echo "Result: ${result}"
+          BRANCH_COUNT=$(jq -c '.branch_count' <<<$result)
+          BRANCHES=$(jq -c '.branches' <<<$result)
+          FORCED_NONE=$(jq -c '.forced_none' <<<$result)
+          echo "BRANCHES: $BRANCHES"
 
           gh pr edit --repo ${{ github.repository }} \
             --add-label ${{ vars.PRE_MERGE_TESTING_IN_PROGRESS }} \
             ${PR_NUMBER} || :
 
-          ALL_BRANCHES=$(echo "$BRANCHES" | jq -c "[ \"$BASE_BRANCH\" ] + .")
+          ALL_BRANCHES=$(jq -c "[ \"$BASE_BRANCH\" ] + ." <<<$BRANCHES)
           echo "all_branches=${ALL_BRANCHES}" >>${GITHUB_OUTPUT}
 
       - name: CheckCherryPicks
