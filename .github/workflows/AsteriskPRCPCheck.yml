@@ -69,16 +69,19 @@ jobs:
             --repo=${REPO} \
             --pr-number=${PR_NUMBER} \
             --cherry-pick-regex="${CHERRY_PICK_REGEX}")
-          BRANCH_COUNT=$(echo ${result} | jq -c '.branch_count')
-          BRANCHES=$(echo ${result} | jq -c '.branches')
-          FORCED_NONE=$(echo ${result} | jq -c '.forced_none')
+          echo "Result: ${result}"
+          BRANCH_COUNT=$(jq -c '.branch_count' <<<$result)
+          BRANCHES=$(jq -c '.branches' <<<$result)
+          FORCED_NONE=$(jq -c '.forced_none' <<<$result)
+          echo "BRANCHES: $BRANCHES"
 
           if [ ${BRANCH_COUNT} -eq 0 ] ; then
             echo "No cherry-pick branches"
             exit 0
           fi
+          echo "BRANCH_COUNT: $BRANCH_COUNT"
 
-          branches=$(echo $BRANCHES | jq -r '.[]')
+          branches=$(jq -r '.[]' <<<$BRANCHES)
           for b in $branches ; do
             gh cache delete -R ${REPO} ${BUILD_CACHE_KEY_PREFIX}-$b || :
           done
@@ -91,6 +94,7 @@ jobs:
         env:
           BRANCHES: ${{ steps.setup.outputs.branches }}
         run: |
+          echo "BRANCHES: $BRANCHES"
           ${SCRIPT_DIR}/cherryPick.sh \
             --repo=${REPO} \
             --repo-dir=${REPO_DIR} \
@@ -152,7 +156,7 @@ jobs:
         run: |
           label=""
           RESULT=$RESULT_CHECK
-          branches=$(echo $BRANCHES | jq -r '.[]')
+          branches=$(jq -r '.[]' <<<$BRANCHES)
           echo "Branches: ${branches}"
           echo "Setup status: $RESULT_SETUP Check status: $RESULT_CHECK"
           case $RESULT_CHECK in
