@@ -104,8 +104,6 @@ printvars() {
 	for var in "$@" ; do
 		debug_out "$var=${!var}" >&2
 	done
-	debug_out "kernel.core_pattern=$(/sbin/sysctl -n kernel.core_pattern)"
-	
 }
 
 assert_env_variable() {
@@ -127,7 +125,6 @@ assert_env_variables() {
 		fi
 		$printit && echo "$var=${!var}" >&2
 	done
-	$printit && debug_out "kernel.core_pattern=$(/sbin/sysctl -n kernel.core_pattern)"
 	return $rc
 }
 

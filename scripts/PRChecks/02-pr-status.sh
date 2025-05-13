@@ -18,17 +18,21 @@ fi
 
 readarray -d "" -t states < <( jq --raw-output0 '.[].state ' ${PR_STATUS_PATH})
 readarray -d "" -t descriptions < <( jq --raw-output0 '.[].description ' ${PR_STATUS_PATH})
+readarray -d "" -t contexts < <( jq --raw-output0 '.[].context ' ${PR_STATUS_PATH})
 
-checklist_added=false
+checklist_added=true
 for (( status=0 ; status < status_count ; status+=1 )) ; do
-	if [ "${states[$status]}" != "success" ] ; then
-		debug_out "Status check failed: ${descriptions[$status]}"
-		cat <<-EOF | print_checklist_item --append-newline
-		- [ ] ${descriptions[$status]}
-		EOF
-		checklist_added=true
+	if [ "${states[$status]}" == "success" ] && [ "${contexts[$status]}" == "license/cla" ] ; then
+		checklist_added=false
 	fi
 done
+
+if $checklist_added ; then
+	debug_out "Status check failed: Contributor License Agreement is not signed yet."
+	cat <<-EOF | print_checklist_item --append-newline
+	- [ ] Contributor License Agreement is not signed yet.
+	EOF
+fi
 
 $checklist_added && exit $EXIT_CHECKLIST_ADDED
 debug_out "No issues found."
