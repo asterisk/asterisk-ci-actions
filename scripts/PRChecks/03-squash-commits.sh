@@ -18,6 +18,20 @@ fi
 
 debug_out "${commit_count} commits found."
 
+debug_out "Looking for merge commits"
+merge=$(jq '.[].commit.message | select(startswith("Merge branch"))' ${PR_COMMITS_PATH})
+if [ -n "$merge" ] ; then
+	cat <<EOF | print_checklist_item --append-newline
+- [ ] There is a Merge commit in this PR.  The Asterisk project doesn't 
+use Merge commits so this commit must be removed.
+EOF
+	# If there was only the good commit and a merge commit
+	# we can stop here.
+	if [ $commit_count -eq 2 ] ; then
+		exit $EXIT_CHECKLIST_ADDED
+	fi
+fi
+
 debug_out "Looking for 'multiple-commits' headers"
 value=$(jq -r "[ .[].body | match(\"(^|\r?\n)multiple-commits:[[:blank:]]*(standalone|interim)(\r?\n|$)\"; \"g\") | .captures[1].string ][0]" ${PR_COMMENTS_PATH})
 if [[ "$value" =~ (standalone|interim) ]] ; then
