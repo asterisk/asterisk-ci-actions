@@ -28,11 +28,16 @@ END_TAG="${NEW_VERSION}"
 declare -A end_tag_array
 tag_parser ${END_TAG} end_tag_array || bail "Unable to parse end tag '${END_TAG}'"
 
+if ${end_tag_array[certified]} && [ "${end_tag_array[release_type]}" == "ga" ] && ! ${SECURITY} ; then
+	NORC=true
+	FORCE_CHERRY_PICK=true
+fi
+
 debug "Validating tags"
 ${SCRIPT_DIR}/version_validator.sh \
 	--product=${PRODUCT} \
-	$(booloption security) $(booloption hotfix) \
-	$(stringoption start-tag) --end-tag=${END_TAG}
+	$(booloption security) $(booloption hotfix)  $(booloption norc) \
+	$(stringoption start-tag) --end-tag=${END_TAG} --debug
 
 debug "Tags valid: ${START_TAG} -> ${END_TAG} Release Type: ${end_tag_array[release_type]}"
 
