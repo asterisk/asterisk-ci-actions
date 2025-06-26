@@ -3,7 +3,7 @@ set -e
 
 declare needs=( end_tag dst_dir )
 declare wants=( product src_repo gh_repo dst_dir security hotfix norc advisories
-				adv_url_base force_cherry_pick alembic
+				adv_url_base skip_cherry_pick force_cherry_pick alembic
 				changelog commit tag push_branches tarball patchfile
 				sign full_monty dry_run )
 declare tests=( src_repo dst_dir )
@@ -36,6 +36,12 @@ debug "$(declare -p start_tag)"
 
 ${ECHO_CMD} git -C "${SRC_REPO}" checkout ${end_tag[branch]}
 cd "${SRC_REPO}"
+
+CHERRY_PICK=true
+if ${SKIP_CHERRY_PICK} ; then
+	debug "Skipping cherry-pick"
+	CHERRY_PICK=false
+fi
 
 if ${CHERRY_PICK} ; then
 	debug "Cherry-picking ${START_TAG} -> ${END_TAG}"

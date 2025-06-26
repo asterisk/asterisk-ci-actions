@@ -4,7 +4,7 @@ SCRIPT_DIR=$(dirname $(readlink -fn $0))
 STAGING_DIR=${GITHUB_WORKSPACE}/${PRODUCT}-${NEW_VERSION}
 
 declare needs=( repo repo_dir product new_version security hotfix 
-				force_cherry_pick push_branches create_github_release
+				force_cherry_pick skip_cherry_pick push_branches create_github_release
 				push_tarballs send_email mail_list_ga mail_list_rc
 				mail_list_cert_ga mail_list_cert_rc mail_list_sec
 				adv_url_base deploy_host deploy_dir 
@@ -107,10 +107,9 @@ ${SCRIPT_DIR}/create_release_artifacts.sh \
 	--gh-repo=${REPO} --debug \
 	$(booloption security) $(booloption hotfix) $(booloption norc) \
 	$(stringoption advisories) $(stringoption adv-url-base) \
-	$(booloption force-cherry-pick) \
+	$(booloption skip-cherry-pick) $(booloption force-cherry-pick) \
 	--product=${PRODUCT} \
 	--start-tag=${START_TAG} --end-tag=${END_TAG} \
-	--cherry-pick \
 	$([ "${PRODUCT}" == "asterisk" ] && echo "--alembic" || echo "") \
 	--changelog --commit --tag \
 	--sign --tarball --patchfile

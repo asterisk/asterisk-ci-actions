@@ -52,7 +52,7 @@ commitcount=$(wc -l ${commitlist} | sed -n -r -e "s/([0-9]+).*/\1/gp")
 echo "Cherry picking $commitcount commit(s) from ${end_tag[source_branch]} to ${end_tag[branch]}"
 ${DEBUG} && cat ${commitlist}
 sed -i -r -e "s/([^ ]+)\s+.*/\1/g" ${commitlist}
-echo git -C "${SRC_REPO}" cherry-pick -x $(< ${commitlist})
+echo git -C "${SRC_REPO}" cherry-pick --keep-redundant-commits -x $(< ${commitlist})
 ${ECHO_CMD} git -C "${SRC_REPO}" cherry-pick --keep-redundant-commits -x $(< ${commitlist}) || { 
 	echo "Aborting cherry-pick"
 	git -C "${SRC_REPO}" cherry-pick --abort

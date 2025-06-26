@@ -31,6 +31,12 @@ on:
         required: true
         type: boolean
         default: false
+      skip_cherry_pick:
+        description: |
+          Skip automatic cherry-pick for regular RC1 releases?
+        required: false
+        type: boolean
+        default: true
       force_cherry_pick:
         description: |
           Force cherry-pick for non-RC1 releases?
@@ -93,6 +99,7 @@ env:
   SECURITY:              ${{inputs.is_security}}
   ADVISORIES:            ${{inputs.advisories}}
   HOTFIX:                ${{inputs.is_hotfix}}
+  SKIP_CHERRY_PICK:      ${{inputs.skip_cherry_pick}}
   FORCE_CHERRY_PICK:     ${{inputs.force_cherry_pick}}
   PUSH_BRANCHES:         ${{inputs.push_release_branches}}
   CREATE_GITHUB_RELEASE: ${{inputs.create_github_release}}

@@ -46,8 +46,8 @@ options+=(
 	  [advisories]="--advisories=<adv>[,<adv> ...]     # A comma separated list of advisories"
 	[adv_url_base]="--adv-url-base=<adv_url_base>      # The URL base for security advisories"
 	      [hotfix]="--hotfix                           # This is a hotfix but not security release"
-	 [cherry_pick]="--cherry-pick                      # Cherry-pick commits for rc1 releases"
-[force_cherry_pick]="--force-cherry-pick                # Force cherry-pick for non-rc releases"
+[skip_cherry_pick]="--skip-cherry-pick                 # Skip automatic cherry-picking for regular rc1 releases"
+[force_cherry_pick]="--force-cherry-pick               # Force cherry-pick for non-rc releases"
 	     [alembic]="--alembic                          # Create alembic sql scripts"
 	   [changelog]="--changelog                        # Create changelog"
 	      [commit]="--commit                           # Commit changelog/alembic scripts"
@@ -135,7 +135,7 @@ BRANCH=
 : ${SECURITY:=false}
 : ${HOTFIX:=false}
 : ${NORC:=false}
-: ${CHERRY_PICK:=false}
+: ${SKIP_CHERRY_PICK:=false}
 : ${FORCE_CHERRY_PICK:=false}
 : ${ALEMBIC:=false}
 : ${CHANGELOG:=false}
