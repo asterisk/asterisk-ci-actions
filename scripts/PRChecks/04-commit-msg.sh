@@ -84,7 +84,7 @@ declare -A has_fixes=( ["commit"]=false ["pr"]=false )
 has_extra_trailers=false
 
 check_for_extra_trailers() {
-	bad_trailers=$(echo "$2" | grep -A999 -E '^(Resolves|Fixes|UserNote|UpgradeNote)' | sed -n -r -e '/^[^ :]+:/!d;/(Resolves|Fixes|UpgradeNote|UserNote)/!p')
+	bad_trailers=$(echo "$2" | grep -A999 -E '^(Resolves|Fixes|DeveloperNote|UserNote|UpgradeNote)' | sed -n -r -e '/^[^ :]+:/!d;/(Resolves|Fixes|UpgradeNote|UserNote)/!p')
 	if [ -n "$bad_trailers" ] ; then
 		debug_out "${1} has extra trailers: ${bad_trailers}"
 		has_extra_trailers=true
@@ -100,7 +100,7 @@ done
 if $has_extra_trailers ; then
 	cat <<-EOF | print_checklist_item --append-newline
 	- [ ] The PR description and/or commit message has unsupported trailers after 
-	the \`Resolves\`, \`Fixes\`, \`UserNote\`, and/or \`UpgradeNote\` trailers. 
+	the \`Resolves\`, \`Fixes\`, \`UserNote\`, \`UpgradeNote\` and/or \`DeveloperNote\` trailers. 
 	Please refrain from adding unsupported trailers as they will confuse the 
 	release change log generation.  If you really need them, please move them 
 	before any of the supportred trailers and ensure there's a blank line after them.
@@ -184,7 +184,7 @@ fi
 
 has_bad_note=false
 check_for_bad_notes() {
-	for keyword in UserNote UpgradeNote ; do
+	for keyword in UserNote UpgradeNote DeveloperNote ; do
 		[[ "${2}" =~ (^|[[:cntrl:]])(${keyword})([^[:cntrl:]]+) ]] || continue
 		debug_out "${1} has a '${keyword}' trailer.  Checking for ':' and predeeding blank line."
 		if [[ ! "${2}" =~ (^|[[:cntrl:]][[:cntrl:]])${keyword}[:][[:blank:]] ]] ; then
@@ -203,8 +203,9 @@ done
 if $has_bad_note ; then
 	cat <<-EOF | print_checklist_item --append-newline
 	- [ ] The PR description and/or commit message has malformed 
-	\`UserNote\` and/or \`UpgradeNote\` trailers.  The \`UserNote\` and 
-	\`UpgradeNote\` keywords MUST be predeeded by a blank line and 
+	\`UserNote\`, \`UpgradeNote\` and/or \`DeveloperNote\` trailers. 
+	The \`UserNote\`, \`UpgradeNote\` and \`DeveloperNote\` 
+	keywords MUST be predeeded by a blank line and 
 	followed immediately by a colon and a space before 
 	the actual note text.  This is to ensure that the note is properly 
 	formatted and displayed in the release change logs.

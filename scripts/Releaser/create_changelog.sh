@@ -99,7 +99,7 @@ sed -i -r -e '/^(\(cherry.+|Change-Id.+)/d' "${RAW_COMMIT_FILE}"
 
 # NOTE:  There are two spaces at the end of each
 # link line.  They force newlines when rendered
-# are are intentional.
+# and are are intentional.
 
 cat <<-EOF >"${SUMMARY_FILE}"
 
@@ -153,6 +153,12 @@ if [ $ghsacount -gt 0 ] ; then
 	done
 fi
 
+
+# We only want commit messages that have UserNote,
+# UpgradeNote or DeveloperNote in them. 
+# awk is better at filtering paragraphs than sed
+# so we'll use it to find the commits then sed to format them.
+
 debug "Creating user notes"
 cat <<-EOF >>"${SUMMARY_FILE}"
 
@@ -160,13 +166,8 @@ cat <<-EOF >>"${SUMMARY_FILE}"
 
 EOF
 
-# We only want commit messages that have UserNote
-# headers in them. awk is better at filtering
-# paragraphs than sed so we'll use it to find
-# the commits then sed to format them.
-
 awk 'BEGIN{RS="@#@#@#@"; ORS="#@#@#@#"} /UserNote/' "${RAW_COMMIT_FILE}" |\
-	sed -n -r -e 's/Subject: (.*)/- #### \1/p' -e '/UserNote:/,/(UserNote|UpgradeNote|#@#@#@#)/!d ; s/UserNote:\s+//g ; s/#@#@#@#|UpgradeNote.*|UserNote.*//p ; s/^(.)/  \1/p' \
+	sed -n -r -e 's/Subject: (.*)/- #### \1/p' -e '/UserNote:/,/(UserNote|UpgradeNote|#@#@#@#)/!d ; s/UserNote:\s+//g ; s/#@#@#@#|UpgradeNote.*|UserNote.*|DeveloperNote.*//p ; s/^(.)/  \1/p' \
 		>>"${SUMMARY_FILE}"
 
 debug "Creating upgrade notes"
@@ -177,7 +178,24 @@ cat <<-EOF >>"${SUMMARY_FILE}"
 EOF
 
 awk 'BEGIN{RS="@#@#@#@"; ORS="#@#@#@#"} /UpgradeNote/' "${RAW_COMMIT_FILE}" |\
-	sed -n -r -e 's/Subject: (.*)/- #### \1/p' -e '/UpgradeNote:/,/(UserNote|UpgradeNote|#@#@#@#)/!d  ; s/UpgradeNote:\s+//g ; s/#@#@#@#|UpgradeNote.*|UserNote.*//p; s/^(.)/  \1/p' \
+	sed -n -r -e 's/Subject: (.*)/- #### \1/p' -e '/UpgradeNote:/,/(UserNote|UpgradeNote|#@#@#@#)/!d  ; s/UpgradeNote:\s+//g ; s/#@#@#@#|UpgradeNote.*|UserNote.*|DeveloperNote.*//p; s/^(.)/  \1/p' \
+		>>"${SUMMARY_FILE}"
+
+cat <<-EOF >>"${SUMMARY_FILE}"
+
+### Commit Authors:
+
+EOF
+
+debug "Creating developer notes"
+cat <<-EOF >>"${SUMMARY_FILE}"
+
+### Developer Notes:
+
+EOF
+
+awk 'BEGIN{RS="@#@#@#@"; ORS="#@#@#@#"} /DeveloperNote/' "${RAW_COMMIT_FILE}" |\
+	sed -n -r -e 's/Subject: (.*)/- #### \1/p' -e '/UpgradeNote:/,/(UserNote|UpgradeNote|#@#@#@#)/!d  ; s/DeveloperNote:\s+//g ; s/#@#@#@#|UpgradeNote.*|UserNote.*|DeveloperNote.*//p; s/^(.)/  \1/p' \
 		>>"${SUMMARY_FILE}"
 
 cat <<-EOF >>"${SUMMARY_FILE}"
@@ -189,6 +207,7 @@ EOF
 cat "${AUTHORS_SUMMARY_FILE}" >>"${SUMMARY_FILE}"
 debug "Done with summary"
 cp "${SUMMARY_FILE}" "${FULL_CHANGELOG_FILE}"
+
 debug "Beginning details"
 
 cat <<-EOF >>"${FULL_CHANGELOG_FILE}"
