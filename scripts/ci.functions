@@ -23,15 +23,15 @@ for a in "$@" ; do
 			l=${BASH_REMATCH[1]//-/_}
 			printf -v "${l^^}" "%b" "${BASH_REMATCH[2]}"
 			;;
+		--no-* | --dont-*)
+			[[ $a =~ --(no|dont)-(.+) ]]
+			l=${BASH_REMATCH[2]//-/_}
+			printf -v "${l^^}" "%b" "false"
+			;;
 		--*)
 			[[ $a =~ --(.+) ]]
 			l=${BASH_REMATCH[1]//-/_}
 			printf -v "${l^^}" "%b" "true"
-			;;
-		--no-*)
-			[[ $a =~ --no-(.+) ]]
-			l=${BASH_REMATCH[1]//-/_}
-			printf -v "${l^^}" "%b" "false"
 			;;
 		*)
 			POSITIONAL_ARGS+=($a)

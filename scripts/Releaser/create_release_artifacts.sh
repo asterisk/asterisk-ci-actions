@@ -3,7 +3,8 @@ set -e
 
 declare needs=( end_tag dst_dir )
 declare wants=( product src_repo gh_repo dst_dir security hotfix norc advisories
-				adv_url_base skip_cherry_pick force_cherry_pick alembic
+				adv_url_base skip_cherry_pick force_cherry_pick
+				skip_test_builds alembic
 				changelog commit tag push_branches tarball patchfile
 				sign full_monty dry_run )
 declare tests=( src_repo dst_dir )
@@ -57,6 +58,16 @@ if ${ALEMBIC} && [ "${PRODUCT}" == "asterisk" ] ; then
 		--start-tag=${START_TAG} --end-tag=${END_TAG} \
 		--src-repo="${SRC_REPO}" --dst-dir="${DST_DIR}" \
 		$(booloption debug)
+fi
+
+if ! ${SKIP_TEST_BUILDS} ; then
+	CI_SCRIPT_DIR=$(dirname ${progdir})
+	debug "Running production buildAsterisk.sh for ${END_TAG}"
+	$ECHO_CMD ${CI_SCRIPT_DIR}/buildAsterisk.sh \
+		--distclean --no-dev-mode --build-native --optimize
+	debug "Running dev-mode buildAsterisk.sh for ${END_TAG}"
+	$ECHO_CMD ${CI_SCRIPT_DIR}/buildAsterisk.sh \
+		--distclean --dev-mode --build-native --no-optimize --compile-double
 fi
 
 if ${CHANGELOG} ; then

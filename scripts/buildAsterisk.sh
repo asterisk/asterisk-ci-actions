@@ -1,15 +1,33 @@
 #!/usr/bin/env bash
 
 SCRIPT_DIR=$(dirname $(readlink -fn $0))
+
+# These variables can all be set on the command line.
+# To enable an option, convert the variable to lower case and
+# replace '_' with '-'. 
+# Examples: --optimize --build-native
+# To disable an option use the same name but with prefix with
+# '--no-' or '--dont-'.
+# Examples: --no-dev-mode --dont-configure
 GITHUB=false
 COVERAGE=false
+OPTIMIZE=false
+DEV_MODE=true
 COMPILE_DOUBLE=false
+BUILD_NATIVE=false
+DISTCLEAN=false
 REF_DEBUG=false
+MALLOC_DEBUG=false
+BETTER_BACKTRACES=false
+DEBUG_FD_LEAKS=false
+DEBUG_THREADS=false
+LEAK_SANITIZER=false
+DO_CRASH=false
+TEST_FRAMEWORK=false
 DISABLE_BINARY_MODULES=false
-NO_CONFIGURE=false
-NO_MENUSELECT=false
-NO_MAKE=false
-NO_DEV_MODE=false
+CONFIGURE=true
+MENUSELECT=true
+MAKE=true
 OUTPUT_DIR=/tmp/asterisk_ci/
 TESTED_ONLY=false
 
@@ -66,26 +84,43 @@ if [ -n "$CACHE_DIR" ] ; then
 	mkdir -p $CACHE_DIR 2> /dev/null
 fi
 
-MAKE=`which make`
+GMAKE=`which make`
 PKGCONFIG=`which pkg-config`
 _libdir=`${SCRIPT_DIR}/findLibdir.sh`
 
 ulimit -a
 _version=$(./build_tools/make_version .)
 
-printvars BRANCH_NAME MAINLINE_BRANCH OUTPUT_DIR CACHE_DIR CCACHE_DISABLE CCACHE_DIR _libdir _version
+if $DEV_MODE ; then
+	DO_CRASH=true
+	TEST_FRAMEWORK=true
+fi
+
+printvars BRANCH_NAME MAINLINE_BRANCH OUTPUT_DIR CACHE_DIR CCACHE_DISABLE \
+	CCACHE_DIR _libdir _version \
+	DISTCLEAN \
+	CONFIGURE DEV_MODE DISABLE_BINARY_MODULES \
+	MENUSELECT OPTIMIZE COMPILE_DOUBLE BUILD_NATIVE \
+	MALLOC_DEBUG \
+	BETTER_BACKTRACES \
+	DEBUG_FD_LEAKS \
+	DEBUG_THREADS \
+	REF_DEBUG \
+	LEAK_SANITIZER \
+	DO_CRASH \
+	TEST_FRAMEWORK \
+	MAKE
 
 debug_out "Creating configure arguments"
 
 common_config_args="--prefix=/usr ${_libdir:+--libdir=${_libdir}} --sysconfdir=/etc --with-pjproject-bundled"
-
 
 source <(sed -r -e "s/\s+//g" third-party/versions.mak)
 [ -n "${JANSSON_VERSION}" ] && { $PKGCONFIG "jansson >= ${JANSSON_VERSION}" || common_config_args+=" --with-jansson-bundled" ; }
 [ -n "${LIBJWT_VERSION}" ] && { $PKGCONFIG "libjwt >= ${LIBJWT_VERSION}" && common_config_args+=" --with-libjwt" || common_config_args+=" --with-libjwt-bundled" ; } 
 
 common_config_args+=" ${CACHE_DIR:+--with-download-cache=${CACHE_DIR}}"
-if ! $NO_DEV_MODE ; then
+if $DEV_MODE ; then
 	common_config_args+=" --enable-dev-mode"
 fi
 if $COVERAGE ; then
@@ -97,7 +132,14 @@ fi
 
 export WGET_EXTRA_ARGS="--quiet"
 
-if ! $NO_CONFIGURE ; then
+if $DISTCLEAN ; then
+	debug_out "Running distclean"
+	# Yes, we do it twice.
+	${GMAKE} distclean &> /dev/null || :
+	rm -rf menuselect.makeopts menuselect.makedeps &>/dev/null || :
+fi
+
+if $CONFIGURE ; then
 	debug_out "Running configure"
 	SUCCESS=true
 	runner ./configure ${common_config_args} > /dev/null || SUCCESS=false
@@ -109,10 +151,23 @@ if ! $NO_CONFIGURE ; then
 	}
 fi
 
-if ! $NO_MENUSELECT ; then
+set_menuselect_options() {
+	args=""
+	for opt in $@ ; do
+		local value=${!opt}
+		if $value ; then
+			args+=" --enable $opt"
+		else
+			args+=" --disable $opt"
+		fi
+	done
+	runner menuselect/menuselect $args menuselect.makeopts
+}
+
+if $MENUSELECT ; then
 	SUCCESS=true
 	debug_out "Running initial menuselect"
-	runner ${MAKE} menuselect.makeopts || SUCCESS=false
+	runner ${GMAKE} menuselect.makeopts || SUCCESS=false
 	cp menuselect-tree menuselect.{makedeps,makeopts} ${OUTPUT_DIR}/
 	$SUCCESS || {
 		log_error_msgs "Initial menuselect failed"
@@ -120,20 +175,27 @@ if ! $NO_MENUSELECT ; then
 	}
 
 	debug_out "Setting menuselect options"
-	runner menuselect/menuselect `gen_mods enable DONT_OPTIMIZE` menuselect.makeopts
-	if ! $COMPILE_DOUBLE ; then
-		runner menuselect/menuselect `gen_mods disable COMPILE_DOUBLE` menuselect.makeopts
+
+	if $OPTIMIZE ; then
+		runner menuselect/menuselect `gen_mods disable DONT_OPTIMIZE` menuselect.makeopts
+	else
+		runner menuselect/menuselect `gen_mods enable DONT_OPTIMIZE` menuselect.makeopts
 	fi
+
+	set_menuselect_options \
+		BUILD_NATIVE \
+		COMPILE_DOUBLE \
+		REF_DEBUG \
+		MALLOC_DEBUG \
+		BETTER_BACKTRACES \
+		DEBUG_FD_LEAKS \
+		DEBUG_THREADS \
+		LEAK_SANITIZER \
+		DO_CRASH \
+		TEST_FRAMEWORK
 
 	grep -q ADD_CFLAGS_TO_BUILDOPTS_H ./build_tools/cflags.xml && \
 		runner menuselect/menuselect --enable ADD_CFLAGS_TO_BUILDOPTS_H menuselect.makeopts
-	if ! $NO_DEV_MODE ; then
-		runner menuselect/menuselect `gen_mods enable DO_CRASH TEST_FRAMEWORK` menuselect.makeopts
-	fi
-	runner menuselect/menuselect `gen_mods disable BUILD_NATIVE` menuselect.makeopts
-	if $REF_DEBUG ; then
-		runner menuselect/menuselect --enable REF_DEBUG menuselect.makeopts
-	fi
 
 	cat_enables=""
 	cat_disables=""
@@ -145,7 +207,7 @@ if ! $NO_MENUSELECT ; then
 		cat_enables+=" MENUSELECT_PBX MENUSELECT_RES"
 	fi
 
-	if ! $NO_DEV_MODE ; then
+	if $DEV_MODE ; then
 		cat_enables+=" MENUSELECT_TESTS"
 	fi
 
@@ -217,24 +279,26 @@ if ! $NO_MENUSELECT ; then
 fi
 
 debug_out "Running make ari-stubs"
-runner ${MAKE} ari-stubs || {
+runner ${GMAKE} ari-stubs || {
 		log_error_msgs "make ari-stubs failed"
 		exit 1
 	}
 
-changes=$(git status --porcelain)
-if [ -n "$changes" ] ; then
-		log_error_msgs "ERROR: 'make ari-stubs' generated new files which were not checked in.
-Perhaps you forgot to run 'make ari-stubs' yourself?
-Files:
-$changes
-"
-	exit 1
+if [ -d .git ] ; then
+	changes=$(git status --porcelain)
+	if [ -n "$changes" ] ; then
+			log_error_msgs "ERROR: 'make ari-stubs' generated new files which were not checked in.
+	Perhaps you forgot to run 'make ari-stubs' yourself?
+	Files:
+	$changes
+	"
+		exit 1
+	fi
 fi
 
-if ! $NO_MAKE ; then
+if $MAKE ; then
 	np=$(nproc 2>/dev/null || echo 8)
-	runner ${MAKE} -j ${np} full || runner ${MAKE} -j1 NOISY_BUILD=yes full || {
+	runner ${GMAKE} -j ${np} full || runner ${GMAKE} -j1 NOISY_BUILD=yes full || {
 		log_error_msgs "compile failed"
 		exit 1
 	}
@@ -257,7 +321,7 @@ if $COVERAGE ; then
 fi
 
 if [ -f "doc/core-en_US.xml" ] ; then
-	runner ${MAKE} validate-docs || ${MAKE} NOISY_BUILD=yes validate-docs || {
+	runner ${GMAKE} validate-docs || ${GMAKE} NOISY_BUILD=yes validate-docs || {
 		log_error_msgs "Documentation validation failed"
 		exit 1
 	}

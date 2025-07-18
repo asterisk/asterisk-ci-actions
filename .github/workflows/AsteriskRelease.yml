@@ -36,11 +36,17 @@ on:
           Skip automatic cherry-pick for regular RC1 releases?
         required: false
         type: boolean
-        default: true
+        default: false
       force_cherry_pick:
         description: |
           Force cherry-pick for non-RC1 releases?
         required: true
+        type: boolean
+        default: false
+      skip_test_builds:
+        description: |
+          Skip test builds?
+        required: false
         type: boolean
         default: false
       push_release_branches:
@@ -101,6 +107,7 @@ env:
   HOTFIX:                ${{inputs.is_hotfix}}
   SKIP_CHERRY_PICK:      ${{inputs.skip_cherry_pick}}
   FORCE_CHERRY_PICK:     ${{inputs.force_cherry_pick}}
+  SKIP_TEST_BUILDS:      ${{inputs.skip_test_builds}}
   PUSH_BRANCHES:         ${{inputs.push_release_branches}}
   CREATE_GITHUB_RELEASE: ${{inputs.create_github_release}}
   PUSH_TARBALLS:         ${{inputs.push_tarballs}}
