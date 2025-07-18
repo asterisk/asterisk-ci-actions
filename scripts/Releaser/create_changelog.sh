@@ -351,7 +351,18 @@ Thank You!
 EOF
 fi
 
+FULL_EMAIL=false
+
 if $SECURITY || $HOTFIX ; then
+	FULL_EMAIL=true
+fi
+
+if [ "${end_tag_array[release_type]}" == "rc" ] \
+	&& [ "${end_tag_array[release_num]}" -gt 1 ] ; then
+	FULL_EMAIL=true
+fi
+
+if $FULL_EMAIL ; then
 cat "${FULL_CHANGELOG_FILE}" >>"${DST_DIR}/email_announcement.md"
 else
 cat "${SUMMARY_FILE}" >>"${DST_DIR}/email_announcement.md"
