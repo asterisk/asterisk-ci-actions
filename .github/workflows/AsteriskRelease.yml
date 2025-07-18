@@ -2,6 +2,11 @@ name: Release
 on:
   workflow_call:
     inputs:
+      release_type:
+        description: |
+          Release Type:
+        required: true
+        type: string
       new_version:
         description: |
           New Version
@@ -10,13 +15,6 @@ on:
             certified/21.4-cert1-rc1, certified/21.4-cert1
         required: true
         type: string
-      is_security:
-        description: |
-          Security?
-          (Implies no RCs)
-        required: true
-        type: boolean
-        default: false
       advisories:
         description: |
           Comma separated list of advisories.
@@ -24,13 +22,6 @@ on:
           Example: GHSA-4xjp-22g4-9fxm,GHSA-4xjp-22g4-zzzz
         required: false
         type: string
-      is_hotfix:
-        description: |
-          Hotfix?
-          (A patch release but not security.  No RCs)
-        required: true
-        type: boolean
-        default: false
       skip_cherry_pick:
         description: |
           Skip automatic cherry-pick for regular RC1 releases?
@@ -102,9 +93,9 @@ env:
   WORKFLOW_RUN_ID: ${{ github.run_id }}
 
   NEW_VERSION:           ${{inputs.new_version}}
-  SECURITY:              ${{inputs.is_security}}
+  SECURITY:              ${{inputs.release_type == 'SECURITY'}}
   ADVISORIES:            ${{inputs.advisories}}
-  HOTFIX:                ${{inputs.is_hotfix}}
+  HOTFIX:                ${{inputs.release_type == 'HOTFIX'}}
   SKIP_CHERRY_PICK:      ${{inputs.skip_cherry_pick}}
   FORCE_CHERRY_PICK:     ${{inputs.force_cherry_pick}}
   SKIP_TEST_BUILDS:      ${{inputs.skip_test_builds}}
