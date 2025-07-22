@@ -84,7 +84,7 @@ declare -A has_fixes=( ["commit"]=false ["pr"]=false )
 has_extra_trailers=false
 
 check_for_extra_trailers() {
-	bad_trailers=$(echo "$2" | grep -A999 -E '^(Resolves|Fixes|DeveloperNote|UserNote|UpgradeNote)' | sed -n -r -e '/^[^ :]+:/!d;/(Resolves|Fixes|UpgradeNote|UserNote)/!p')
+	bad_trailers=$(echo "$2" | grep -A999 -E '^(Resolves|Fixes|DeveloperNote|UserNote|UpgradeNote)' | sed -n -r -e '/^[^ :]+:/!d;/(Resolves|Fixes|DeveloperNote|UpgradeNote|UserNote)/!p')
 	if [ -n "$bad_trailers" ] ; then
 		debug_out "${1} has extra trailers: ${bad_trailers}"
 		has_extra_trailers=true
