@@ -190,10 +190,14 @@ if $MENUSELECT ; then
 		BETTER_BACKTRACES \
 		DEBUG_FD_LEAKS \
 		DEBUG_THREADS \
-		LEAK_SANITIZER \
-		DO_CRASH \
-		TEST_FRAMEWORK
+		LEAK_SANITIZER
 
+	if $DEV_MODE ; then
+		set_menuselect_options \
+			DO_CRASH \
+			TEST_FRAMEWORK
+	fi
+	
 	grep -q ADD_CFLAGS_TO_BUILDOPTS_H ./build_tools/cflags.xml && \
 		runner menuselect/menuselect --enable ADD_CFLAGS_TO_BUILDOPTS_H menuselect.makeopts
 
