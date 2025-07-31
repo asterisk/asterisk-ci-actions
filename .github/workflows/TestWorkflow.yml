@@ -20,18 +20,21 @@ jobs:
       run:
         shell: bash
     steps:
-        # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
-      - name: GetActionsRepo
-        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
+      - name: Send email
+        uses: devellany/send-mail@v1.0.2
+        with:
+          host: smtp-mail.outlook.com
+            # Optional port (defaults to 465)
+          port: 587
+          account: ${{ secrets.ASTERISKTEAMSA_USERNAME }}
+          password: ${{ secrets.ASTERISKTEAMSA_PASSWORD }}
+          sender: Asterisk Team
+          from: asteriskteamsa@sangoma.com
+          to: gjoseph@sangoma.com
+          subject: mail title.
+          body: your messages.
+          # Optional content type (defaults to text/plain)
+          contentType: text/plain
+          # Optional attachment files (JSON type. require property 'path')
+          attachments: '[{"path":"README.md"}]'
 
-      - name: DumpEnvironment
-        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
-
-      - name: printenv
-        env:
-          FROM_STEP: "from step"
-          SSS: ${{ secrets.SOME_SUPER_SECRET }}
-        run: |
-          FROM_STEP_SHELL="from step shell"
-          export FROM_STEP_SHELL_EXPORTED="from step shell exported"
-          ${SCRIPT_DIR}/printEnv.sh
