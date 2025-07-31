@@ -84,7 +84,7 @@ fi
 debug "Getting commit list for ${START_TAG}..HEAD"
 git -C "${SRC_REPO}" --no-pager log \
 	--format='format:@#@#@#@%nSubject: %<(80,trunc)%s%nAuthor: %an  %nDate:   %as  %n%n%b%n#@#@#@#' \
-	-E --grep "^(([.]github)|(Add\s+ChangeLog)|(Update[s]?\s+for)|(Update\s+CHANGES))" --invert-grep ${START_TAG}..HEAD >>"${RAW_COMMIT_FILE}"
+	-E --grep "^(([.]github)|([.]lastclean)|(Add\s+ChangeLog)|(Update[s]?\s+for)|(Update\s+CHANGES))" --invert-grep ${START_TAG}..HEAD >>"${RAW_COMMIT_FILE}"
 
 if [ ! -s "${RAW_COMMIT_FILE}" ] ; then
 	bail "There are no commits in the range ${START_TAG}..HEAD.
@@ -167,7 +167,7 @@ cat <<-EOF >>"${SUMMARY_FILE}"
 EOF
 
 awk 'BEGIN{RS="@#@#@#@"; ORS="#@#@#@#"} /UserNote/' "${RAW_COMMIT_FILE}" |\
-	sed -n -r -e 's/Subject: (.*)/- #### \1/p' -e '/UserNote:/,/(UserNote|UpgradeNote|#@#@#@#)/!d ; s/UserNote:\s+//g ; s/#@#@#@#|UpgradeNote.*|UserNote.*|DeveloperNote.*//p ; s/^(.)/  \1/p' \
+	sed -n -r -e 's/Subject: (.*)/- #### \1/p' -e '/^UserNote:/,/^(UserNote|UpgradeNote|DeveloperNote|#@#@#@#)/!d ; s/UserNote:\s+//g ; s/#@#@#@#|UpgradeNote.*|UserNote.*|DeveloperNote.*//p ; s/^(.)/  \1/p' \
 		>>"${SUMMARY_FILE}"
 
 debug "Creating upgrade notes"
@@ -178,14 +178,9 @@ cat <<-EOF >>"${SUMMARY_FILE}"
 EOF
 
 awk 'BEGIN{RS="@#@#@#@"; ORS="#@#@#@#"} /UpgradeNote/' "${RAW_COMMIT_FILE}" |\
-	sed -n -r -e 's/Subject: (.*)/- #### \1/p' -e '/UpgradeNote:/,/(UserNote|UpgradeNote|#@#@#@#)/!d  ; s/UpgradeNote:\s+//g ; s/#@#@#@#|UpgradeNote.*|UserNote.*|DeveloperNote.*//p; s/^(.)/  \1/p' \
+	sed -n -r -e 's/Subject: (.*)/- #### \1/p' -e '/^UpgradeNote:/,/^(UserNote:|UpgradeNote:|DeveloperNote:|Resolves:|Fixes:|#@#@#@#)/!d  ; s/UpgradeNote:\s+//g ; s/#@#@#@#|^UpgradeNote:.*|^UserNote:.*|^DeveloperNote:.*|^Resolves:.*|^Fixes:.*//p; s/^(.)/  \1/p' \
 		>>"${SUMMARY_FILE}"
 
-cat <<-EOF >>"${SUMMARY_FILE}"
-
-### Commit Authors:
-
-EOF
 
 debug "Creating developer notes"
 cat <<-EOF >>"${SUMMARY_FILE}"
@@ -195,7 +190,7 @@ cat <<-EOF >>"${SUMMARY_FILE}"
 EOF
 
 awk 'BEGIN{RS="@#@#@#@"; ORS="#@#@#@#"} /DeveloperNote/' "${RAW_COMMIT_FILE}" |\
-	sed -n -r -e 's/Subject: (.*)/- #### \1/p' -e '/UpgradeNote:/,/(UserNote|UpgradeNote|#@#@#@#)/!d  ; s/DeveloperNote:\s+//g ; s/#@#@#@#|UpgradeNote.*|UserNote.*|DeveloperNote.*//p; s/^(.)/  \1/p' \
+	sed -n -r -e 's/Subject: (.*)/- #### \1/p' -e '/DeveloperNote:/,/(UserNote|UpgradeNote|DeveloperNote|#@#@#@#)/!d  ; s/DeveloperNote:\s+//g ; s/#@#@#@#|UpgradeNote.*|UserNote.*|DeveloperNote.*//p; s/^(.)/  \1/p' \
 		>>"${SUMMARY_FILE}"
 
 cat <<-EOF >>"${SUMMARY_FILE}"
@@ -278,7 +273,7 @@ debug "Getting shortlog for authors"
 # git shortlog can give us a list of commit authors
 # and the number of commits in the tag range.
 git -C "${SRC_REPO}" shortlog \
-	-E --grep "^(([.]github)|(Add\s+ChangeLog)|(Update[s]?\s+for)|(Update\s+CHANGES))" --invert-grep \
+	-E --grep "^(([.]github)|([.]lastclean)|(Add\s+ChangeLog)|(Update[s]?\s+for)|(Update\s+CHANGES))" --invert-grep \
 	--group="author" --format="- %<(80,trunc)%s" ${START_TAG}..HEAD |\
 #	Undent the commits and make headings for the authors
 	sed -r -e "s/\s+-(.+)/  -\1/g" --e "s/^([^ ].+)/- #### \1/g" \
