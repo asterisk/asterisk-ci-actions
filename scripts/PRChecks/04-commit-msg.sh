@@ -77,8 +77,6 @@ if $no_blank_line ; then
 	checklist_added=true
 fi
 
-debug_out "Checking commit message for Resolves/Fixes, UpgradeNote and UserNote trailers."
-
 declare -A has_fixes=( ["commit"]=false ["pr"]=false )
 
 has_extra_trailers=false
@@ -91,7 +89,7 @@ check_for_extra_trailers() {
 	fi
 }
 
-# Check PR and commits for extra trailers.
+debug_out "Checking PR and commits for extra trailers."
 check_for_extra_trailers "pr" "${pr_body}"
 for (( commit=0 ; commit < commit_count ; commit+=1 )) ; do
 	check_for_extra_trailers "commit" "${commit_bodies[$commit]}"
@@ -108,7 +106,9 @@ if $has_extra_trailers ; then
 	checklist_added=true
 fi
 
+debug_out "Checking PR and commits for Fixes/Resolves."
 has_bad_fixes=false
+declare -A issues_resolved=()
 check_for_bad_fixes() {
 	while read LINE ; do
 		# Skip the check if someone typed "Resolves an issue..."
@@ -121,6 +121,11 @@ check_for_bad_fixes() {
 		if [[ ! "${value}" =~ ^[:][[:blank:]]([#]([0-9]+|GHSA))|(https://github.com/[^/]+/[^/]+/issues/[0-9]+) ]] || [[ ! "${2}" =~ (^|[[:cntrl:]][[:cntrl:]])${keyword} ]] ; then
 			debug_out "${1} '${keyword}' trailer is malformed."
 			has_bad_fixes=true
+		else
+			if [[ "${value}" =~ ^[:][[:blank:]]([#]([0-9]+|GHSA-[0-9a-z]+-[0-9a-z]+-[0-9a-z]+))|(https://github.com/[^/]+/[^/]+/issues/([0-9]+)) ]] ; then
+				issue="${BASH_REMATCH[2]:-${BASH_REMATCH[4]}}"
+				issues_resolved[$issue]=true
+			fi
 		fi
 	done <<< $2 
 }
@@ -148,8 +153,23 @@ if $has_bad_fixes ; then
 	checklist_added=true
 fi
 
-has_stray_refs=false
+debug_out "Checking PR for issue mentions. ${has_fixes[pr]} ${has_fixes['pr']}"
+if ! ${has_fixes[pr]} ; then
+	pr_mentioned_by=( $(jq '.[] | select(.event == "cross-referenced") | .source.issue.number' $PR_TIMELINE_PATH) )
+	if [ ${#pr_mentioned_by[@]} -gt 0 ] ; then
+	cat <<-EOF | print_checklist_item --append-newline
+	- [ ] The PR is cross-referenced by one or more issues (${pr_mentioned_by[@]/#/#}) 
+	but doesn't contain any \`Fixes\` or \`Resolves\` trailers. 
+	A missing trailer will prevent the issue from being automatically closed when 
+	the PR merges and from being listed in the release change logs.<br> 
+	  Regular expression: \`^(Fixes|Resolves): #[0-9]+$\`.<br> 
+	  Example: \`Fixes: #9999\`. 
+	EOF
+	checklist_added=true
+	fi
+fi
 
+has_stray_refs=false
 declare -a stray_issues
 check_for_stray_refs() {
 	[[ "$2" =~ [[:blank:]](#[0-9]+)[[:blank:]] ]] || return 0
@@ -158,7 +178,7 @@ check_for_stray_refs() {
 	has_stray_refs=true
 }
 
-# Check PR and commits for stray issue references.
+debug_out "Checking PR and commits for stray issue references."
 if ! ${has_fixes[pr]} ; then
 	check_for_stray_refs "pr" "${pr_body}"
 fi
@@ -194,7 +214,7 @@ check_for_bad_notes() {
 	done
 }
 
-# Check PR and commits for notes.
+debug_out "Check PR and commits for notes."
 check_for_bad_notes "pr" "${pr_body}"
 for (( commit=0 ; commit < commit_count ; commit+=1 )) ; do
 	check_for_bad_notes "commit" "${commit_bodies[$commit]}"

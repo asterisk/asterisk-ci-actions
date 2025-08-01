@@ -4,7 +4,7 @@ SCRIPT_DIR=$(dirname ${CHECKS_DIR})
 
 DRY_RUN=false
 DOWNLOAD_ONLY=false
-DONT_DOWNLOAD=false
+DOWNLOAD=true
 QUIET_CHECKS=false
 
 source ${SCRIPT_DIR}/ci.functions
@@ -18,8 +18,9 @@ pr_files_path=/tmp/pr-files-${PR_NUMBER}.json
 pr_commits_path=/tmp/pr-commits-${PR_NUMBER}.json
 pr_comments_path=/tmp/pr-comments-${PR_NUMBER}.json
 pr_status_path=/tmp/pr-status-${PR_NUMBER}.json
+pr_timeline_path=/tmp/pr-timeline-${PR_NUMBER}.json
 
-if ! $DONT_DOWNLOAD ; then
+if $DOWNLOAD ; then
 	debug_out "Downloading PR,  diff, commits, comments"
 
 	gh api /repos/${REPO}/pulls/${PR_NUMBER} | jq . > ${pr_path}
@@ -32,6 +33,8 @@ if ! $DONT_DOWNLOAD ; then
 
 	status_url=$(jq -r '.statuses_url' ${pr_path})
 	gh api /repos/${status_url##*/repos/} | jq . > ${pr_status_path}
+	
+	gh api /repos/${REPO}/issues/${PR_NUMBER}/timeline | jq . > ${pr_timeline_path}
 fi
 
 if $DOWNLOAD_ONLY ; then
@@ -48,6 +51,7 @@ SCRIPT_ARGS="--repo=${REPO} --pr-number=${PR_NUMBER} \
 --pr-commits-path=${pr_commits_path} \
 --pr-comments-path=${pr_comments_path} \
 --pr-status-path=${pr_status_path} \
+--pr-timeline-path=${pr_timeline_path} \
 --pr-checklist-path=${pr_checklist_path}"
 
 debug_out "Running PR checks with arguments: ${SCRIPT_ARGS}"
