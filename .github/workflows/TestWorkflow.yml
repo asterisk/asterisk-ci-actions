@@ -20,7 +20,8 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Send email
+      - name: Send email via MS
+        if: always()
         uses: devellany/send-mail@v1.0.2
         with:
           host: smtp-mail.outlook.com
@@ -28,7 +29,8 @@ jobs:
           port: 587
           account: ${{ secrets.ASTERISKTEAMSA_USERNAME }}
           password: ${{ secrets.ASTERISKTEAMSA_PASSWORD }}
-          sender: Asterisk Team
+          secure: false
+          sender: Asterisk Development Team
           from: asteriskteamsa@sangoma.com
           to: gjoseph@sangoma.com
           subject: mail title.
@@ -36,5 +38,39 @@ jobs:
           # Optional content type (defaults to text/plain)
           contentType: text/plain
           # Optional attachment files (JSON type. require property 'path')
-          attachments: '[{"path":"README.md"}]'
+          attachments: '[]'
 
+      - name: Send Release Announcements
+        if: always()
+        uses: dawidd6/action-send-mail@v4
+        with:
+          server_address: smtp.office365.com
+          server_port: 587
+          secure: false
+          username: ${{ secrets.ASTERISKTEAMSA_USERNAME }}
+          password: ${{ secrets.ASTERISKTEAMSA_PASSWORD }}
+          subject: Test via MS2
+          to: gjoseph@sangoma.com
+          from: asteriskteamsa@sangoma.com
+          body: "test email"
+          reply_to: no-reply@sangoma.com
+          ignore_cert: true
+          convert_markdown: false
+
+      - name: Send Email
+        if: always()
+        uses: hilarion5/send-mail@v1
+        with:
+          smtp-server: smtp-mail.outlook.com
+          smtp-port: 587
+          smtp-secure: false
+          from-email: asteriskteamsa@sangoma.com
+          to-email: gjoseph@sangoma.com
+          username: ${{ secrets.ASTERISKTEAMSA_USERNAME }}
+          password: ${{ secrets.ASTERISKTEAMSA_PASSWORD }}
+          subject: Test Email
+          body: This is a test email sent from GitHub Actions.
+          html: |
+            <h1>This is a test email</h1>
+            <p>Test Paragraph</p>
+        
