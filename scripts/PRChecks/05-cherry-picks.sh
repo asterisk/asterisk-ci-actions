@@ -9,7 +9,7 @@ set -e
 assert_env_variables --print PR_COMMENTS_PATH || exit $EXIT_ERROR
 
 : ${PR_CHECKLIST_PATH:=/dev/stderr}
-: ${CHERRY_PICK_VALID_BRANCHES:='["22","21","20","certified/20.7","certified/18.9"]'}
+: ${CHERRY_PICK_VALID_BRANCHES:='["23","22","21","20","certified/20.7","certified/18.9"]'}
 
 debug_out "    Looking for 'cherry-pick-to' headers."
 value=$(jq -c -r "[ .[].body | match(\"(^|\r?\n)cherry-pick-to:[[:blank:]]*(([0-9.]+)|(certified/[0-9.]+)|(master|none))\"; \"g\") | .captures[1].string ]" ${PR_COMMENTS_PATH})
