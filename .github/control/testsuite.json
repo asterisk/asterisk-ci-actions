@@ -38,8 +38,8 @@
   {
     "created_at": "2023-06-13T14:00:55Z",
     "name": "CHERRY_PICK_REMINDER",
-    "updated_at": "2024-10-29T14:52:53Z",
-    "value": "<!--CPR-->REMINDER: If this PR applies to other branches, please add a comment with the appropriate \"cherry-pick-to\" headers as per the [Create a Pull Request](https://docs.asterisk.org/Development/Policies-and-Procedures/Code-Contribution) process.\r\n\r\nIf you don't want it cherry-picked, please add a \"cherry-pick-to: none\" comment so we don't keep asking.\r\n\r\nIf, after adding \"cherry-pick-to\" comments, you change your mind, please edit the comment to DELETE the header lines and add \"cherry-pick-to: none\".\r\n\r\nThe currently active branches are now __20, 21, 22 and master__."
+    "updated_at": "2025-08-13T16:21:29Z",
+    "value": "<!--CPR-->REMINDER: If this PR applies to other branches, please add a comment with the appropriate \"cherry-pick-to\" headers as per the [Create a Pull Request](https://docs.asterisk.org/Development/Policies-and-Procedures/Code-Contribution) process.\r\n\r\nIf you don't want it cherry-picked, please add a \"cherry-pick-to: none\" comment so we don't keep asking.\r\n\r\nIf, after adding \"cherry-pick-to\" comments, you change your mind, please edit the comment to DELETE the header lines and add \"cherry-pick-to: none\".\r\n\r\nThe currently active branches are now __20, 21, 22, 23 and master__."
   },
   {
     "created_at": "2023-05-02T17:54:05Z",
