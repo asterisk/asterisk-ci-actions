@@ -56,8 +56,8 @@
   {
     "created_at": "2025-03-07T18:28:55Z",
     "name": "CHERRY_PICK_VALID_BRANCHES",
-    "updated_at": "2025-03-07T18:31:58Z",
-    "value": "[\"22\",\"21\",\"20\",\"certified/20.7\",\"certified/18.9\"]"
+    "updated_at": "2025-08-14T17:04:21Z",
+    "value": "[\"23\",\"22\",\"21\",\"20\",\"certified/20.7\",\"certified/18.9\"]"
   },
   {
     "created_at": "2023-04-27T14:48:34Z",
