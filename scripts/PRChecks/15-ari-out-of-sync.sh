@@ -55,16 +55,18 @@ fi
 
 debug_out "    Checking for UpgradeNote mentioning ARI in commit message."
 upgrade_note=$(jq -r '.[].commit.message' ${PR_COMMITS_PATH} | \
-	tr -d '\r' | sed -n -r -e '/^(User|Upgrade)Note:/,/^$/p' | \
+	tr -d '\r' | sed -n -r -e '/^(User|Upgrade|Developer)Note:/,/^$/p' | \
 	 tr '[:upper:]' '[:lower:]' | sed -n -r -e 's/.*(ari).*/\1/p')
 
 if [ -z "$upgrade_note" ] ; then
 debug_out "    No UpgradeNote mentioning 'ARI' found.  Adding checklist item."
 	cat <<-EOF | print_checklist_item --append-newline
-	- [ ] An ARI change was detected but a commit message UpgradeNote 
-	or UserNote mentioning ARI wasn't found. 
-	Please add an UpgradeNote to the commit message that mentions ARI 
-	notifying users that there's been a change to the REST resources.
+	- [ ] An ARI change was detected but a commit message UpgradeNote or 
+	DeveloperNote mentioning ARI wasn't found. 
+	Please add a DeveloperNote for new capabilities or an UpgradeNote for 
+	non-backwards compatible changes to the commit message that 
+	mentions ARI notifying users that there's been a change to the REST 
+	resources.
 	EOF
 	checklist_added=true
 fi
