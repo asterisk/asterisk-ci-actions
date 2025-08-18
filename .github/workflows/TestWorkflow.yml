@@ -20,57 +20,222 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Send email via MS
-        if: always()
-        uses: devellany/send-mail@v1.0.2
+      - name: Send Release Announcements SES no envelope
+        if: true
+        uses: dawidd6/action-send-mail@v6
         with:
-          host: smtp-mail.outlook.com
-            # Optional port (defaults to 465)
-          port: 587
-          account: ${{ secrets.ASTERISKTEAMSA_USERNAME }}
-          password: ${{ secrets.ASTERISKTEAMSA_PASSWORD }}
-          secure: false
-          sender: Asterisk Development Team
-          from: asteriskteamsa@sangoma.com
-          to: gjoseph@sangoma.com
-          subject: mail title.
-          body: your messages.
-          # Optional content type (defaults to text/plain)
-          contentType: text/plain
-          # Optional attachment files (JSON type. require property 'path')
-          attachments: '[]'
-
-      - name: Send Release Announcements
-        if: always()
-        uses: dawidd6/action-send-mail@v4
-        with:
-          server_address: smtp.office365.com
+          server_address: email-smtp.us-east-1.amazonaws.com
           server_port: 587
           secure: false
-          username: ${{ secrets.ASTERISKTEAMSA_USERNAME }}
-          password: ${{ secrets.ASTERISKTEAMSA_PASSWORD }}
-          subject: Test via MS2
+          username: ${{ secrets.ASTERISKTEAM_SES_KEY_ID }}
+          password: ${{ secrets.ASTERISKTEAM_SES_KEY_SECRET }}
+          subject: Test via SES
+          to: gjoseph@sangoma.com
+          from: Asterisk Team <asteriskteam@sangoma.com>
+          body: "test email"
+          reply_to: no-reply+asteriskteam@sangoma.com
+          ignore_cert: true
+          convert_markdown: false
+          nodemailerlog: true
+          nodemailerdebug: true
+
+      - name: Send Release Announcements SES no envelope2
+        if: false
+        uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: email-smtp.us-east-1.amazonaws.com
+          server_port: 587
+          secure: false
+          username: ${{ secrets.ASTERISKTEAM_SES_KEY_ID }}
+          password: ${{ secrets.ASTERISKTEAM_SES_KEY_SECRET }}
+          subject: Test via SES
+          to: gjoseph@sangoma.com
+          from: asteriskteam@sangoma.com
+          body: "test email"
+          reply_to: no-reply@sangoma.com
+          ignore_cert: true
+          convert_markdown: false
+          nodemailerlog: true
+          nodemailerdebug: true
+
+      - name: Send Release Announcements SES no envelope3
+        if: false
+        uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: email-smtp.us-east-1.amazonaws.com
+          server_port: 587
+          secure: false
+          username: ${{ secrets.ASTERISKTEAM_SES_KEY_ID }}
+          password: ${{ secrets.ASTERISKTEAM_SES_KEY_SECRET }}
+          subject: Test via SES
+          to: gjoseph@sangoma.com
+          from: <asteriskteam@sangoma.com>
+          body: "test email"
+          reply_to: no-reply@sangoma.com
+          ignore_cert: true
+          convert_markdown: false
+          nodemailerlog: true
+          nodemailerdebug: true
+
+      - name: Send Release Announcements SES envelope_from
+        if: false
+        uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: email-smtp.us-east-1.amazonaws.com
+          server_port: 587
+          secure: false
+          username: ${{ secrets.ASTERISKTEAM_SES_KEY_ID }}
+          password: ${{ secrets.ASTERISKTEAM_SES_KEY_SECRET }}
+          subject: Test via SES
+          to: gjoseph@sangoma.com
+          from: Asterisk Team #<asteriskteam@sangoma.com>
+          envelope_from: asteriskteam@sangoma.com
+          body: "test email"
+          reply_to: no-reply@sangoma.com
+          ignore_cert: true
+          convert_markdown: false
+          nodemailerlog: true
+          nodemailerdebug: true
+
+      - name: Send Release Announcements SES envelope_from2
+        if: false
+        uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: email-smtp.us-east-1.amazonaws.com
+          server_port: 587
+          secure: false
+          username: ${{ secrets.ASTERISKTEAM_SES_KEY_ID }}
+          password: ${{ secrets.ASTERISKTEAM_SES_KEY_SECRET }}
+          subject: Test via SES
+          to: gjoseph@sangoma.com
+          from: Asterisk Team <asteriskteam@sangoma.com>
+          envelope_from: asteriskteam@sangoma.com
+          body: "test email"
+          reply_to: no-reply@sangoma.com
+          ignore_cert: true
+          convert_markdown: false
+          nodemailerlog: true
+          nodemailerdebug: true
+
+      - name: Send Release Announcements SES envelope_to
+        if: false
+        uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: email-smtp.us-east-1.amazonaws.com
+          server_port: 587
+          secure: false
+          username: ${{ secrets.ASTERISKTEAM_SES_KEY_ID }}
+          password: ${{ secrets.ASTERISKTEAM_SES_KEY_SECRET }}
+          subject: Test via SES
+          to: gjoseph@sangoma.com
+          from: Asterisk Team <asteriskteam@sangoma.com>
+          envelope_from: Asterisk Team <asteriskteam@sangoma.com>
+          envelope_to: George Joseph <gjoseph@sangoma.com>
+          body: "test email"
+          reply_to: no-reply@sangoma.com
+          ignore_cert: true
+          convert_markdown: false
+          nodemailerlog: true
+          nodemailerdebug: true
+
+      - name: Send Release Announcements SES envelope_to/from
+        if: false
+        uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: email-smtp.us-east-1.amazonaws.com
+          server_port: 587
+          secure: false
+          username: ${{ secrets.ASTERISKTEAM_SES_KEY_ID }}
+          password: ${{ secrets.ASTERISKTEAM_SES_KEY_SECRET }}
+          subject: Test via SES
+          to: gjoseph@sangoma.com
+          from: Asterisk Team <asteriskteam@sangoma.com>
+          envelope_from: asteriskteam@sangoma.com
+          envelope_to: gjoseph@sangoma.com
+          body: "test email"
+          reply_to: no-reply@sangoma.com
+          ignore_cert: true
+          convert_markdown: false
+          nodemailerlog: true
+          nodemailerdebug: true
+
+      - name: Send Release Announcements GMAIL no envelope
+        if: false
+        uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          secure: false
+          username: asteriskteamsa@sangoma.com
+          password: ${{secrets.ASTERISKTEAMSA_GMAIL_TOKEN}}
+          subject: Test via GMAIL
           to: gjoseph@sangoma.com
           from: asteriskteamsa@sangoma.com
           body: "test email"
           reply_to: no-reply@sangoma.com
           ignore_cert: true
           convert_markdown: false
+          nodemailerlog: true
+          nodemailerdebug: true
 
-      - name: Send Email
-        if: always()
-        uses: hilarion5/send-mail@v1
+      - name: Send Release Announcements GMAIL envelope_from
+        if: false
+        uses: dawidd6/action-send-mail@v6
         with:
-          smtp-server: smtp-mail.outlook.com
-          smtp-port: 587
-          smtp-secure: false
-          from-email: asteriskteamsa@sangoma.com
-          to-email: gjoseph@sangoma.com
-          username: ${{ secrets.ASTERISKTEAMSA_USERNAME }}
-          password: ${{ secrets.ASTERISKTEAMSA_PASSWORD }}
-          subject: Test Email
-          body: This is a test email sent from GitHub Actions.
-          html: |
-            <h1>This is a test email</h1>
-            <p>Test Paragraph</p>
-        
+          server_address: smtp.gmail.com
+          server_port: 587
+          secure: false
+          username: asteriskteamsa@sangoma.com
+          password: ${{secrets.ASTERISKTEAMSA_GMAIL_TOKEN}}
+          subject: Test via GMAIL
+          to: gjoseph@sangoma.com
+          from: Asterisk Team
+          envelope_from: asteriskteamsa@sangoma.com
+          body: "test email"
+          reply_to: no-reply@sangoma.com
+          ignore_cert: true
+          convert_markdown: false
+          nodemailerlog: true
+          nodemailerdebug: true
+
+      - name: Send Release Announcements GMAIL envelope_to
+        if: false
+        uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          secure: false
+          username: asteriskteamsa@sangoma.com
+          password: ${{secrets.ASTERISKTEAMSA_GMAIL_TOKEN}}
+          subject: Test via GMAIL
+          to: gjoseph@sangoma.com
+          from: Asterisk Team <asteriskteamsa@sangoma.com>
+          envelope_to: gjoseph@sangoma.com
+          body: "test email"
+          reply_to: no-reply@sangoma.com
+          ignore_cert: true
+          convert_markdown: false
+          nodemailerlog: true
+          nodemailerdebug: true
+          
+      - name: Send Release Announcements GMAIL envelope_to/from
+        if: false
+        uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          secure: false
+          username: asteriskteamsa@sangoma.com
+          password: ${{secrets.ASTERISKTEAMSA_GMAIL_TOKEN}}
+          subject: Test via GMAIL
+          to: gjoseph@sangoma.com
+          from: Asterisk Team <asteriskteamsa@sangoma.com>
+          envelope_from: asteriskteamsa@sangoma.com
+          envelope_to: gjoseph@sangoma.com
+          body: "test email"
+          reply_to: no-reply@sangoma.com
+          ignore_cert: true
+          convert_markdown: false
+          nodemailerlog: true
+          nodemailerdebug: true
+          
