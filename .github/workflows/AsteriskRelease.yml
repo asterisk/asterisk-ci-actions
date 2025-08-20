@@ -68,9 +68,9 @@ on:
         required: true
       gpg_private_key:
         required: true
-      asteriskteamsa_username:
+      asteriskteam_email_username:
         required: true
-      asteriskteamsa_token:
+      asteriskteam_email_secret:
         required: true
       deploy_ssh_priv_key:
         required: true
@@ -151,21 +151,21 @@ jobs:
 
       - name: Send Release Announcements
         if: inputs.send_email && steps.releaser.outputs.mail_list != 'none'
-        uses: dawidd6/action-send-mail@v4
+        uses: dawidd6/action-send-mail@v6
         with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          secure: true
-          username: ${{ secrets.asteriskteamsa_username }}
-          password: ${{ secrets.asteriskteamsa_token }}
+          server_address: email-smtp.us-east-1.amazonaws.com
+          server_port: 587
+          secure: false
+          username: ${{ secrets.asteriskteam_email_username }}
+          password: ${{ secrets.asteriskteam_email_secret }}
           subject: ${{ steps.releaser.outputs.subject }}
           to: ${{ steps.releaser.outputs.mail_list }}
           from: Asterisk Development Team <asteriskteamsa@sangoma.com>
           body: "file://${{github.workspace}}/${{steps.releaser.outputs.email_announcement}}"
-          reply_to: no-reply@sangoma.com
+          reply_to: no-reply+asteriskteam@sangoma.com
           ignore_cert: true
           convert_markdown: false
-  
+
       - name: Open FPBX Issue
         if: inputs.send_email && steps.releaser.outputs.release_type == 'ga'
         shell: bash
