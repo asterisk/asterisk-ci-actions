@@ -19,58 +19,47 @@ jobs:
     defaults:
       run:
         shell: bash
+    outputs:
+      testgroup:      ${{ steps.st1.outputs.TESTGROUP }}
+      testobject:      ${{ steps.st1.outputs.TESTOBJECT }}
     steps:
-      - name: Send email via MS
-        if: always()
-        uses: devellany/send-mail@v1.0.2
-        with:
-          host: smtp-mail.outlook.com
-            # Optional port (defaults to 465)
-          port: 587
-          account: ${{ secrets.ASTERISKTEAMSA_USERNAME }}
-          password: ${{ secrets.ASTERISKTEAMSA_PASSWORD }}
-          secure: false
-          sender: Asterisk Development Team
-          from: asteriskteamsa@sangoma.com
-          to: gjoseph@sangoma.com
-          subject: mail title.
-          body: your messages.
-          # Optional content type (defaults to text/plain)
-          contentType: text/plain
-          # Optional attachment files (JSON type. require property 'path')
-          attachments: '[]'
+      - name: Test ENV
+        id: st1
+        run: |
+          {
+            echo "TESTGROUP=pjs5" >> ${GITHUB_OUTPUT}
+            echo 'TESTOBJECT<<EOF'
+            cat <<EOFINNER
+            {
+            "pjs5": {
+                "name": "pjs5",
+                "dir": "tests/CI/output/pjsip5",
+                "timeout": 240,
+                "step_timeout_minutes": 45,
+                "options": "",
+                "testcmd": "--test-regex=tests/channels/pjsip/[s]"
+            }
+            }
+          EOFINNER
+            echo "EOF"
+          } >> ${GITHUB_OUTPUT}
 
-      - name: Send Release Announcements
-        if: always()
-        uses: dawidd6/action-send-mail@v4
-        with:
-          server_address: smtp.office365.com
-          server_port: 587
-          secure: false
-          username: ${{ secrets.ASTERISKTEAMSA_USERNAME }}
-          password: ${{ secrets.ASTERISKTEAMSA_PASSWORD }}
-          subject: Test via MS2
-          to: gjoseph@sangoma.com
-          from: asteriskteamsa@sangoma.com
-          body: "test email"
-          reply_to: no-reply@sangoma.com
-          ignore_cert: true
-          convert_markdown: false
+  Job2:
+    needs: Job1
+    runs-on: ubuntu-latest
+    env:
+      XXXXX: ${{ needs.Job1.outputs.testobject }}
+      GROUP: ${{ needs.Job1.outputs.testgroup }}
+      ZZZZZ: ${{ toJSON(fromJSON(needs.Job1.outputs.testobject)[needs.Job1.outputs.testgroup]) }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Test GET
+        run: |
+          echo "TESTOBJ: ${XXXXX}"
+          echo "TESTGROUP: ${GROUP}"
+          echo "LOCAL: ${{ toJSON(fromJSON(env.XXXXX)[env.GROUP]) }}"
+          echo "TESTOBJZ: ${ZZZZZ}"
 
-      - name: Send Email
-        if: always()
-        uses: hilarion5/send-mail@v1
-        with:
-          smtp-server: smtp-mail.outlook.com
-          smtp-port: 587
-          smtp-secure: false
-          from-email: asteriskteamsa@sangoma.com
-          to-email: gjoseph@sangoma.com
-          username: ${{ secrets.ASTERISKTEAMSA_USERNAME }}
-          password: ${{ secrets.ASTERISKTEAMSA_PASSWORD }}
-          subject: Test Email
-          body: This is a test email sent from GitHub Actions.
-          html: |
-            <h1>This is a test email</h1>
-            <p>Test Paragraph</p>
-        
+

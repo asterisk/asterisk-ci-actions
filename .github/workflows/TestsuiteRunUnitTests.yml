@@ -13,11 +13,12 @@ on:
         required: true
 
 env:
+  REPO:             ${{ github.repository }}
+  REPO_DIR:         ${{ github.event.repository.name }}
+  REPO_ORG:         ${{ github.event.repository.owner.login }}
   GH_TOKEN:         ${{ secrets.GITHUB_TOKEN }}
   BASE_BRANCH:      ${{ inputs.base_branch }}
   PR_NUMBER:        ${{ inputs.pr_number }}
-  REPO_DIR:         ${{ github.event.repository.name }}
-  REPO_ORG:         ${{ github.event.repository.owner.login }}
   UNITTEST_COMMAND: ${{ inputs.unittest_command }}
 
 jobs:
@@ -28,18 +29,16 @@ jobs:
       run:
         shell: bash
     steps:
+        # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
+      - name: GetActionsRepo
+        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
+
       - name: "Setup testsuite"
         run: |
           # Setup testsuite
-          git clone --depth 1 --no-tags -q -b ${BASE_BRANCH} \
-            ${GITHUB_SERVER_URL}/${REPO_ORG}/${REPO_DIR} ${REPO_DIR}
-          git config --global --add safe.directory ${REPO_DIR}
-          cd ${REPO_DIR}
-          if [ $PR_NUMBER -gt 0 ] ; then
-            gh pr checkout "${PR_NUMBER}" -b "pr-${PR_NUMBER}" ||
-              { echo "::error::Testsuite PR ${PR_NUMBER} not found" ; exit 1 ; }
-          fi
-          git --no-pager log -1 --oneline
+          ${SCRIPT_DIR}/checkoutRepo.sh --repo="${REPO}" \
+            --repo-dir="${REPO_DIR}" --branch="${BASE_BRANCH}" \
+            --pr-number=${PR_NUMBER} --is-cherry-pick
 
       - name: Run Unit Tests
         run: |

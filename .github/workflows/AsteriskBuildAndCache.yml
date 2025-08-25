@@ -72,9 +72,6 @@ env:
   MODULES_BLACKLIST: ${{ inputs.modules_blacklist }}
   SIPP_VERSION:      ${{ inputs.sipp_version }}
   CACHE_DIR:         ${{ github.workspace }}/${{ inputs.output_cache_dir }}
-  REPO_NAME:         ${{ github.event.repository.name }}
-  REPO_DIR:          ${{ github.workspace }}/${{ github.event.repository.name }}
-  REPO_ORG:          ${{ github.event.repository.owner.login }}
   OUTPUT_DIR:        ${{ github.workspace }}/${{ inputs.output_cache_dir }}/output
   BUILD_CACHE_DIR:   ${{ inputs.build_cache_dir }}
   BUILD_CACHE_PATH:  ${{ github.workspace }}/${{ inputs.build_cache_dir }}
@@ -101,6 +98,14 @@ jobs:
           echo "::group::Installing software"
           sudo ${SCRIPT_DIR}/setupRunner.sh --sipp-version=${SIPP_VERSION}
           echo "::endgroup::"
+
+          REPO_NAME=$(basename ${ASTERISK_REPO})
+          REPO_DIR=${GITHUB_WORKSPACE}/${REPO_NAME}
+          REPO_ORG=$(dirname ${ASTERISK_REPO})
+          echo "REPO_NAME=${REPO_NAME}" >> ${GITHUB_ENV}
+          echo "REPO_DIR=${REPO_DIR}" >> ${GITHUB_ENV}
+          echo "REPO_ORG=${REPO_ORG}" >> ${GITHUB_ENV}
+
           mkdir -p ${REPO_DIR}
           mkdir -p ${CACHE_DIR}
           mkdir -p ${OUTPUT_DIR}

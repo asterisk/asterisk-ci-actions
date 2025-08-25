@@ -3,48 +3,31 @@ run-name: "TestCalledWorkflow"
 on:
   workflow_call:
     inputs:
-      actions_ref:
-        description: 'JSON object reference to the actions: { "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
+      gatetest_group:
         type: string
-        required: false
-        default: '{ "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
-      jobname:
+        required: true
+      gatetest_commands:
         type: string
         required: true
 
 env:
-  ACTIONS_OWNER:     asterisk
-  ACTIONS_REPO:      asterisk-ci-actions
-  ACTIONS_BRANCH:    main
-  SCRIPT_DIR:        ${{ github.workspace }}/asterisk-ci-actions/scripts
-  RUN_ID:            ${{ github.run_id }}
+  GATETEST_GROUP:     ${{ inputs.gatetest_group }}
+  GATETEST_COMMAND:   ${{ toJSON(fromJSON(inputs.gatetest_commands)[inputs.gatetest_group]) }}
 
 jobs:
-  Job1:
-    name: ${{inputs.jobname}}-Job1
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: DumpEnvironment
-        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
-        with:
-          artifact_id: DumpEnvironment-${{inputs.jobname}}-Job1
+  Job2Called:
+      runs-on: ubuntu-latest
+      defaults:
+        run:
+          shell: bash
+      steps:
+        - name: Test GET
+          run: |
+            echo "GROUP: ${{inputs.gatetest_group}}"
+            echo "COMMANDS: ${{inputs.gatetest_commands}}"
+            echo "${{ toJSON(fromJSON(inputs.gatetest_commands)[inputs.gatetest_group]) }}"
+            echo "--------------------------"
+            echo "GROUP: ${GATETEST_GROUP}"
+            echo "CMD: ${GATETEST_COMMAND}"
 
-      - name: test
-        run: |
-          sleep 120
-          exit 0
 
-  Job2:
-    runs-on: ubuntu-latest
-    name: ${{inputs.jobname}}-Job2
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: test
-        run: |
-          sleep 120
-          exit 0

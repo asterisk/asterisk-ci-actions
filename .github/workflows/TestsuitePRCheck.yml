@@ -26,23 +26,28 @@ env:
   TESTING_IN_PROGRESS: ${{ vars.PR_SUBMIT_TESTING_IN_PROGRESS }}
   TESTS_PASSED:        ${{ vars.PR_SUBMIT_TESTS_PASSED }}
   TESTS_FAILED:        ${{ vars.PR_SUBMIT_TESTS_FAILED }}
+  RECHECKPR_LABEL:     ${{ vars.RECHECKPR_LABEL }}
+  ASTERISK_REPO:       ${{ vars.ASTERISK_REPO }}
 
 jobs:
   Setup:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     outputs:
-      testsuite_test_pr: ${{ steps.setup.outputs.TESTSUITE_TEST_PR }}
+      nontest_count:     ${{ steps.checkfiles.outputs.nontest_count }}
+      gatetest_count:    ${{ steps.checkfiles.outputs.gatetest_count }}
+      gatetest_group:    ${{ steps.checkfiles.outputs.gatetest_group }}
+      gatetest_commands: ${{ steps.checkfiles.outputs.gatetest_commands }}
     steps:
-        # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
       - name: GetActionsRepo
         uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
 
-      - id: setup
-        env:
-          PR_STATE_CHANGE_DELAY_SEC: ${{ vars.PR_STATE_CHANGE_DELAY_SEC || 120 }}
-          RECHECKPR_LABEL:           ${{ vars.RECHECKPR_LABEL }}
+      - name: "Label"
+        id: label
         run: |
-        
+          # Setup testsuite
           echo "Labeling"
           gh pr edit --repo ${REPO} \
             --remove-label ${RECHECKPR_LABEL} \
@@ -51,9 +56,47 @@ jobs:
             --add-label ${TESTING_IN_PROGRESS} \
             ${PR_NUMBER} || :
 
-  Check:
-    name: Check
+      - name: Check if any tests have changed
+        id: checkfiles
+        run: |
+          # Get files from PR
+          gh api /repos/${REPO}/pulls/${PR_NUMBER}/files | jq . > /tmp/pr_files
+          file_count=$(jq '[ .[].filename ] | length' /tmp/pr_files)
+          gatetest_count=$(jq '[ .[].filename | select(startswith("tests")) | select(endswith("test-config.yaml")) ] | length' /tmp/pr_files)
+          nontest_count=$(( file_count - gatetest_count ))
+          echo "nontest_count=${nontest_count}" >> ${GITHUB_OUTPUT}
+          echo "gatetest_count=${gatetest_count}" >> ${GITHUB_OUTPUT}
+          if [ $gatetest_count -gt 0 ] ; then
+          testfiles=$(jq -r '.[].filename | select(startswith("tests")) | select(endswith("test-config.yaml"))' /tmp/pr_files)
+          gatetest_group=custom
+          echo "gatetest_group=${gatetest_group}" >> ${GITHUB_OUTPUT}
+          testcmd=$(for f in $testfiles ; do echo -n "-t " ; dirname $f ; done)
+          {
+            echo 'gatetest_commands<<EOF'
+            cat <<-INNEREOF
+            {
+            "${gatetest_group}": {
+                "name": "${gatetest_group}",
+                "dir": "tests/CI/output/${gatetest_group}",
+                "timeout": 240,
+                "step_timeout_minutes": 45,
+                "options": "",
+                "testcmd": "${testcmd}"
+            }
+            }
+          INNEREOF
+            echo "EOF"
+          } >> ${GITHUB_OUTPUT}
+          fi
+          echo "File count: $file_count"
+          echo "Test count: $gatetest_count"
+          echo "Nontest count: $nontest_count"
+          echo "Testcmd: $testcmd"
+
+  UnitTest:
+    name: UnitTest
     needs: [ Setup ]
+    if: ${{ needs.Setup.outputs.nontest_count > 0 }}
     permissions:
       actions: read
       checks: read
@@ -67,16 +110,33 @@ jobs:
       base_branch:       ${{ github.event.pull_request.base.ref }}
       unittest_command:  ${{ vars.UNITTEST_COMMAND }}
 
+  GateTest:
+    name: GateTest
+    needs: [ Setup ]
+    if: ${{ needs.Setup.outputs.gatetest_count > 0 }}
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      issues: read
+      pull-requests: read
+      statuses: read
+    uses: ./.github/workflows/TestsuiteRunGateTests.yml
+    with:
+      pr_number:         ${{ github.event.number }}
+      base_branch:       ${{ github.event.pull_request.base.ref }}
+      asterisk_repo:     ${{ vars.ASTERISK_REPO }}
+      gatetest_group:    ${{ needs.Setup.outputs.gatetest_group }}
+      gatetest_commands: ${{ needs.Setup.outputs.gatetest_commands }}
+
   PostWorkflow:
     if: ${{ always() }}
     runs-on: ubuntu-latest
-    needs: [Setup,Check]
+    needs: [Setup,UnitTest,GateTest]
     env:
-      RESULT_SETUP:   ${{ needs.Setup.result }}
-      RESULT_CHECK:   ${{ needs.Check.result }}
-      CHERRY_PICK_REGEX:       ${{ vars.CHERRY_PICK_REGEX }}
-      CHERRY_PICK_REMINDER:    ${{ vars.CHERRY_PICK_REMINDER }}
-      SQUASH_COMMITS_REMINDER: ${{ vars.SQUASH_COMMITS_REMINDER }}
+      RESULT_SETUP:  ${{ needs.Setup.result }}
+      RESULT_UNIT:   ${{ needs.UnitTest.result }}
+      RESULT_GATE:   ${{ needs.GateTest.result }}
     steps:
         # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
       - name: GetActionsRepo
@@ -86,30 +146,37 @@ jobs:
         run: |
 
           label=""
-          RESULT=$RESULT_CHECK
-          echo "Setup status: $RESULT_SETUP Check status: $RESULT_CHECK"
-          case $RESULT_CHECK in
-            success)
+          RESULT_FULL="${RESULT_SETUP}-${RESULT_UNIT}-${RESULT_GATE}"
+          echo "Result: $RESULT_FULL"
+          case $RESULT_FULL in
+          success-success-success)
+              echo "All passed"
               label=$TESTS_PASSED
+              RESULT=success
               gh cache delete -R ${REPO} ${BUILD_CACHE_KEY} || :
               ;;
-            failure)
+          *failure*)
+              echo "at least one failure"
               label=$TESTS_FAILED
+              RESULT=failure
               ;;
-            cancelled)
+          *cancelled*)
+              echo "at least one cancelled"
               gh cache delete -R ${REPO} ${BUILD_CACHE_KEY} || :
+              RESULT=failure
               ;;
-            skipped)
-              if [ "$RESULT_SETUP" == "failure" ] ; then
-                  RESULT=failure
-                  label=$TESTS_FAILED
-              fi
+          *skipped*)
+              echo "at least one skipped but others succeeded"
+              label=$TESTS_PASSED
+              RESULT=success
               ;;
-            *)
+          *)
+              echo "unknown result"
+              label=$TESTS_FAILED
+              RESULT=failure
               ;;
           esac
 
-          echo "RESULT: '${RESULT}'  Setting label: '$label'"
           gh pr edit --repo ${REPO} \
             --remove-label ${TESTING_IN_PROGRESS} \
             ${label:+--add-label $label} \
