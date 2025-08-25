@@ -3,74 +3,43 @@ run-name: "TestCallingWorkflow"
 on:
   workflow_dispatch:
 
-env:
-  REPO:              ${{ github.repository }}
-  WORKFLOW_RUN_ID:   ${{ github.run_id }}
-  ACTIONS_OWNER:     asterisk
-  ACTIONS_REPO:      asterisk-ci-actions
-  ACTIONS_BRANCH:    main
-  SCRIPT_DIR:        ${{ github.workspace }}/asterisk-ci-actions/scripts
-  GH_TOKEN:          ${{secrets.GITHUB_TOKEN}}
-  RUN_ID:            ${{ github.id }}
-
 jobs:
-  Setup:
+  Job1:
     runs-on: ubuntu-latest
+    env:
+      FROM_JOB: "from job"
     defaults:
       run:
         shell: bash
+    outputs:
+      testgroup:      ${{ steps.st1.outputs.TESTGROUP }}
+      testobject:      ${{ steps.st1.outputs.TESTOBJECT }}
     steps:
-      - name: DumpEnvironment
-        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
-        with:
-          save_output: true
-          artifact_id: DumpEnvironment-Setup
-  
-  TestCalled:
-    needs: [ Setup ]
-    strategy:
-      fail-fast: false
-      matrix:
-        jobname: [ 'JobA', 'JobB' ]
+      - name: Test ENV
+        id: st1
+        run: |
+          {
+            echo "TESTGROUP=pjs5" >> ${GITHUB_OUTPUT}
+            echo 'TESTOBJECT<<EOF'
+            cat <<-EOFINNER
+            {
+            "pjs5": {
+                "name": "pjs5",
+                "dir": "tests/CI/output/pjsip5",
+                "timeout": 240,
+                "step_timeout_minutes": 45,
+                "options": "",
+                "testcmd": "--test-regex=tests/channels/pjsip/[s]"
+            }
+            }
+          EOFINNER
+            echo "EOF"
+          } >> ${GITHUB_OUTPUT}
+
+  Job2:
+    needs: Job1
     uses: ./.github/workflows/TestCalledWorkflow.yml
     with:
-      jobname:  ${{ matrix.jobname }}
-    secrets:
-      TOKEN: ${{secrets.GITHUB_TOKEN}}
+      gatetest_group: ${{ needs.Job1.outputs.testgroup }}
+      gatetest_commands: ${{ needs.Job1.outputs.testobject }}
 
-  Cleanup:
-    needs: [ TestCalled ]
-    runs-on: ubuntu-latest
-    if: ${{ always() }}
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: DumpEnvironment
-        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
-        with:
-          artifact_id: DumpEnvironment-Cleanup
-          needs: ${{ toJSON(needs) }}
-
-      - name: Create Job Summary
-        env:
-          RESULT: ${{ needs.Check.result }}
-        run: |
-          wget -qO asterisk-ci-actions.tar.gz \
-            https://github.com/${ACTIONS_OWNER}/${ACTIONS_REPO}/archive/refs/heads/${ACTIONS_BRANCH}.tar.gz
-          tar -xf asterisk-ci-actions.tar.gz --transform="s/^${ACTIONS_REPO}-${ACTIONS_BRANCH}/asterisk-ci-actions/g"
-
-          mkdir logs
-          ${SCRIPT_DIR}/createJobSummary.sh \
-            --repo=${REPO} \
-            --workflow-run=${WORKFLOW_RUN_ID} \
-            --tmp-dir=./run-${WORKFLOW_RUN_ID} \
-            --job-summary-output=job_summary.txt \
-            --output-dir=./logs \
-            --write-step-summary \
-            --verbose
-          if [ ! -f ./logs/job_summary.txt ] ; then
-            echo "No failures" >> ./logs/job_summary.txt
-            echo "No failures" >> "$GITHUB_STEP_SUMMARY"
-          fi
-          exit 0

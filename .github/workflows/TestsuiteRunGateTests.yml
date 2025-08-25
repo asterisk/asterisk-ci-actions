@@ -1,0 +1,67 @@
+name: 'RunGateTests'
+on:
+  workflow_call:
+    inputs:
+      pr_number:
+        required: true
+        type: string
+      base_branch:
+        required: true
+        type: string
+      asterisk_repo:
+        type: string
+        required: true
+      gatetest_group:
+        description: 'Gate Group'
+        type: string
+        required: true
+      gatetest_commands:
+        description: 'Gate Commands'
+        type: string
+        required: true
+
+env:
+  REPO:             ${{ github.repository }}
+  REPO_DIR:         ${{ github.workspace }}/${{ github.event.repository.name }}
+  REPO_ORG:         ${{ github.event.repository.owner.login }}
+  GH_TOKEN:         ${{ secrets.GITHUB_TOKEN }}
+  BASE_BRANCH:      ${{ inputs.base_branch }}
+  PR_NUMBER:        ${{ inputs.pr_number }}
+  UNITTEST_COMMAND: ${{ inputs.unittest_command }}
+  ASTERISK_REPO:    ${{ inputs.asterisk_repo }}
+
+jobs:
+  Build:
+    uses: ./.github/workflows/AsteriskBuildAndCache.yml
+    with:
+      test_type:         prstatechange
+      asterisk_repo:     ${{ inputs.asterisk_repo }}
+      pr_number:         -1
+      base_branch:       ${{ inputs.base_branch }}
+      is_cherry_pick:    false
+      build_cache_dir:   build-cache
+      build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
+      no_alembic:        true
+
+  Gate:
+    needs: [ Build ]
+    name: Gate
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      issues: read
+      pull-requests: read
+      statuses: read
+    uses: ./.github/workflows/AsteriskRunGateTests.yml
+    with:
+      test_type:         prstatechange
+      base_branch:       ${{ inputs.base_branch }}
+      asterisk_repo:     ${{ inputs.asterisk_repo }}
+      testsuite_repo:    ${{ github.repository }}
+      testsuite_test_pr: ${{ github.event.number }}
+      gatetest_group:    ${{ inputs.gatetest_group }}
+      gatetest_commands: ${{ inputs.gatetest_commands }}
+      build_cache_dir:   build-cache
+      build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
+      realtime:          false

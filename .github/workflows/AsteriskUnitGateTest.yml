@@ -41,7 +41,8 @@ on:
         required: false
       unittest_command:
         type: string
-        required: true
+        required: false
+        default: ''
       testsuite_repo:
         type: string
         required: false
@@ -62,6 +63,14 @@ on:
         type: boolean
         required: false
         default: false
+      build_no_dev_mode:
+        type: boolean
+        required: false
+        default: true
+      no_alembic:
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   Build:
@@ -76,8 +85,10 @@ jobs:
       modules_blacklist: ${{ inputs.modules_blacklist }}
       build_cache_dir:   ${{ inputs.build_cache_dir }}
       build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
+      no_alembic:        ${{ inputs.no_alembic }}
 
   BuildNoDevmode:
+    if: ${{ fromJSON(inputs.build_no_dev_mode) }}
     uses: ./.github/workflows/AsteriskBuildAndCache.yml
     with:
       job_name_extra:    -no-dev-mode
@@ -93,6 +104,7 @@ jobs:
 
   Unit:
     needs: Build
+    if: ${{ inputs.unittest_command != '' }}
     uses: ./.github/workflows/AsteriskRunUnitTests.yml
     with:
       test_type:         ${{ inputs.test_type }}

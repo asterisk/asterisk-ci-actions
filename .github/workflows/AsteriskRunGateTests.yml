@@ -11,6 +11,11 @@ on:
       user_group:
         type: string
         required: false
+      asterisk_repo:
+        description: 'Asterisk Repo (default: asterisk/asterisk)'
+        type: string
+        required: false
+        default: asterisk/asterisk
       testsuite_repo:
         description: 'Testsuite Repo (default: asterisk/testsuite)'
         type: string
@@ -50,10 +55,9 @@ env:
   CACHE_DIR:    ${{ inputs.output_cache_dir }}
   USER_GROUP:   ${{ inputs.user_group }}
   OUTPUT_DIR:   ${{ github.workspace }}/${{ inputs.output_cache_dir }}/output
-  REPO_DIR:     ${{ github.event.repository.name }}
-  REPO_ORG:     ${{ github.event.repository.owner.login }}
   REALTIME:     ${{ inputs.realtime }}
   SIPP_VERSION: ${{ inputs.sipp_version }}
+  ASTERISK_REPO:      ${{ inputs.asterisk_repo }}
   TESTSUITE_REPO:     ${{ inputs.testsuite_repo }}
   TESTSUITE_TEST_PR:  ${{ inputs.testsuite_test_pr }}
   GATETEST_GROUP:     ${{ inputs.gatetest_group }}
@@ -81,16 +85,18 @@ jobs:
           echo "::endgroup::"
 
           TESTSUITE_DIR=${GITHUB_WORKSPACE}/$(basename ${TESTSUITE_REPO})
-          ASTERISK_DIR=${GITHUB_WORKSPACE}/${REPO_DIR}
+          ASTERISK_DIR=${GITHUB_WORKSPACE}/$(basename ${ASTERISK_REPO})
+          REPO_ORG=$(basename ${ASTERISK_REPO})
+          
           LOG_DIR=${TESTSUITE_DIR}/logs
           LOG_FILE=${LOG_DIR}/job_summary.txt
-          export_to_github TESTSUITE_DIR ASTERISK_DIR \
+          export_to_github TESTSUITE_DIR ASTERISK_DIR REPO_ORG \
             LOG_DIR LOG_FILE
 
       - name: Restore Asterisk Cache
         uses: asterisk/asterisk-ci-actions/RestoreAsteriskFromCache@main
         with:
-          repo_dir:        ${{ github.event.repository.name }}
+          repo_dir:        ${{ env.ASTERISK_DIR }}
           build_cache_dir: ${{ inputs.build_cache_dir }}
           build_cache_key: ${{ inputs.build_cache_key }}
           user_group:      ${{ inputs.user_group }}
