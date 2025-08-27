@@ -1,0 +1,518 @@
+[
+  {
+    "created_at": "2025-08-07T13:53:22Z",
+    "name": "AA_READ_BEFORE_MAKING_CHANGES_",
+    "updated_at": "2025-08-07T13:53:22Z",
+    "value": "Any variable that contains JSON MUST be proper JSON and use double quotes around names and text values or it will fail to validate.  If in doubt, copy the value to a local file and run jq  on it to make sure it validates.\r\n\r\nDo NOT put sensitive data into an action variable!!\r\n"
+  },
+  {
+    "created_at": "2025-08-27T12:46:16Z",
+    "name": "ASSOCIATED_TEST_PR_REGEX",
+    "updated_at": "2025-08-27T12:46:16Z",
+    "value": "(?:^|\\n)testsuite-test-pr:[ ]*([0-9]+)"
+  },
+  {
+    "created_at": "2025-08-07T13:53:22Z",
+    "name": "CHERRY_PICK_CHECKS_FAILED_LABEL",
+    "updated_at": "2025-08-07T13:53:22Z",
+    "value": "cherry-pick-checks-failed"
+  },
+  {
+    "created_at": "2025-08-07T13:53:23Z",
+    "name": "CHERRY_PICK_CHECKS_PASSED_LABEL",
+    "updated_at": "2025-08-07T13:53:23Z",
+    "value": "cherry-pick-checks-passed"
+  },
+  {
+    "created_at": "2025-08-07T13:53:23Z",
+    "name": "CHERRY_PICK_GATES_FAILED_LABEL",
+    "updated_at": "2025-08-07T13:53:23Z",
+    "value": "cherry-pick-gates-failed"
+  },
+  {
+    "created_at": "2025-08-07T13:53:23Z",
+    "name": "CHERRY_PICK_GATES_PASSED_LABEL",
+    "updated_at": "2025-08-07T13:53:23Z",
+    "value": "cherry-pick-gates-passed"
+  },
+  {
+    "created_at": "2025-08-07T13:53:23Z",
+    "name": "CHERRY_PICK_REGEX",
+    "updated_at": "2025-08-07T13:53:23Z",
+    "value": "(?:^|\\n)cherry-pick-to:[ ]*(([0-9.]+|certified/[0-9.]+|master)|(none))"
+  },
+  {
+    "created_at": "2025-08-07T13:53:24Z",
+    "name": "CHERRY_PICK_REMINDER",
+    "updated_at": "2025-08-07T13:53:24Z",
+    "value": "<!--CPR-->\r\nREMINDER: If this PR applies to other branches, please add a comment with the appropriate \"cherry-pick-to\" headers as per the [Create a Pull Request](https://docs.asterisk.org/Development/Policies-and-Procedures/Code-Contribution) process.  \r\n\r\nIf you don't want it cherry-picked, please add a comment with `cherry-pick-to: none` so we don't keep asking.\r\n\r\nIf, after adding \"cherry-pick-to\" comments, you change your mind, please edit the comment to DELETE the header lines and add `cherry-pick-to: none`.\r\n\r\nThe currently active branches are now __20, 21, 22 and master__.\r\n\r\n"
+  },
+  {
+    "created_at": "2025-08-07T13:53:24Z",
+    "name": "CHERRY_PICK_TESTING_IN_PROGRESS",
+    "updated_at": "2025-08-07T13:53:24Z",
+    "value": "cherry-pick-testing-in-progress"
+  },
+  {
+    "created_at": "2025-08-07T13:53:24Z",
+    "name": "CHERRY_PICK_TEST_LABEL",
+    "updated_at": "2025-08-07T13:53:24Z",
+    "value": "cherry-pick-test"
+  },
+  {
+    "created_at": "2025-08-07T13:53:24Z",
+    "name": "CHERRY_PICK_VALID_BRANCHES",
+    "updated_at": "2025-08-07T13:53:24Z",
+    "value": "[\"22\",\"21\",\"20\",\"certified/20.7\",\"certified/18.9\"]"
+  },
+  {
+    "created_at": "2025-08-07T13:53:25Z",
+    "name": "CONFLUENCE_SPACE",
+    "updated_at": "2025-08-07T13:53:25Z",
+    "value": "AST"
+  },
+  {
+    "created_at": "2025-08-07T13:53:25Z",
+    "name": "CONFLUENCE_URL",
+    "updated_at": "2025-08-07T13:53:25Z",
+    "value": "https://wiki.asterisk.org/wiki/rpc/xmlrpc"
+  },
+  {
+    "created_at": "2025-08-07T13:53:25Z",
+    "name": "CSI_CLOSE_ISSUE_MESSAGE",
+    "updated_at": "2025-08-07T13:53:25Z",
+    "value": "This issue has been closed because it has been open 14 days with no feedback."
+  },
+  {
+    "created_at": "2025-08-07T13:53:25Z",
+    "name": "CSI_DAYS_BEFORE_ISSUE_CLOSE",
+    "updated_at": "2025-08-07T13:53:25Z",
+    "value": "7"
+  },
+  {
+    "created_at": "2025-08-07T13:53:26Z",
+    "name": "CSI_DAYS_BEFORE_ISSUE_STALE",
+    "updated_at": "2025-08-07T13:53:26Z",
+    "value": "7"
+  },
+  {
+    "created_at": "2025-08-07T13:53:26Z",
+    "name": "CSI_DEBUG_ONLY",
+    "updated_at": "2025-08-07T13:53:26Z",
+    "value": "false"
+  },
+  {
+    "created_at": "2025-08-07T13:53:26Z",
+    "name": "CSI_ONLY_LABELS",
+    "updated_at": "2025-08-07T13:53:26Z",
+    "value": "triage,feedback-required"
+  },
+  {
+    "created_at": "2025-08-07T13:53:26Z",
+    "name": "CSI_SEARCH_FILTER",
+    "updated_at": "2025-08-07T13:53:26Z",
+    "value": "[ \"repo:asterisk/asterisk is:issue is:open\" ]"
+  },
+  {
+    "created_at": "2025-08-07T13:53:27Z",
+    "name": "CSI_STALE_ISSUE_MESSAGE",
+    "updated_at": "2025-08-07T13:53:27Z",
+    "value": "This issue has been marked stale because it has been open 7 days with no feedback. Please provide feedback within 7 days or this issue will be closed."
+  },
+  {
+    "created_at": "2025-08-07T13:53:27Z",
+    "name": "CSPR_CLOSE_PR_MESSAGE",
+    "updated_at": "2025-08-07T13:53:27Z",
+    "value": "This PR has been closed because it has been in \"Changes Requested\" or \"submitter-action-required\" state for more than 42 days."
+  },
+  {
+    "created_at": "2025-08-07T13:53:27Z",
+    "name": "CSPR_DAYS_BEFORE_PR_CLOSE",
+    "updated_at": "2025-08-07T13:53:27Z",
+    "value": "14"
+  },
+  {
+    "created_at": "2025-08-07T13:53:27Z",
+    "name": "CSPR_DAYS_BEFORE_PR_STALE",
+    "updated_at": "2025-08-07T13:53:27Z",
+    "value": "28"
+  },
+  {
+    "created_at": "2025-08-07T13:53:27Z",
+    "name": "CSPR_DEBUG_ONLY",
+    "updated_at": "2025-08-07T13:53:27Z",
+    "value": "false"
+  },
+  {
+    "created_at": "2025-08-07T13:53:28Z",
+    "name": "CSPR_SEARCH_FILTER",
+    "updated_at": "2025-08-07T13:53:28Z",
+    "value": "[ \"repo:asterisk/asterisk is:pr is:open review:changes_requested\", \"repo:asterisk/asterisk is:pr is:open label:submitter-action-required\" ]"
+  },
+  {
+    "created_at": "2025-08-07T13:53:28Z",
+    "name": "CSPR_STALE_PR_MESSAGE",
+    "updated_at": "2025-08-07T13:53:28Z",
+    "value": "This PR has been marked stale because it has been in \"Changes Requested\" or \"submitter-action-required\" state for 28 days or more. Please make the requested changes within 14 days or the PR will be closed."
+  },
+  {
+    "created_at": "2025-08-07T13:53:28Z",
+    "name": "DEPLOY_DIR",
+    "updated_at": "2025-08-07T13:53:28Z",
+    "value": "/var/www/downloads.asterisk.org/pub"
+  },
+  {
+    "created_at": "2025-08-07T13:53:28Z",
+    "name": "DEPLOY_HOST",
+    "updated_at": "2025-08-07T13:53:28Z",
+    "value": "oss-downloads.sangoma.com"
+  },
+  {
+    "created_at": "2025-08-07T13:53:29Z",
+    "name": "FPBX_ISSUE_REPO",
+    "updated_at": "2025-08-07T13:53:29Z",
+    "value": "freepbx/issue-tracker"
+  },
+  {
+    "created_at": "2025-08-07T13:53:29Z",
+    "name": "GATETEST_COMMANDS",
+    "updated_at": "2025-08-07T13:53:29Z",
+    "value": "{\r\n  \"ari1\": {\r\n    \"name\": \"ari1\",\r\n    \"dir\": \"tests/CI/output/ari1\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \"--test-regex=tests/rest_api/[abem]\"\r\n  },\r\n  \"ari2\": {\r\n    \"name\": \"ari2\",\r\n    \"dir\": \"tests/CI/output/ari2\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \"--test-regex=tests/rest_api/[cdw]\"\r\n  },\r\n  \"pjs1\": {\r\n    \"name\": \"pjs1\",\r\n    \"dir\": \"tests/CI/output/pjsip1\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \"--test-regex=tests/channels/pjsip/[cghmnopqu]\"\r\n  },\r\n  \"pjs2\": {\r\n    \"name\": \"pjs2\",\r\n    \"dir\": \"tests/CI/output/pjsip2\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \"--test-regex=tests/channels/pjsip/[adit]\"\r\n  },\r\n  \"pjs3\": {\r\n    \"name\": \"pjs3\",\r\n    \"dir\": \"tests/CI/output/pjsip3\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \"--test-regex=tests/channels/pjsip/[b]\"\r\n  },\r\n  \"pjs4\": {\r\n    \"name\": \"pjs4\",\r\n    \"dir\": \"tests/CI/output/pjsip4\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \"--test-regex=tests/channels/pjsip/[r]\"\r\n  },\r\n  \"pjs5\": {\r\n    \"name\": \"pjs5\",\r\n    \"dir\": \"tests/CI/output/pjsip5\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \"--test-regex=tests/channels/pjsip/[s]\"\r\n  },\r\n  \"local_iax2_mgr\": {\r\n    \"name\": \"local_iax2_mgr\",\r\n    \"dir\": \"tests/CI/output/channels\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \" -t tests/channels/local -t tests/channels/iax2 -t tests/manager\"\r\n  },\r\n  \"fax\": {\r\n    \"name\": \"fax\",\r\n    \"dir\": \"tests/CI/output/fax\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \" -t tests/fax\"\r\n  },\r\n  \"extra_gates\": {\r\n    \"name\": \"extra_gates\",\r\n    \"dir\": \"tests/CI/output/extra_gates\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \" -t tests/extra_gates\"\r\n  },\r\n  \"rtp_sorcery\": {\r\n    \"name\": \"rtp_sorcery\",\r\n    \"dir\": \"tests/CI/output/rtp_sorcery\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \" -t tests/rtp -t tests/sorcery\"\r\n  },\r\n  \"apps_funcs\": {\r\n    \"name\": \"apps_funcs\",\r\n    \"dir\": \"tests/CI/output/apps\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \" -t tests/apps -t tests/funcs\"\r\n  },\r\n  \"app_dial\": {\r\n    \"name\": \"app_dial\",\r\n    \"dir\": \"tests/CI/output/app_dial\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \" -t tests/apps/dial\"\r\n  },\r\n  \"mgr_masq_pbx\": {\r\n    \"name\": \"mgr_masq_pbx\",\r\n    \"dir\": \"tests/CI/output/mgr_masq_pbx\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \" -t tests/manager -t tests/masquerade -t tests/pbx\"\r\n  },\r\n  \"pass_fail\": {\r\n    \"name\": \"pass_fail\",\r\n    \"dir\": \"tests/CI/output/pass_fail\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \" -t tests/channels/pjsip/subscriptions/presence\"\r\n  },\r\n  \"all_pass\": {\r\n    \"name\": \"all_pass\",\r\n    \"dir\": \"tests/CI/output/all_pass\",\r\n    \"timeout\": 240,\r\n    \"step_timeout_minutes\": 45,\r\n    \"options\": \"\",\r\n    \"testcmd\": \" -t tests/channels/local\"\r\n  }\r\n}\r\n"
+  },
+  {
+    "created_at": "2025-08-07T13:53:29Z",
+    "name": "GATETEST_LIST",
+    "updated_at": "2025-08-07T13:53:29Z",
+    "value": "[\"app_dial\",\"ari1\",\"ari2\",\"pjs1\",\"pjs2\",\"pjs3\",\"pjs4\",\"pjs5\",\"fax\",\"local_iax2_mgr\",\"extra_gates\"]"
+  },
+  {
+    "created_at": "2025-08-07T13:53:29Z",
+    "name": "ISSUE_DAYS_BEFORE_CLOSE",
+    "updated_at": "2025-08-07T13:53:29Z",
+    "value": "14"
+  },
+  {
+    "created_at": "2025-08-07T13:53:30Z",
+    "name": "ISSUE_DAYS_BEFORE_STALE",
+    "updated_at": "2025-08-07T13:53:30Z",
+    "value": "7"
+  },
+  {
+    "created_at": "2025-08-07T13:53:30Z",
+    "name": "MAIL_FROM_TEAM",
+    "updated_at": "2025-08-07T13:53:30Z",
+    "value": "\"Asterisk Development Team\" <asteriskteam@digium.com>"
+  },
+  {
+    "created_at": "2025-08-07T13:53:30Z",
+    "name": "MAIL_FROM_TEAM_SEC",
+    "updated_at": "2025-08-07T13:53:30Z",
+    "value": "\"Asterisk Security Team\" <security@asterisk.org>"
+  },
+  {
+    "created_at": "2025-08-07T13:53:30Z",
+    "name": "MAIL_LIST_CERT_GA",
+    "updated_at": "2025-08-07T13:53:30Z",
+    "value": "asterisk-dev@groups.io,asterisk+news@discoursemail.com,switchvox-dev@digium.com"
+  },
+  {
+    "created_at": "2025-08-07T13:53:30Z",
+    "name": "MAIL_LIST_CERT_RC",
+    "updated_at": "2025-08-07T13:53:30Z",
+    "value": "asterisk-dev@groups.io,asterisk+development@discoursemail.com,switchvox-dev@digium.com"
+  },
+  {
+    "created_at": "2025-08-07T13:53:31Z",
+    "name": "MAIL_LIST_GA",
+    "updated_at": "2025-08-07T13:53:31Z",
+    "value": "asterisk-dev@groups.io,asterisk+news@discoursemail.com"
+  },
+  {
+    "created_at": "2025-08-07T13:53:31Z",
+    "name": "MAIL_LIST_RC",
+    "updated_at": "2025-08-07T13:53:31Z",
+    "value": "asterisk-dev@groups.io,asterisk+development@discoursemail.com"
+  },
+  {
+    "created_at": "2025-08-07T13:53:31Z",
+    "name": "MAIL_LIST_SEC_ADV",
+    "updated_at": "2025-08-07T13:53:31Z",
+    "value": "asterisk-dev@groups.io,fulldisclosure@seclists.org,asterisk+news@discoursemail.com"
+  },
+  {
+    "created_at": "2025-08-07T13:53:31Z",
+    "name": "MERGE_APPROVED",
+    "updated_at": "2025-08-07T13:53:31Z",
+    "value": "merge-approved"
+  },
+  {
+    "created_at": "2025-08-07T13:53:32Z",
+    "name": "MERGE_APPROVED_LABEL",
+    "updated_at": "2025-08-07T13:53:32Z",
+    "value": "merge-approved"
+  },
+  {
+    "created_at": "2025-08-07T13:53:32Z",
+    "name": "MERGE_APPROVED_LABELS",
+    "updated_at": "2025-08-07T13:53:32Z",
+    "value": "[\"merge-approved\",\"merge-approved-force\"]"
+  },
+  {
+    "created_at": "2025-08-07T13:53:32Z",
+    "name": "MERGE_FAILED_LABEL",
+    "updated_at": "2025-08-07T13:53:32Z",
+    "value": "merge-failed"
+  },
+  {
+    "created_at": "2025-08-07T13:53:32Z",
+    "name": "MERGE_IN_PROGRESS_LABEL",
+    "updated_at": "2025-08-07T13:53:32Z",
+    "value": "merge-in-progress"
+  },
+  {
+    "created_at": "2025-08-07T13:53:32Z",
+    "name": "NIGHTLYTEST_BRANCHES",
+    "updated_at": "2025-08-07T13:53:32Z",
+    "value": "[\"18\",\"20\",\"21\",\"22\",\"master\",\"certified/20.7\"]"
+  },
+  {
+    "created_at": "2025-08-07T13:53:33Z",
+    "name": "NIGHTLYTEST_LIST",
+    "updated_at": "2025-08-07T13:53:33Z",
+    "value": "[\"ari1\",\"ari2\",\"pjs1\",\"pjs2\",\"pjs3\",\"pjs4\",\"pjs5\",\"fax\",\"local_iax2_mgr\",\"extra_gates\",\"apps_funcs\"]"
+  },
+  {
+    "created_at": "2025-08-07T13:53:33Z",
+    "name": "PRE_MERGE_CHECKS_FAILED_LABEL",
+    "updated_at": "2025-08-07T13:53:33Z",
+    "value": "pre-merge-checks-failed"
+  },
+  {
+    "created_at": "2025-08-07T13:53:33Z",
+    "name": "PRE_MERGE_CHECKS_PASSED_LABEL",
+    "updated_at": "2025-08-07T13:53:33Z",
+    "value": "pre-merge-checks-passed"
+  },
+  {
+    "created_at": "2025-08-07T13:53:33Z",
+    "name": "PRE_MERGE_GATES_FAILED_LABEL",
+    "updated_at": "2025-08-07T13:53:33Z",
+    "value": "pre-merge-gates-failed"
+  },
+  {
+    "created_at": "2025-08-07T13:53:34Z",
+    "name": "PRE_MERGE_GATES_PASSED_LABEL",
+    "updated_at": "2025-08-07T13:53:34Z",
+    "value": "pre-merge-gates-passed"
+  },
+  {
+    "created_at": "2025-08-07T13:53:34Z",
+    "name": "PRE_MERGE_TESTING_IN_PROGRESS",
+    "updated_at": "2025-08-07T13:53:34Z",
+    "value": "pre-merge-testing-in-progress"
+  },
+  {
+    "created_at": "2025-08-07T13:53:34Z",
+    "name": "PRODUCT_NAME",
+    "updated_at": "2025-08-07T13:53:34Z",
+    "value": "asterisk"
+  },
+  {
+    "created_at": "2025-08-07T13:53:34Z",
+    "name": "PR_ACCEPTANCE_TEST_LABEL",
+    "updated_at": "2025-08-07T13:53:34Z",
+    "value": "pr-acceptance-test"
+  },
+  {
+    "created_at": "2025-08-07T13:53:35Z",
+    "name": "PR_COMMENT_KEYWORD_REGEX",
+    "updated_at": "2025-08-07T13:53:35Z",
+    "value": "(check|recheck|regate|pregate)"
+  },
+  {
+    "created_at": "2025-08-07T13:53:35Z",
+    "name": "PR_DAYS_BEFORE_CLOSE",
+    "updated_at": "2025-08-07T13:53:35Z",
+    "value": "28"
+  },
+  {
+    "created_at": "2025-08-07T13:53:35Z",
+    "name": "PR_DAYS_BEFORE_STALE",
+    "updated_at": "2025-08-07T13:53:35Z",
+    "value": "14"
+  },
+  {
+    "created_at": "2025-08-07T13:53:35Z",
+    "name": "PR_JOB_START_DELAY_SEC",
+    "updated_at": "2025-08-07T13:53:35Z",
+    "value": "60"
+  },
+  {
+    "created_at": "2025-08-07T13:53:36Z",
+    "name": "PR_REVIEWERS",
+    "updated_at": "2025-08-07T13:53:36Z",
+    "value": "[\"asterisk/asterisk-dev\"]"
+  },
+  {
+    "created_at": "2025-08-07T13:53:36Z",
+    "name": "PR_SUBMIT_TESTING_IN_PROGRESS",
+    "updated_at": "2025-08-07T13:53:36Z",
+    "value": "pr-submit-testing-in-progress"
+  },
+  {
+    "created_at": "2025-08-07T13:53:36Z",
+    "name": "PR_SUBMIT_TESTS_FAILED",
+    "updated_at": "2025-08-07T13:53:36Z",
+    "value": "pr-submit-tests-failed"
+  },
+  {
+    "created_at": "2025-08-07T13:53:36Z",
+    "name": "PR_SUBMIT_TESTS_PASSED",
+    "updated_at": "2025-08-07T13:53:36Z",
+    "value": "pr-submit-tests-passed"
+  },
+  {
+    "created_at": "2025-08-07T13:53:37Z",
+    "name": "RECHECKPR_LABEL",
+    "updated_at": "2025-08-07T13:53:37Z",
+    "value": "recheckpr"
+  },
+  {
+    "created_at": "2025-08-07T13:53:37Z",
+    "name": "RECHECK_LABEL",
+    "updated_at": "2025-08-07T13:53:37Z",
+    "value": "recheck"
+  },
+  {
+    "created_at": "2025-08-07T13:53:37Z",
+    "name": "SECURITY_FIX_BRANCHES",
+    "updated_at": "2025-08-07T13:53:37Z",
+    "value": "[\"18\",\"20\",\"21\",\"22\",\"certified/18.9\",\"certified/20.7\"]"
+  },
+  {
+    "created_at": "2025-08-07T13:53:37Z",
+    "name": "SEC_ADV_URL_BASE",
+    "updated_at": "2025-08-07T13:53:37Z",
+    "value": "https://github.com/asterisk/asterisk/security/advisories"
+  },
+  {
+    "created_at": "2025-08-07T13:53:38Z",
+    "name": "SQUASH_COMMITS_REGEX",
+    "updated_at": "2025-08-07T13:53:38Z",
+    "value": "(?:^|\\n)multiple-commits:[ ]*(standalone|interim)"
+  },
+  {
+    "created_at": "2025-08-07T13:53:38Z",
+    "name": "SQUASH_COMMITS_REMINDER",
+    "updated_at": "2025-08-07T13:53:38Z",
+    "value": "<!--SCR-->This PR contains multiple commits which normally isn't allowed by the project.\r\nIf your PR meets the criteria for containing multiple standalone or interim commits as defined in the [Coding Guidelines](https://docs.asterisk.org/Development/Policies-and-Procedures/Coding-Guidelines/), please add a comment to the PR with one of the following headers:\r\n```\r\nmultiple-commits: standalone\r\nmultiple-commits: interim\r\n```\r\nThe header must be the only thing in a comment or be in the same comment that contains `cherry-pick-to` headers.\r\n\r\n"
+  },
+  {
+    "created_at": "2025-08-07T13:53:38Z",
+    "name": "TESTING_CHERRY_PICKS_LABEL",
+    "updated_at": "2025-08-07T13:53:38Z",
+    "value": "testing-cherry-picks"
+  },
+  {
+    "created_at": "2025-08-07T13:53:38Z",
+    "name": "TESTING_IN_PROGRESS",
+    "updated_at": "2025-08-07T13:53:38Z",
+    "value": "testing-in-progress"
+  },
+  {
+    "created_at": "2025-08-07T13:53:39Z",
+    "name": "TESTSUITE_REPO",
+    "updated_at": "2025-08-07T13:53:39Z",
+    "value": "asterisk/testsuite"
+  },
+  {
+    "created_at": "2025-08-07T13:53:39Z",
+    "name": "TESTSUITE_TEST_AUTO_MERGE_REGEX",
+    "updated_at": "2025-08-07T13:53:39Z",
+    "value": "testsuite-test-auto-merge:[ ]*(yes|no|true|false)"
+  },
+  {
+    "created_at": "2025-08-07T13:53:39Z",
+    "name": "TESTSUITE_TEST_PR_REGEX",
+    "updated_at": "2025-08-07T13:53:39Z",
+    "value": "(?:^|\\n)testsuite-test-pr:[ ]*([0-9]+)"
+  },
+  {
+    "created_at": "2025-08-07T13:53:39Z",
+    "name": "TEST_CHECKS_FAILED_LABEL",
+    "updated_at": "2025-08-07T13:53:39Z",
+    "value": "test-checks-failed"
+  },
+  {
+    "created_at": "2025-08-07T13:53:40Z",
+    "name": "TEST_CHECKS_PASSED_LABEL",
+    "updated_at": "2025-08-07T13:53:40Z",
+    "value": "test-checks-passed"
+  },
+  {
+    "created_at": "2025-08-07T13:53:40Z",
+    "name": "TEST_GATES_FAILED_LABEL",
+    "updated_at": "2025-08-07T13:53:40Z",
+    "value": "test-gates-failed"
+  },
+  {
+    "created_at": "2025-08-07T13:53:40Z",
+    "name": "TEST_GATES_PASSED_LABEL",
+    "updated_at": "2025-08-07T13:53:40Z",
+    "value": "test-gates-passed"
+  },
+  {
+    "created_at": "2025-08-07T13:53:40Z",
+    "name": "UNITTEST_COMMAND",
+    "updated_at": "2025-08-07T13:53:40Z",
+    "value": "test execute all"
+  },
+  {
+    "created_at": "2025-08-07T13:53:41Z",
+    "name": "UNITTEST_MODULES_BLACKLIST_NOT_USED",
+    "updated_at": "2025-08-07T13:53:41Z",
+    "value": "test_crypto"
+  },
+  {
+    "created_at": "2025-08-07T13:53:41Z",
+    "name": "UPGRADE_NOTE_REGEX",
+    "updated_at": "2025-08-07T13:53:41Z",
+    "value": "^UpgradeNote:(.+)"
+  },
+  {
+    "created_at": "2025-08-07T13:53:41Z",
+    "name": "UPGRADE_NOTE_REMINDER",
+    "updated_at": "2025-08-07T13:53:41Z",
+    "value": "<!--UPNR-->REMINDER: This PR has changes which require an \"UpgradeNote\" in the PR description and the commit message.\r\nPossible reasons include:\r\n* New or updated Alembic database scripts.\r\n* Breaking changes to dialplan application or function arguments.\r\n* Breaking changes to AMI, ARI, or AGI actions, events resources or commands.\r\n* Changes to any public \"C\" function or structure.\r\n\r\nSee the [Commit Messages](https://docs.asterisk.org/Development/Policies-and-Procedures/Commit-Messages) page in the [Asterisk Developer Documentation](https://docs.asterisk.org/Development/) for more information.\r\n"
+  },
+  {
+    "created_at": "2025-08-07T13:53:41Z",
+    "name": "USER_NOTE_REGEX",
+    "updated_at": "2025-08-07T13:53:41Z",
+    "value": "^UserNote:(.+)"
+  },
+  {
+    "created_at": "2025-08-07T13:53:41Z",
+    "name": "USER_NOTE_REMINDER",
+    "updated_at": "2025-08-07T13:53:41Z",
+    "value": "<!--USNR-->REMINDER: This PR has changes which require a \"UserNote\" trailer in the PR description and the commit message.\r\nPossible reasons include:\r\n* New features.\r\n* Changes to CLI commands.\r\n* Significant bug fixes.\r\n\r\nSee the [Commit Messages](https://docs.asterisk.org/Development/Policies-and-Procedures/Commit-Messages) page in the [Asterisk Developer Documentation](https://docs.asterisk.org/Development/) for more information.\r\n"
+  },
+  {
+    "created_at": "2025-08-07T13:53:42Z",
+    "name": "WIKIDOCS_ENABLE",
+    "updated_at": "2025-08-07T13:53:42Z",
+    "value": "true"
+  },
+  {
+    "created_at": "2025-08-07T13:53:42Z",
+    "name": "WIKIDOC_BRANCHES",
+    "updated_at": "2025-08-07T13:53:42Z",
+    "value": "[\"18\",\"20\",\"21\",\"22\",\"certified/18.9\",\"certified/20.7\"]"
+  },
+  {
+    "created_at": "2025-08-07T13:53:42Z",
+    "name": "WIKIDOC_MANUAL_BRANCHES",
+    "updated_at": "2025-08-07T13:53:42Z",
+    "value": "[\"18\",\"20\",\"21\",\"22\",\"certified/18.9\",\"certified/20.7\"]"
+  }
+]
