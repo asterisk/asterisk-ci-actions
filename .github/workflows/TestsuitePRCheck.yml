@@ -28,6 +28,8 @@ env:
   TESTS_FAILED:        ${{ vars.PR_SUBMIT_TESTS_FAILED }}
   RECHECKPR_LABEL:     ${{ vars.RECHECKPR_LABEL }}
   ASTERISK_REPO:       ${{ vars.ASTERISK_REPO }}
+  PR_STATE_CHANGE_DELAY_SEC:  ${{ vars.PR_STATE_CHANGE_DELAY_SEC || 120 }}
+  ASSOCIATED_TEST_PR_REGEX:   ${{ vars.ASSOCIATED_TEST_PR_REGEX }}
 
 jobs:
   Setup:
@@ -36,6 +38,7 @@ jobs:
       run:
         shell: bash
     outputs:
+      asterisk_test_pr:  ${{ steps.setup.outputs.ASSOCIATED_TEST_PR }}
       nontest_count:     ${{ steps.checkfiles.outputs.nontest_count }}
       gatetest_count:    ${{ steps.checkfiles.outputs.gatetest_count }}
       gatetest_group:    ${{ steps.checkfiles.outputs.gatetest_group }}
@@ -44,17 +47,29 @@ jobs:
       - name: GetActionsRepo
         uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
 
-      - name: "Label"
-        id: label
+      - name: Setup
+        id: setup
         run: |
-          # Setup testsuite
-          echo "Labeling"
+          if [ "$TRIGGER" != "labeled" ] ; then
+            # Wait to allow time to add associated PR
+            echo "Waiting for ${PR_STATE_CHANGE_DELAY_SEC} seconds to give user a chance to add PR comments"
+            sleep ${PR_STATE_CHANGE_DELAY_SEC}
+          fi
+
+          # Label and get Asterisk PR
           gh pr edit --repo ${REPO} \
             --remove-label ${RECHECKPR_LABEL} \
             --remove-label ${TESTS_PASSED} \
             --remove-label ${TESTS_FAILED} \
             --add-label ${TESTING_IN_PROGRESS} \
             ${PR_NUMBER} || :
+
+          # Asterisk PR will be placed in ASSOCIATED_TEST_PR in both
+          # GITHUB_ENV and GITHUB_OUTPUT by the script.
+          ${SCRIPT_DIR}/getAssociatedTestPR.sh \
+            --repo=${REPO} \
+            --pr-number=${PR_NUMBER} \
+            --associated-test-pr-regex="${ASSOCIATED_TEST_PR_REGEX}"
 
       - name: Check if any tests have changed
         id: checkfiles
@@ -125,6 +140,7 @@ jobs:
     with:
       pr_number:         ${{ github.event.number }}
       base_branch:       ${{ github.event.pull_request.base.ref }}
+      is_cherry_pick:    false
       asterisk_repo:     ${{ vars.ASTERISK_REPO }}
       gatetest_group:    ${{ needs.Setup.outputs.gatetest_group }}
       gatetest_commands: ${{ needs.Setup.outputs.gatetest_commands }}

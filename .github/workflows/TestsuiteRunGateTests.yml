@@ -8,9 +8,17 @@ on:
       base_branch:
         required: true
         type: string
+      is_cherry_pick:
+        required: false
+        type: boolean
+        default: false
       asterisk_repo:
         type: string
         required: true
+      asterisk_test_pr:
+        type: string
+        required: false
+        default: '-1'
       gatetest_group:
         description: 'Gate Group'
         type: string
@@ -36,9 +44,9 @@ jobs:
     with:
       test_type:         prstatechange
       asterisk_repo:     ${{ inputs.asterisk_repo }}
-      pr_number:         -1
+      pr_number:         ${{ inputs.asterisk_test_pr }}
       base_branch:       ${{ inputs.base_branch }}
-      is_cherry_pick:    false
+      is_cherry_pick:    ${{ inputs.is_cherry_pick }}
       build_cache_dir:   build-cache
       build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
       no_alembic:        true

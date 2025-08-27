@@ -27,12 +27,16 @@ env:
   TESTING_IN_PROGRESS: ${{ vars.PR_SUBMIT_TESTING_IN_PROGRESS }}
   TESTS_PASSED:        ${{ vars.PR_SUBMIT_TESTS_PASSED }}
   TESTS_FAILED:        ${{ vars.PR_SUBMIT_TESTS_FAILED }}
+  PR_STATE_CHANGE_DELAY_SEC:  ${{ vars.PR_STATE_CHANGE_DELAY_SEC || 120 }}
+  RECHECKPR_LABEL:            ${{ vars.RECHECKPR_LABEL }}
+  ASSOCIATED_TEST_PR_REGEX:   ${{ vars.ASSOCIATED_TEST_PR_REGEX }}
+  CHERRY_PICK_VALID_BRANCHES: ${{ vars.CHERRY_PICK_VALID_BRANCHES }}
 
 jobs:
   Setup:
     runs-on: ubuntu-latest
     outputs:
-      testsuite_test_pr: ${{ steps.setup.outputs.TESTSUITE_TEST_PR }}
+      testsuite_test_pr: ${{ steps.setup.outputs.ASSOCIATED_TEST_PR }}
     steps:
         # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
       - name: GetActionsRepo
@@ -40,26 +44,12 @@ jobs:
 
       - id: setup
         name: Setup
-        env:
-          PR_STATE_CHANGE_DELAY_SEC: ${{ vars.PR_STATE_CHANGE_DELAY_SEC || 120 }}
-          RECHECKPR_LABEL:           ${{ vars.RECHECKPR_LABEL }}
-          TESTSUITE_TEST_PR_REGEX:   ${{ vars.TESTSUITE_TEST_PR_REGEX }}
         run: |
           if [ "$TRIGGER" != "labeled" ] ; then
             # Wait then get testsuite PR
             echo "Waiting for ${PR_STATE_CHANGE_DELAY_SEC} seconds to give user a chance to add PR comments"
             sleep ${PR_STATE_CHANGE_DELAY_SEC}
           fi
-
-          # Testsuite PR will be placed in TESTSUITE_TEST_PR in both
-          # GITHUB_ENV and GITHUB_OUTPUT by the script.
-          ${SCRIPT_DIR}/getTestsuitePRfromAsteriskPR.sh \
-            --repo=${REPO} \
-            --pr-number=${PR_NUMBER} \
-            --testsuite-pr-regex="${TESTSUITE_TEST_PR_REGEX}"
-
-          echo "Attempting to delete any existing cache"
-          gh cache delete -R ${REPO} ${BUILD_CACHE_KEY} || :
 
           echo "Labeling"
           gh pr edit --repo ${REPO} \
@@ -68,6 +58,16 @@ jobs:
             --remove-label ${TESTS_FAILED} \
             --add-label ${TESTING_IN_PROGRESS} \
             ${PR_NUMBER} || :
+
+          # Testsuite PR will be placed in ASSOCIATED_TEST_PR in both
+          # GITHUB_ENV and GITHUB_OUTPUT by the script.
+          ${SCRIPT_DIR}/getAssociatedTestPR.sh \
+            --repo=${REPO} \
+            --pr-number=${PR_NUMBER} \
+            --associated-test-pr-regex="${ASSOCIATED_TEST_PR_REGEX}"
+
+          echo "Attempting to delete any existing cache"
+          gh cache delete -R ${REPO} ${BUILD_CACHE_KEY} || :
 
   Check:
     name: Check
@@ -100,7 +100,6 @@ jobs:
     env:
       RESULT_SETUP:   ${{ needs.Setup.result }}
       RESULT_CHECK:   ${{ needs.Check.result }}
-      CHERRY_PICK_VALID_BRANCHES:       ${{ vars.CHERRY_PICK_VALID_BRANCHES }}
     steps:
         # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
       - name: GetActionsRepo

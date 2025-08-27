@@ -25,12 +25,16 @@ env:
   TESTING_IN_PROGRESS: ${{ vars.CHERRY_PICK_TESTING_IN_PROGRESS }}
   TESTS_PASSED:        ${{ vars.CHERRY_PICK_CHECKS_PASSED_LABEL }}
   TESTS_FAILED:        ${{ vars.CHERRY_PICK_CHECKS_FAILED_LABEL }}
+  ASSOCIATED_TEST_PR_REGEX: ${{ vars.ASSOCIATED_TEST_PR_REGEX }}
+  CHERRY_PICK_TEST_LABEL:   ${{ vars.CHERRY_PICK_TEST_LABEL }}
+  CHERRY_PICK_REGEX:        ${{ vars.CHERRY_PICK_REGEX }}
 
 jobs:
   Setup:
     name: Setup
     runs-on: ubuntu-latest
     outputs:
+      asterisk_test_pr:   ${{ steps.setup.outputs.ASSOCIATED_TEST_PR }}
       branches:           ${{ steps.setup.outputs.BRANCHES }}
       branch_count:       ${{ steps.setup.outputs.BRANCH_COUNT }}
       nontest_count:      ${{ steps.checkfiles.outputs.nontest_count }}
@@ -42,18 +46,23 @@ jobs:
       - name: GetActionsRepo
         uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
 
-      - id: setup
-        env:
-          CHERRY_PICK_TEST_LABEL:          ${{ vars.CHERRY_PICK_TEST_LABEL }}
-          CHERRY_PICK_REGEX:               ${{ vars.CHERRY_PICK_REGEX }}
+      - name: Setup
+        id: setup
         run: |
-
+          # Label, get Asterisk PR and cherry-pick branches.
           gh pr edit --repo ${REPO} \
             --remove-label ${CHERRY_PICK_TEST_LABEL} \
             --remove-label ${TESTS_PASSED} \
             --remove-label ${TESTS_FAILED} \
             --remove-label ${TESTING_IN_PROGRESS} \
             ${PR_NUMBER} || :
+
+          # Asterisk PR will be placed in ASSOCIATED_TEST_PR in both
+          # GITHUB_ENV and GITHUB_OUTPUT by the script.
+          ${SCRIPT_DIR}/getAssociatedTestPR.sh \
+            --repo=${REPO} \
+            --pr-number=${PR_NUMBER} \
+            --associated-test-pr-regex="${ASSOCIATED_TEST_PR_REGEX}"
 
           # The script will populate BRANCHES and BRANCH_COUNT in
           # both GITHUB_ENV and GITHUB_OUTPUT for future use but
@@ -178,6 +187,7 @@ jobs:
     with:
       pr_number:         ${{ github.event.number }}
       base_branch:       ${{ matrix.branch }}
+      is_cherry_pick:    true
       asterisk_repo:     ${{ vars.ASTERISK_REPO }}
       gatetest_group:    ${{ needs.Setup.outputs.gatetest_group }}
       gatetest_commands: ${{ needs.Setup.outputs.gatetest_commands }}

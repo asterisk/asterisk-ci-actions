@@ -26,6 +26,9 @@ env:
   TESTING_IN_PROGRESS: ${{ vars.CHERRY_PICK_TESTING_IN_PROGRESS }}
   TESTS_PASSED:        ${{ vars.CHERRY_PICK_CHECKS_PASSED_LABEL }}
   TESTS_FAILED:        ${{ vars.CHERRY_PICK_CHECKS_FAILED_LABEL }}
+  CHERRY_PICK_TEST_LABEL:   ${{ vars.CHERRY_PICK_TEST_LABEL }}
+  CHERRY_PICK_REGEX:        ${{ vars.CHERRY_PICK_REGEX }}
+  ASSOCIATED_TEST_PR_REGEX: ${{ vars.ASSOCIATED_TEST_PR_REGEX }}
 
 jobs:
   Setup:
@@ -34,7 +37,7 @@ jobs:
     outputs:
       branches:           ${{ steps.setup.outputs.BRANCHES }}
       branch_count:       ${{ steps.setup.outputs.BRANCH_COUNT }}
-      testsuite_test_pr:  ${{ steps.setup.outputs.TESTSUITE_TEST_PR }}
+      testsuite_test_pr:  ${{ steps.setup.outputs.ASSOCIATED_TEST_PR }}
     steps:
         # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
       - name: GetActionsRepo
@@ -42,17 +45,13 @@ jobs:
 
       - id: setup
         name: Setup
-        env:
-          CHERRY_PICK_TEST_LABEL:          ${{ vars.CHERRY_PICK_TEST_LABEL }}
-          CHERRY_PICK_REGEX:               ${{ vars.CHERRY_PICK_REGEX }}
-          TESTSUITE_TEST_PR_REGEX:         ${{ vars.TESTSUITE_TEST_PR_REGEX }}
         run: |
-          # The script will populate TESTSUITE_TEST_PR in both
+          # The script will populate ASSOCIATED_TEST_PR in both
           # GITHUB_ENV and GITHUB_OUTPUT.
-          ${SCRIPT_DIR}/getTestsuitePRfromAsteriskPR.sh \
+          ${SCRIPT_DIR}/getAssociatedTestPR.sh \
             --repo=${REPO} \
             --pr-number=${PR_NUMBER} \
-            --testsuite-pr-regex="${TESTSUITE_TEST_PR_REGEX}"
+            --associated-test-pr-regex="${ASSOCIATED_TEST_PR_REGEX}"
 
           gh pr edit --repo ${REPO} \
             --remove-label ${CHERRY_PICK_TEST_LABEL} \
