@@ -1,26 +1,200 @@
 [
   {
-    "created_at": "2023-04-12T13:10:32Z",
+    "created_at": "2025-08-27T12:44:55Z",
+    "name": "ASSOCIATED_TEST_PR_REGEX",
+    "updated_at": "2025-08-27T12:44:55Z",
+    "value": "(?:^|\\n)asterisk-test-pr:[ ]*([0-9]+)"
+  },
+  {
+    "created_at": "2024-07-26T18:29:48Z",
     "name": "ASTERISK_REPO",
-    "updated_at": "2023-04-12T13:10:32Z",
+    "updated_at": "2025-08-26T13:22:48Z",
     "value": "asterisk/asterisk-gh-test"
   },
   {
-    "created_at": "2023-04-12T13:08:02Z",
-    "name": "CHERRY_PICK_REGEX",
-    "updated_at": "2023-04-12T13:08:02Z",
-    "value": "cherry-pick-to:[ ]*(([0-9.]+)|(certified/[0-9.]+)|(master))"
+    "created_at": "2025-08-27T12:33:33Z",
+    "name": "ASTERISK_TEST_PR_REGEX",
+    "updated_at": "2025-08-27T12:33:33Z",
+    "value": "(?:^|\\n)asterisk-test-pr:[ ]*([0-9]+)"
   },
   {
-    "created_at": "2023-04-12T13:08:38Z",
+    "created_at": "2024-07-26T18:29:48Z",
+    "name": "CHERRY_PICK_CHECKS_FAILED_LABEL",
+    "updated_at": "2024-07-26T18:29:48Z",
+    "value": "cherry-pick-checks-failed"
+  },
+  {
+    "created_at": "2024-07-26T18:29:49Z",
+    "name": "CHERRY_PICK_CHECKS_PASSED_LABEL",
+    "updated_at": "2024-07-26T18:29:49Z",
+    "value": "cherry-pick-checks-passed"
+  },
+  {
+    "created_at": "2024-07-26T18:29:49Z",
+    "name": "CHERRY_PICK_GATES_FAILED_LABEL",
+    "updated_at": "2024-07-26T18:29:49Z",
+    "value": "cherry-pick-gates-failed"
+  },
+  {
+    "created_at": "2024-07-26T18:29:49Z",
+    "name": "CHERRY_PICK_GATES_PASSED_LABEL",
+    "updated_at": "2024-07-26T18:29:49Z",
+    "value": "cherry-pick-gates-passed"
+  },
+  {
+    "created_at": "2024-07-26T18:29:51Z",
+    "name": "CHERRY_PICK_REGEX",
+    "updated_at": "2024-07-26T18:29:51Z",
+    "value": "(?:^|\\n)cherry-pick-to:[ ]*(([0-9.]+)|(certified/[0-9.]+)|(master))"
+  },
+  {
+    "created_at": "2024-07-26T18:29:51Z",
+    "name": "CHERRY_PICK_REMINDER",
+    "updated_at": "2025-02-15T17:06:36Z",
+    "value": "<!--CPR-->\r\nREMINDER: If this PR applies to other branches, please add a comment with the appropriate \"cherry-pick-to\" headers as per the [Create a Pull Request](https://docs.asterisk.org/Development/Policies-and-Procedures/Code-Contribution) process.  \r\n\r\nIf you don't want it cherry-picked, please add a comment with `cherry-pick-to: none` so we don't keep asking.\r\n\r\nIf, after adding \"cherry-pick-to\" comments, you change your mind, please edit the comment to DELETE the header lines and add `cherry-pick-to: none`.\r\n\r\nThe currently active branches are now __20, 21, 22 and master__.\r\n"
+  },
+  {
+    "created_at": "2024-07-26T18:29:51Z",
+    "name": "CHERRY_PICK_TESTING_IN_PROGRESS",
+    "updated_at": "2024-07-26T18:29:51Z",
+    "value": "cherry-pick-testing-in-progress"
+  },
+  {
+    "created_at": "2024-07-26T18:29:52Z",
     "name": "CHERRY_PICK_TEST_LABEL",
-    "updated_at": "2023-04-12T13:08:38Z",
+    "updated_at": "2024-07-26T18:29:52Z",
     "value": "cherry-pick-test"
   },
   {
-    "created_at": "2023-04-12T13:09:55Z",
+    "created_at": "2024-07-26T18:29:52Z",
+    "name": "MERGE_APPROVED",
+    "updated_at": "2024-07-26T18:29:52Z",
+    "value": "merge-approved"
+  },
+  {
+    "created_at": "2024-07-26T18:29:53Z",
+    "name": "MERGE_APPROVED_LABEL",
+    "updated_at": "2024-07-26T18:29:53Z",
+    "value": "merge-approved"
+  },
+  {
+    "created_at": "2024-07-26T18:29:53Z",
+    "name": "MERGE_APPROVED_LABELS",
+    "updated_at": "2024-07-26T18:29:53Z",
+    "value": "['merge-approved','merge-approved-force']"
+  },
+  {
+    "created_at": "2024-07-26T18:29:53Z",
+    "name": "MERGE_FAILED_LABEL",
+    "updated_at": "2024-07-26T18:29:53Z",
+    "value": "merge-failed"
+  },
+  {
+    "created_at": "2024-07-26T18:29:54Z",
+    "name": "MERGE_IN_PROGRESS_LABEL",
+    "updated_at": "2024-07-26T18:29:54Z",
+    "value": "merge-in-progress"
+  },
+  {
+    "created_at": "2024-07-26T18:29:54Z",
+    "name": "PRE_MERGE_CHECKS_FAILED_LABEL",
+    "updated_at": "2024-07-26T18:29:54Z",
+    "value": "pre-merge-checks-failed"
+  },
+  {
+    "created_at": "2024-07-26T18:29:54Z",
+    "name": "PRE_MERGE_CHECKS_PASSED_LABEL",
+    "updated_at": "2024-07-26T18:29:54Z",
+    "value": "pre-merge-checks-passed"
+  },
+  {
+    "created_at": "2024-07-26T18:29:55Z",
+    "name": "PRE_MERGE_GATES_FAILED_LABEL",
+    "updated_at": "2024-07-26T18:29:55Z",
+    "value": "pre-merge-gates-failed"
+  },
+  {
+    "created_at": "2024-07-26T18:29:55Z",
+    "name": "PRE_MERGE_GATES_PASSED_LABEL",
+    "updated_at": "2024-07-26T18:29:55Z",
+    "value": "pre-merge-gates-passed"
+  },
+  {
+    "created_at": "2024-07-26T18:29:56Z",
+    "name": "PRE_MERGE_TESTING_IN_PROGRESS",
+    "updated_at": "2024-07-26T18:29:56Z",
+    "value": "pre-merge-testing-in-progress"
+  },
+  {
+    "created_at": "2024-07-26T18:29:56Z",
+    "name": "PR_ACCEPTANCE_TEST_LABEL",
+    "updated_at": "2024-07-26T18:29:56Z",
+    "value": "pr-acceptance-test"
+  },
+  {
+    "created_at": "2024-07-26T18:29:56Z",
+    "name": "PR_REVIEWERS",
+    "updated_at": "2024-07-26T18:29:56Z",
+    "value": "[\"asterisk/asterisk-dev\"]"
+  },
+  {
+    "created_at": "2024-07-26T18:29:57Z",
+    "name": "PR_SUBMIT_TESTING_IN_PROGRESS",
+    "updated_at": "2024-07-26T18:29:57Z",
+    "value": "pr-submit-testing-in-progress"
+  },
+  {
+    "created_at": "2024-07-26T18:29:57Z",
+    "name": "PR_SUBMIT_TESTS_FAILED",
+    "updated_at": "2024-07-26T18:29:57Z",
+    "value": "pr-submit-tests-failed"
+  },
+  {
+    "created_at": "2024-07-26T18:29:57Z",
+    "name": "PR_SUBMIT_TESTS_PASSED",
+    "updated_at": "2024-07-26T18:29:57Z",
+    "value": "pr-submit-tests-passed"
+  },
+  {
+    "created_at": "2024-11-06T19:06:52Z",
+    "name": "RECHECKPR_LABEL",
+    "updated_at": "2024-11-06T19:06:52Z",
+    "value": "recheckpr"
+  },
+  {
+    "created_at": "2024-07-26T18:29:58Z",
+    "name": "TESTING_IN_PROGRESS",
+    "updated_at": "2024-07-26T18:29:58Z",
+    "value": "testing-in-progress"
+  },
+  {
+    "created_at": "2024-07-26T18:29:58Z",
+    "name": "TEST_CHECKS_FAILED_LABEL",
+    "updated_at": "2024-07-26T18:29:58Z",
+    "value": "test-checks-failed"
+  },
+  {
+    "created_at": "2024-07-26T18:29:59Z",
+    "name": "TEST_CHECKS_PASSED_LABEL",
+    "updated_at": "2024-07-26T18:29:59Z",
+    "value": "test-checks-passed"
+  },
+  {
+    "created_at": "2024-07-26T18:29:59Z",
+    "name": "TEST_GATES_FAILED_LABEL",
+    "updated_at": "2024-07-26T18:29:59Z",
+    "value": "test-gates-failed"
+  },
+  {
+    "created_at": "2024-07-26T18:29:59Z",
+    "name": "TEST_GATES_PASSED_LABEL",
+    "updated_at": "2024-07-26T18:29:59Z",
+    "value": "test-gates-passed"
+  },
+  {
+    "created_at": "2024-07-26T18:30:00Z",
     "name": "UNITTEST_COMMAND",
-    "updated_at": "2023-04-12T13:43:19Z",
+    "updated_at": "2024-07-26T18:30:00Z",
     "value": "./self_test"
   }
 ]
