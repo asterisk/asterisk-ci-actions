@@ -113,7 +113,7 @@ jobs:
           echo "gatetest_count=${gatetest_count}" >> ${GITHUB_OUTPUT}
           if [ $gatetest_count -gt 0 ] ; then
           testfiles=$(jq -r '.[].filename | select(startswith("tests")) | select(endswith("test-config.yaml"))' /tmp/pr_files)
-          gatetest_group=custom
+          gatetest_group=gates
           echo "gatetest_group=${gatetest_group}" >> ${GITHUB_OUTPUT}
           testcmd=$(for f in $testfiles ; do echo -n "-t " ; dirname $f ; done)
           {
@@ -188,6 +188,7 @@ jobs:
       pr_number:         ${{ github.event.number }}
       base_branch:       ${{ matrix.branch }}
       is_cherry_pick:    true
+      asterisk_test_pr:  ${{ needs.Setup.outputs.asterisk_test_pr }}
       asterisk_repo:     ${{ vars.ASTERISK_REPO }}
       gatetest_group:    ${{ needs.Setup.outputs.gatetest_group }}
       gatetest_commands: ${{ needs.Setup.outputs.gatetest_commands }}
