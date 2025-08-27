@@ -1,9 +1,21 @@
 [
   {
+    "created_at": "2025-08-27T12:45:04Z",
+    "name": "ASSOCIATED_TEST_PR_REGEX",
+    "updated_at": "2025-08-27T12:45:04Z",
+    "value": "(?:^|\\n)asterisk-test-pr:[ ]*([0-9]+)"
+  },
+  {
     "created_at": "2023-04-28T18:11:58Z",
     "name": "ASTERISK_REPO",
     "updated_at": "2023-04-28T18:11:58Z",
     "value": "asterisk/asterisk"
+  },
+  {
+    "created_at": "2025-08-27T12:32:52Z",
+    "name": "ASTERISK_TEST_PR_REGEX",
+    "updated_at": "2025-08-27T12:32:52Z",
+    "value": "(?:^|\\n)asterisk-test-pr:[ ]*([0-9]+)"
   },
   {
     "created_at": "2023-05-02T17:54:05Z",
