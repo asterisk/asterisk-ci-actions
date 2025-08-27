@@ -1,5 +1,11 @@
 [
   {
+    "created_at": "2025-08-27T12:45:45Z",
+    "name": "ASSOCIATED_TEST_PR_REGEX",
+    "updated_at": "2025-08-27T12:45:45Z",
+    "value": "(?:^|\\n)testsuite-test-pr:[ ]*([0-9]+)"
+  },
+  {
     "created_at": "2023-05-04T17:14:53Z",
     "name": "ASTERISK_MAIL_FROM_TEAM",
     "updated_at": "2023-05-04T17:15:01Z",
@@ -222,6 +228,18 @@
     "value": "pre-merge-testing-in-progress"
   },
   {
+    "created_at": "2025-02-21T16:35:58Z",
+    "name": "PR_CHECKLIST_HEADER",
+    "updated_at": "2025-02-21T19:52:08Z",
+    "value": "<!--PRCL-->\r\n**Attention!** This pull request may contain issues that could prevent it from being accepted.  Please review the checklist below and take the recommended action.  If you believe any of these are not applicable, just add a comment and let us know.\r\n"
+  },
+  {
+    "created_at": "2025-02-21T16:40:35Z",
+    "name": "PR_CHECKLIST_TRAILER",
+    "updated_at": "2025-02-21T19:52:21Z",
+    "value": "\r\nDocumentation:\r\n* [Asterisk Developer Documentation](https://docs.asterisk.org/Development/)\r\n  * [Code Contribution](https://docs.asterisk.org/Development/Policies-and-Procedures/Code-Contribution/)\r\n  * [Commit Messages](https://docs.asterisk.org/Development/Policies-and-Procedures/Commit-Messages)\r\n  * [Alembic Scripts](https://docs.asterisk.org/Development/Reference-Information/Other-Reference-Information/Alembic-Scripts/)\r\n"
+  },
+  {
     "created_at": "2023-03-09T20:04:09Z",
     "name": "PR_COMMENT_KEYWORD_REGEX",
     "updated_at": "2023-03-09T20:20:32Z",
@@ -274,6 +292,12 @@
     "name": "RUN_DUMP_ENV",
     "updated_at": "2024-09-16T16:01:45Z",
     "value": "false"
+  },
+  {
+    "created_at": "2025-02-11T17:40:48Z",
+    "name": "SQUASH_COMMITS_REMINDER",
+    "updated_at": "2025-02-11T17:40:48Z",
+    "value": "<!--SCR-->This PR contains multiple commits which normally isn't allowed by the project.\r\nIf your PR meets the criteria for containing multiple standalone or interim commits as defined in the [Coding Guidelines](https://docs.asterisk.org/Development/Policies-and-Procedures/Coding-Guidelines/), please add a comment to the PR with one of the following headers:\r\n```\r\nmultiple-commits: standalone\r\nmultiple-commits: interim\r\n```\r\nThe header must be the only thing in a comment or be in the same comment that contains `cherry-pick-to` headers."
   },
   {
     "created_at": "2023-05-02T17:04:26Z",
@@ -334,6 +358,18 @@
     "name": "UNITTEST_COMMAND",
     "updated_at": "2024-07-30T23:15:43Z",
     "value": "test execute all"
+  },
+  {
+    "created_at": "2025-02-11T17:41:50Z",
+    "name": "UPGRADE_NOTE_REMINDER",
+    "updated_at": "2025-02-11T17:41:50Z",
+    "value": "<!--UPNR-->REMINDER: This PR has changes which require an \"UpgradeNote\" in the PR description and the commit message.\r\nPossible reasons include:\r\n* New or updated Alembic database scripts.\r\n* Breaking changes to dialplan application or function arguments.\r\n* Breaking changes to AMI, ARI, or AGI actions, events resources or commands.\r\n* Changes to any public \"C\" function or structure.\r\n\r\nSee the [Commit Messages](https://docs.asterisk.org/Development/Policies-and-Procedures/Commit-Messages) page in the [Asterisk Developer Documentation](https://docs.asterisk.org/Development/) for more information."
+  },
+  {
+    "created_at": "2025-02-11T17:41:34Z",
+    "name": "USER_NOTE_REMINDER",
+    "updated_at": "2025-02-11T17:41:34Z",
+    "value": "<!--USNR-->REMINDER: This PR has changes which require a \"UserNote\" trailer in the PR description and the commit message.\r\nPossible reasons include:\r\n* New features.\r\n* Changes to CLI commands.\r\n* Significant bug fixes.\r\n\r\nSee the [Commit Messages](https://docs.asterisk.org/Development/Policies-and-Procedures/Commit-Messages) page in the [Asterisk Developer Documentation](https://docs.asterisk.org/Development/) for more information."
   },
   {
     "created_at": "2023-04-06T13:34:14Z",
