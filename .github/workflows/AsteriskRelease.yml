@@ -160,7 +160,7 @@ jobs:
           password: ${{ secrets.asteriskteam_email_secret }}
           subject: ${{ steps.releaser.outputs.subject }}
           to: ${{ steps.releaser.outputs.mail_list }}
-          from: Asterisk Development Team <asteriskteamsa@sangoma.com>
+          from: Asterisk Development Team <asteriskteam@sangoma.com>
           body: "file://${{github.workspace}}/${{steps.releaser.outputs.email_announcement}}"
           reply_to: no-reply+asteriskteam@sangoma.com
           ignore_cert: true
