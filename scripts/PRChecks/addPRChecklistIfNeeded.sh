@@ -17,6 +17,7 @@ pr_path=/tmp/pr-${PR_NUMBER}.json
 pr_files_path=/tmp/pr-files-${PR_NUMBER}.json
 pr_commits_path=/tmp/pr-commits-${PR_NUMBER}.json
 pr_comments_path=/tmp/pr-comments-${PR_NUMBER}.json
+pr_reviews_path=/tmp/pr-reviews-${PR_NUMBER}.json
 pr_status_path=/tmp/pr-status-${PR_NUMBER}.json
 pr_timeline_path=/tmp/pr-timeline-${PR_NUMBER}.json
 
@@ -30,6 +31,8 @@ if $DOWNLOAD ; then
 	gh api /repos/${REPO}/pulls/${PR_NUMBER}/commits | jq . > ${pr_commits_path}
 
 	gh api /repos/${REPO}/issues/${PR_NUMBER}/comments | jq . > ${pr_comments_path}
+
+	gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews | jq . > ${pr_reviews_path}
 
 	status_url=$(jq -r '.statuses_url' ${pr_path})
 	gh api /repos/${status_url##*/repos/} | jq . > ${pr_status_path}
@@ -50,6 +53,7 @@ SCRIPT_ARGS="--repo=${REPO} --pr-number=${PR_NUMBER} \
 --pr-files-path=${pr_files_path} \
 --pr-commits-path=${pr_commits_path} \
 --pr-comments-path=${pr_comments_path} \
+--pr-reviews-path=${pr_reviews_path} \
 --pr-status-path=${pr_status_path} \
 --pr-timeline-path=${pr_timeline_path} \
 --pr-checklist-path=${pr_checklist_path}"
@@ -96,24 +100,32 @@ for s in $(find ${CHECKS_DIR} -name '[0-9]*.sh' | sort) ; do
 	esac
 done
 
-checklist_comment_id=$(jq -r '.[] | select(.body | startswith("<!--PRCL-->")) | .id' ${pr_comments_path})
+checklist_review_id=$(jq -r '.[] | select(.state != "DISMISSED" and (.body | startswith("<!--PRCL-->")) ) | .id' ${pr_reviews_path})
+if [ -n "$checklist_review_id" ] ; then
+	debug_out "Found existing checklist review ${checklist_review_id}"
+fi
+
+pr_checklist_comment_path=/tmp/pr-checklist-comment-${PR_NUMBER}.md
 
 if ! $checklist_added ; then
 	debug_out "No PR checklist items found.  No reminder needed"
-	if [ -n "$checklist_comment_id" ] ; then
-		debug_out "Removing existing obsolete PR checklist comment"
+	if [ -n "$checklist_review_id" ] ; then
+		debug_out "Removing existing obsolete PR checklist review"
 		if $DRY_RUN ; then
-			debug_out "DRY-RUN: gh api /repos/${REPO}/issues/comments/${checklist_comment_id} -X DELETE"
+			debug_out "DRY-RUN: gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id}/dismissals -f 'event=DISMISS' -X PUT -f'message=Checklist Complete'"
 			debug_out "DRY-RUN: gh pr edit --repo ${REPO} --remove-label \"has-pr-checklist\" ${PR_NUMBER}"
 		else
-			gh api /repos/${REPO}/issues/comments/${checklist_comment_id} -X DELETE
+			echo "<!--PRCL-->" > ${pr_checklist_comment_path}
+			echo "Pull Request Checklist Complete" >> ${pr_checklist_comment_path}
+			gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id} \
+				-X PUT  -F "body=@${pr_checklist_comment_path}" > /dev/null
+			gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id}/dismissals -f 'event=DISMISS' -X PUT -f'message=Pull Request Checklist Complete' >/dev/null
 			gh pr edit --repo ${REPO} --remove-label "has-pr-checklist" ${PR_NUMBER}
 		fi
 	fi
 	exit 0
 fi
 
-pr_checklist_comment_path=/tmp/pr-checklist-comment-${PR_NUMBER}.md
 
 # <!--PRCL--> needs to be the first line of the comment.
 # This is how we'll find it later.
@@ -122,24 +134,35 @@ echo "<!--PRCL-->" > ${pr_checklist_comment_path}
 # Append the checklist items
 cat ${pr_checklist_path} >> ${pr_checklist_comment_path}
 
+if [ -n "$checklist_review_id" ] ; then
+	existing_checklist=/tmp/pr-existing-checklist-comment-${PR_NUMBER}.md
+	jq -jr '.[] | select( .id == '${checklist_review_id}' ) | .body' ${pr_reviews_path} > ${existing_checklist}
+	diff -qEZBwb ${existing_checklist} ${pr_checklist_comment_path} &>/dev/null && {
+		debug_out "New checklist same as existing.  Nothing to do"
+		exit 0
+	}
+fi
+
 if $DRY_RUN ; then
 	cat ${pr_checklist_comment_path} >&2
 fi
 
-if [ -n "$checklist_comment_id" ] ; then
+if [ -n "$checklist_review_id" ] ; then
 	debug_out "Updating existing PR checklist comment"
 	if $DRY_RUN ; then
-		debug_out "DRY-RUN: gh api /repos/${REPO}/issues/comments/${checklist_comment_id} -X PATCH -F 'body=@${pr_checklist_comment_path}'"
+		debug_out "DRY-RUN: gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id} \
+			-X PUT  -F \"body=@${pr_checklist_comment_path}\""
 	else
-		gh api /repos/${REPO}/issues/comments/${checklist_comment_id} -X PATCH -F "body=@${pr_checklist_comment_path}"
+		gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id} \
+			-X PUT  -F "body=@${pr_checklist_comment_path}" > /dev/null
 	fi
 else
 	debug_out "Creating new PR checklist comment"
 	if $DRY_RUN ; then
-		debug_out "DRY-RUN: gh api /repos/${REPO}/issues/${PR_NUMBER}/comments -F 'body=@${pr_checklist_comment_path}'"
+		debug_out "DRY-RUN: gh pr review --repo ${REPO} ${PR_NUMBER} -r -F \"${pr_checklist_comment_path}\""
 		debug_out "DRY-RUN: gh pr edit --repo ${REPO} --add-label \"has-pr-checklist\" ${PR_NUMBER}"
 	else
-		gh api /repos/${REPO}/issues/${PR_NUMBER}/comments -F "body=@${pr_checklist_comment_path}"
+		gh pr review --repo ${REPO} ${PR_NUMBER} -r -F "${pr_checklist_comment_path}"
 		gh pr edit --repo ${REPO} --add-label "has-pr-checklist" ${PR_NUMBER}
 	fi
 fi
