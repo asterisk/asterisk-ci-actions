@@ -52,14 +52,6 @@ if ${CHERRY_PICK} ; then
 		$(booloption debug) $(booloption force_cherry_pick)
 fi
 
-if ${ALEMBIC} && [ "${PRODUCT}" == "asterisk" ] ; then
-	debug "Creating Alembic scripts for ${END_TAG}"
-	$ECHO_CMD $progdir/create_alembic_scripts.sh \
-		--start-tag=${START_TAG} --end-tag=${END_TAG} \
-		--src-repo="${SRC_REPO}" --dst-dir="${DST_DIR}" \
-		$(booloption debug)
-fi
-
 if ! ${SKIP_TEST_BUILDS} ; then
 	CI_SCRIPT_DIR=$(dirname ${progdir})
 	debug "Running production buildAsterisk.sh for ${END_TAG}"
@@ -79,6 +71,14 @@ if ${CHANGELOG} ; then
 		$([ -n "$ADVISORIES" ] && echo "--advisories=$ADVISORIES") \
 		$([ -n "$ADV_URL_BASE" ] && echo "--adv-url-base=$ADV_URL_BASE") \
 		$(booloption debug) --product=${PRODUCT}
+fi
+
+if ${ALEMBIC} && [ "${PRODUCT}" == "asterisk" ] ; then
+	debug "Creating Alembic scripts for ${END_TAG}"
+	$ECHO_CMD $progdir/create_alembic_scripts.sh \
+		--start-tag=${START_TAG} --end-tag=${END_TAG} \
+		--src-repo="${SRC_REPO}" --dst-dir="${DST_DIR}" \
+		$(booloption debug)
 fi
 
 echo "${END_TAG}" > ${DST_DIR}/.version
