@@ -189,7 +189,8 @@ done
 
 debug "$@"
 
-[ -n "${SRC_REPO}" ] && SRC_REPO=$(realpath "${SRC_REPO}")
+: ${SRC_REPO:=${PWD}}
+SRC_REPO=$(realpath "${SRC_REPO}")
 [ -n "${DST_DIR}" ] && DST_DIR=$(realpath "${DST_DIR}")
 [ -z "${GH_REPO}" ] && GH_REPO=asterisk/$(basename "${SRC_REPO}")
 

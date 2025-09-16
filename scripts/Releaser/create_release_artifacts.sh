@@ -49,6 +49,7 @@ if ${CHERRY_PICK} ; then
 	$ECHO_CMD $progdir/cherry_pick.sh \
 		--start-tag=${START_TAG} --end-tag=${END_TAG} \
 		--src-repo="${SRC_REPO}" --dst-dir="${DST_DIR}" \
+		$(booloption security) $(booloption hotfix) \
 		$(booloption debug) $(booloption force_cherry_pick)
 fi
 
