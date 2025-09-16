@@ -47,3 +47,5 @@ jobs:
       gatetest_list:     ${{ inputs.group_list }}
       gatetest_commands: ${{ vars.GATETEST_COMMANDS }}
       realtime:          ${{ inputs.realtime }}
+      sipp_version:      ${{ vars.SIPP_VERSION }}
+

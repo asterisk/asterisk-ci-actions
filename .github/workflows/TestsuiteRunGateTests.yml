@@ -27,6 +27,10 @@ on:
         description: 'Gate Commands'
         type: string
         required: true
+      sipp_version:
+        required: false
+        type: string
+        default: v3.6.1
 
 env:
   REPO:             ${{ github.repository }}
@@ -50,6 +54,7 @@ jobs:
       build_cache_dir:   build-cache
       build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
       no_alembic:        true
+      sipp_version:      ${{ inputs.sipp_version }}
 
   Gate:
     needs: [ Build ]
@@ -73,3 +78,5 @@ jobs:
       build_cache_dir:   build-cache
       build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
       realtime:          false
+      sipp_version:      ${{ inputs.sipp_version }}
+      

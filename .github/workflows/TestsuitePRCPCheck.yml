@@ -192,6 +192,7 @@ jobs:
       asterisk_repo:     ${{ vars.ASTERISK_REPO }}
       gatetest_group:    ${{ needs.Setup.outputs.gatetest_group }}
       gatetest_commands: ${{ needs.Setup.outputs.gatetest_commands }}
+      sipp_version:      ${{ vars.SIPP_VERSION }}
 
 
   PostWorkflow:

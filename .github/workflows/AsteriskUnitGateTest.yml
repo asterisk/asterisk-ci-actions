@@ -71,6 +71,9 @@ on:
         type: boolean
         required: false
         default: false
+      sipp_version:
+        type: string
+        required: false
 
 jobs:
   Build:
@@ -86,6 +89,7 @@ jobs:
       build_cache_dir:   ${{ inputs.build_cache_dir }}
       build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
       no_alembic:        ${{ inputs.no_alembic }}
+      sipp_version:      ${{ inputs.sipp_version }}
 
   BuildNoDevmode:
     if: ${{ fromJSON(inputs.build_no_dev_mode) }}
@@ -101,6 +105,7 @@ jobs:
       no_alembic:        true
       modules_blacklist: ${{ inputs.modules_blacklist }}
       build_cache_dir:
+      sipp_version:      ${{ inputs.sipp_version }}
 
   Unit:
     needs: Build
@@ -135,4 +140,5 @@ jobs:
       build_cache_dir:   ${{ inputs.build_cache_dir }}
       build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
       realtime:          ${{ inputs.realtime }}
+      sipp_version:      ${{ inputs.sipp_version }}
 

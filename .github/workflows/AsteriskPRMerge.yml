@@ -102,6 +102,7 @@ jobs:
       testsuite_repo:    ${{ vars.TESTSUITE_REPO }}
       gatetest_list:     '[]'
       gatetest_commands: ${{ vars.GATETEST_COMMANDS }}
+      sipp_version:      ${{ vars.SIPP_VERSION }}
 
   PreMergeTestResults:
     if: ${{ success() || failure() || cancelled() }}

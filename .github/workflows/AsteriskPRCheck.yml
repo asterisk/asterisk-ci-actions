@@ -92,6 +92,7 @@ jobs:
       testsuite_test_pr: ${{ needs.Setup.outputs.testsuite_test_pr }}
       gatetest_list:     ${{ vars.GATETEST_LIST }}
       gatetest_commands: ${{ vars.GATETEST_COMMANDS }}
+      sipp_version:      ${{ vars.SIPP_VERSION }}
 
   PostWorkflow:
     if: ${{ always() }}
