@@ -34,9 +34,23 @@ if ${end_tag_array[certified]} && [ "${end_tag_array[release_type]}" == "ga" ] &
 	FORCE_CHERRY_PICK=true
 fi
 
+cd ${GITHUB_WORKSPACE}
+mkdir -p ${REPO_DIR}
+mkdir -p ${STAGING_DIR}
+
+git clone ${GITHUB_SERVER_URL}/${REPO} ${REPO_DIR} || bail "Unable to clone ${REPO}"
+
+cd ${REPO_DIR}
+
+debug "Checking safe.directory"
+git config --global --get safe.directory ${REPO_DIR} &>/dev/null || {
+	debug "Setting safe.directory to ${REPO_DIR}"
+	git config --global --add safe.directory ${REPO_DIR}
+}
+
 debug "Validating tags"
 ${SCRIPT_DIR}/version_validator.sh \
-	--product=${PRODUCT} \
+	--product=${PRODUCT} --src-repo=${REPO_DIR} \
 	$(booloption security) $(booloption hotfix)  $(booloption norc) \
 	$(stringoption start-tag) --end-tag=${END_TAG} --debug
 
@@ -58,20 +72,6 @@ if [ -n "${ADVISORIES}" ] ; then
 	[ $failed -gt 0 ] && bail "One or more security advisories were not found" || :
 	unset IFS
 fi
-
-cd ${GITHUB_WORKSPACE}
-mkdir -p ${REPO_DIR}
-mkdir -p ${STAGING_DIR}
-
-git clone ${GITHUB_SERVER_URL}/${REPO} ${REPO_DIR} || bail "Unable to clone ${REPO}"
-
-cd ${REPO_DIR}
-
-debug "Checking safe.directory"
-git config --global --get safe.directory ${REPO_DIR} &>/dev/null || {
-	debug "Setting safe.directory to ${REPO_DIR}"
-	git config --global --add safe.directory ${REPO_DIR}
-}
 
 debug "Checking out ${end_tag_array[source_branch]}"
 git -C ${REPO_DIR} checkout ${end_tag_array[source_branch]} >/dev/null 2>&1
