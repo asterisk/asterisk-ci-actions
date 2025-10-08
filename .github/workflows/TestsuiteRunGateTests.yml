@@ -41,23 +41,49 @@ env:
   PR_NUMBER:        ${{ inputs.pr_number }}
   UNITTEST_COMMAND: ${{ inputs.unittest_command }}
   ASTERISK_REPO:    ${{ inputs.asterisk_repo }}
+  ASTERISK_TEST_PR: ${{ inputs.asterisk_test_pr }}
 
 jobs:
+  Setup:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      is_asterisk_cherry_pick:  ${{ steps.setup.outputs.is_asterisk_cherry_pick }}
+    steps:
+      - name: Setup
+        id: setup
+        run: |
+          # It's possible that this is a cherry-pick test of a Testsuite PR
+          # that doesn't have an Asterisk PR associated with it.  In this case,
+          # we need to tell the Asterisk build that this isn't a cherry-pick
+          # even though it is for the Testsuite PR.
+          # NOTE: The [ -z ${ASTERISK_TEST_PR} ] test intentionally doesn't have
+          # quotes around ${ASTERISK_TEST_PR} because it's possible that it may
+          # contain a single space which would make the test false.
+          if [ -z ${ASTERISK_TEST_PR} ] || [ "${ASTERISK_TEST_PR}" -le 0 ] ; then
+            echo "is_asterisk_cherry_pick=false" >> ${GITHUB_OUTPUT}
+          else
+            echo "is_asterisk_cherry_pick=true" >> ${GITHUB_OUTPUT}
+          fi
+
   Build:
+    needs: [ Setup ]
     uses: ./.github/workflows/AsteriskBuildAndCache.yml
     with:
       test_type:         prstatechange
       asterisk_repo:     ${{ inputs.asterisk_repo }}
       pr_number:         ${{ inputs.asterisk_test_pr }}
       base_branch:       ${{ inputs.base_branch }}
-      is_cherry_pick:    ${{ inputs.is_cherry_pick }}
+      is_cherry_pick:    ${{ fromJSON(needs.Setup.outputs.is_asterisk_cherry_pick) }}
       build_cache_dir:   build-cache
       build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
       no_alembic:        true
       sipp_version:      ${{ inputs.sipp_version }}
 
   Gate:
-    needs: [ Build ]
+    needs: [ Setup, Build ]
     name: Gate
     permissions:
       actions: read
