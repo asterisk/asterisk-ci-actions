@@ -15,6 +15,8 @@ assert_env_variables REPO REPO_DIR BRANCH || exit 1
 
 printvars REPO REPO_DIR PR_NUMBER BRANCH IS_CHERRY_PICK NO_TAGS
 
+[ -z ${PR_NUMBER} ] && PR_NUMBER=-1
+
 set -e
 
 REPO_DIR=$(realpath ${REPO_DIR})
