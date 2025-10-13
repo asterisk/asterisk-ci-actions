@@ -37,7 +37,6 @@ jobs:
       asterisk_test_pr:   ${{ steps.setup.outputs.ASSOCIATED_TEST_PR }}
       branches:           ${{ steps.setup.outputs.BRANCHES }}
       branch_count:       ${{ steps.setup.outputs.BRANCH_COUNT }}
-      nontest_count:      ${{ steps.checkfiles.outputs.nontest_count }}
       gatetest_count:     ${{ steps.checkfiles.outputs.gatetest_count }}
       gatetest_group:     ${{ steps.checkfiles.outputs.gatetest_group }}
       gatetest_commands:  ${{ steps.checkfiles.outputs.gatetest_commands }}
@@ -105,38 +104,10 @@ jobs:
         id: checkfiles
         run: |
           # Get files from PR
-          gh api /repos/${REPO}/pulls/${PR_NUMBER}/files | jq . > /tmp/pr_files
-          file_count=$(jq '[ .[].filename ] | length' /tmp/pr_files)
-          gatetest_count=$(jq '[ .[].filename | select(startswith("tests")) | select(endswith("test-config.yaml")) ] | length' /tmp/pr_files)
-          nontest_count=$(( file_count - gatetest_count ))
-          echo "nontest_count=${nontest_count}" >> ${GITHUB_OUTPUT}
-          echo "gatetest_count=${gatetest_count}" >> ${GITHUB_OUTPUT}
-          if [ $gatetest_count -gt 0 ] ; then
-          testfiles=$(jq -r '.[].filename | select(startswith("tests")) | select(endswith("test-config.yaml"))' /tmp/pr_files)
-          gatetest_group=gates
-          echo "gatetest_group=${gatetest_group}" >> ${GITHUB_OUTPUT}
-          testcmd=$(for f in $testfiles ; do echo -n "-t " ; dirname $f ; done)
-          {
-            echo 'gatetest_commands<<EOF'
-            cat <<-INNEREOF
-            {
-            "${gatetest_group}": {
-                "name": "${gatetest_group}",
-                "dir": "tests/CI/output/${gatetest_group}",
-                "timeout": 240,
-                "step_timeout_minutes": 45,
-                "options": "",
-                "testcmd": "${testcmd}"
-            }
-            }
-          INNEREOF
-            echo "EOF"
-          } >> ${GITHUB_OUTPUT}
-          fi
-          echo "File count: $file_count"
-          echo "Test count: $gatetest_count"
-          echo "Nontest count: $nontest_count"
-          echo "Testcmd: $testcmd"
+          # sets gatetest_count, gatetest_group and gatetest_commands
+          ${SCRIPT_DIR}/getChangedTestsuiteTests.sh \
+            --repo=${REPO} \
+            --pr-number=${PR_NUMBER}
 
       - name: Save Output
         id: save-output
@@ -150,7 +121,7 @@ jobs:
   UnitTest:
     name: UnitTest
     needs: [Setup]
-    if: ${{ needs.Setup.outputs.nontest_count > 0 && needs.Setup.outputs.branch_count > 0 && ( success() ) }}
+    if: ${{ needs.Setup.outputs.branch_count > 0 && ( success() ) }}
     permissions:
       actions: read
       checks: read
