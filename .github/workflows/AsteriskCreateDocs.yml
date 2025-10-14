@@ -42,7 +42,7 @@ jobs:
           # Setup
 
           echo "::group::Installing software"
-          sudo ${SCRIPT_DIR}/setupRunner.sh ${SIPP_VERSION:+--sipp-version=${SIPP_VERSION}}
+          sudo -E ${SCRIPT_DIR}/setupRunner.sh ${SIPP_VERSION:+--sipp-version=${SIPP_VERSION}}
           echo "::endgroup::"
           DOCS_DIR=${GITHUB_WORKSPACE}/docs_dir/${NORMALIZED_BRANCH}
           echo "DOCS_DIR=${DOCS_DIR}" >> ${GITHUB_ENV}

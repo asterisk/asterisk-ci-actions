@@ -127,7 +127,7 @@ jobs:
       - name: Setup
         run: |
           echo "::group::Installing software"
-          sudo ${SCRIPT_DIR}/setupRunner.sh --for-release
+          sudo -E ${SCRIPT_DIR}/setupRunner.sh --for-release
           echo "::endgroup::"
 
       - name: Release

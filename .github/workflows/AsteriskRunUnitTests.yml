@@ -61,7 +61,7 @@ jobs:
         run: |
           # Setup
           echo "::group::Installing software"
-          sudo ${SCRIPT_DIR}/setupRunner.sh --sipp-version=${SIPP_VERSION}
+          sudo -E ${SCRIPT_DIR}/setupRunner.sh --sipp-version=${SIPP_VERSION}
           echo "::endgroup::"
           mkdir -p ${LOG_DIR}
           mkdir -p ${OUTPUT_DIR}

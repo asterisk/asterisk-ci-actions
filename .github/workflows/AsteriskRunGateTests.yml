@@ -81,7 +81,7 @@ jobs:
           # Setup
           source ${SCRIPT_DIR}/ci.functions
           echo "::group::Installing software"
-          sudo ${SCRIPT_DIR}/setupRunner.sh --sipp-version=${SIPP_VERSION}
+          sudo -E ${SCRIPT_DIR}/setupRunner.sh --sipp-version=${SIPP_VERSION}
           echo "::endgroup::"
 
           TESTSUITE_DIR=${GITHUB_WORKSPACE}/$(basename ${TESTSUITE_REPO})
