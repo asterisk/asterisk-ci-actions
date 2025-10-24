@@ -40,7 +40,7 @@ debug_out "Checking for Upgrade/UserNote."
 checklist_added=false
 
 upgrade_note=$(jq -r '.[].commit.message' ${PR_COMMITS_PATH} | \
-	tr -d '\r' | sed -n -r -e '/^(User|Upgrade)Note:/,/^$/p')
+	tr -d '\r' | sed -n -r -e '/^(User|Upgrade|Developer)Note:/,/^$/p')
 if [ -z "$upgrade_note" ] ; then
 	debug_out "    No Upgrade/UserNote."
 
