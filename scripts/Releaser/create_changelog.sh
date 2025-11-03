@@ -63,7 +63,7 @@ if ! ${start_tag_array[certified]} && [ "${start_tag_array[release_type]}" == "p
 		[[ "$MSG" =~ ^((Add ChangeLog)|(Update for)) ]] && continue || :
 		grep -q "$MSG" "${TMPDIR}/lastchanges.txt" && continue || :
 		git -C "${SRC_REPO}" --no-pager log -1 \
-			--format='format:@#@#@#@%nSubject: %<(80,trunc)%s%nAuthor: %an  %nDate:   %as  %n%n%b%n#@#@#@#%n' \
+			--format='format:@#@#@#@%nSubject: %s%nAuthor: %an  %nDate:   %as  %n%n%b%n#@#@#@#%n' \
 			-E --grep "^((Add ChangeLog)|(Update for))" --invert-grep $SHA \
 				>>"${RAW_COMMIT_FILE}"
 	done < "${TMPDIR}/majorchanges1.txt"
@@ -83,7 +83,7 @@ fi
 
 debug "Getting commit list for ${START_TAG}..HEAD"
 git -C "${SRC_REPO}" --no-pager log \
-	--format='format:@#@#@#@%nSubject: %<(80,trunc)%s%nAuthor: %an  %nDate:   %as  %n%n%b%n#@#@#@#' \
+	--format='format:@#@#@#@%nSubject: %s%nAuthor: %an  %nDate:   %as  %n%n%b%n#@#@#@#' \
 	-E --grep "^(([.]github)|([.]lastclean)|(Add\s+ChangeLog)|(Update[s]?\s+for)|(Update\s+CHANGES))" --invert-grep ${START_TAG}..HEAD >>"${RAW_COMMIT_FILE}"
 
 if [ ! -s "${RAW_COMMIT_FILE}" ] ; then
@@ -96,6 +96,52 @@ echo "" >>"${RAW_COMMIT_FILE}"
 # Get rid of any automated "cherry-picked" or "Change-Id" lines.
 sed -i -r -e '/^(\(cherry.+|Change-Id.+)/d' "${RAW_COMMIT_FILE}"
 
+# Look for any reverts.
+# For every revert commit we found, delete both it and the
+# commit that was reverted IF the reverted commit is also in
+# this release.
+# We have to do this by Subject because the original revert
+# was done in the master branch and cherry-picked to the other
+# branches so the commit hash in the revert commit's
+# description will be the master branch's original commit which
+# won't be in the release branches.  
+
+# Reverted commit subject:  Subject: My Commit
+# Reverting commit subject: Subject: Revert "My Commit"
+
+# Find subjects that start with 'Revert "' and extract and save
+# the original commit subjects in an array.
+# They'll contain spaces so we need to make sure we
+# capture on newline boundaries.
+IFS=$'\n'
+declare -a reverts=( $(sed -n -r -e "s/^\s*Subject:\s+Revert\s+\"(.+)\"\s*$/\1/gp" "${RAW_COMMIT_FILE}") )
+unset IFS
+
+cp "${RAW_COMMIT_FILE}" "${RAW_COMMIT_FILE}_orig"
+
+for r in "${reverts[@]}" ; do
+	# We only want to remove reverts where the reverted commit is in
+	# this same release.
+	grep -q -E "^Subject:[[:space:]]+${r}$" "${RAW_COMMIT_FILE}" || continue
+	debug "Suppressing reverted commit for '${r}'"
+	# Regex that catches both reverting and reverted subjects:
+	SUBJECT="^Subject:[[:space:]]+(Revert[[:space:]]+\")?${r}[\"]?$"
+	awk -i inplace -v SUBJECT="${SUBJECT}" \
+		'/@#@#@#@/ {               # Start of block
+			print_block=1          # The default is to print the block
+			buffer = ""            # Clear the buffer
+		}
+		{
+			buffer = buffer ? buffer"\n"$0 : $0  # Accumulate lines into "buffer"
+			if ($0 ~ SUBJECT) {    # If the line matches the SUBJECT pattern...
+				print_block = 0    # Dont print the block
+			}
+		}
+		/#@#@#@#/ && print_block { # If end of block and "print_block" is set...
+			print buffer          # print the block
+		}' \
+		"${RAW_COMMIT_FILE}"
+done
 
 # NOTE:  There are two spaces at the end of each
 # link line.  They force newlines when rendered
@@ -124,7 +170,7 @@ printf -- "- Commits: %d\n" $commitcount >> "${SUMMARY_FILE}"
 
 AUTHORS_FILE="${TMPDIR}/authors.txt"
 AUTHORS_SUMMARY_FILE="${TMPDIR}/authors-summary.txt"
-sed -n -r -e '/^Author:/!d;s/^Author:\s*(.*)/\1/g;s/\b(.)/\u\1/g;s/\s+$//gp' "${RAW_COMMIT_FILE}" > "${AUTHORS_FILE}" 
+sed -n -r -e '/^Author:/!d;s/^Author:\s*(.*)\s*/\1/g;s/\s+$//gp' "${RAW_COMMIT_FILE}" | sort > "${AUTHORS_FILE}"
 awk -F'\n' '{count[$1]++} END{for (i in count) printf "- %s: (%d)\n", i, count[i]}' "${AUTHORS_FILE}" | sort > "${AUTHORS_SUMMARY_FILE}"
 authorcount=$(cat "${AUTHORS_SUMMARY_FILE}" | wc -l)
 printf -- "- Commit Authors: %d\n" $authorcount >> "${SUMMARY_FILE}"
@@ -143,7 +189,6 @@ printf -- "- Issues Resolved: %d\n" $(( $issuecount + $astissuecount )) >> "${SU
 debug "Getting GitHub security advisory list"
 ghsalist=( $(sed -n -r -e "s/^\s*(Fixes|Resolves):\s*(#)?((GHSA|ghsa)-[0-9a-z-]+).*/\3/gp" "${RAW_COMMIT_FILE}" | sort -n | tr '[:space:]' ' ') )
 ghsacount=${#ghsalist[*]}
-printf -- "- Security Advisories Resolved: %d\n" $ghsacount
 printf -- "- Security Advisories Resolved: %d\n" $ghsacount >> "${SUMMARY_FILE}"
 if [ $ghsacount -gt 0 ] ; then
 	for issue in ${ghsalist[*]} ; do
@@ -155,7 +200,7 @@ fi
 
 
 # We only want commit messages that have UserNote,
-# UpgradeNote or DeveloperNote in them. 
+# UpgradeNote or DeveloperNote in them.
 # awk is better at filtering paragraphs than sed
 # so we'll use it to find the commits then sed to format them.
 
@@ -267,17 +312,18 @@ fi
 cat <<-EOF >>"${FULL_CHANGELOG_FILE}"
 
 ### Commits By Author:
-
 EOF
-debug "Getting shortlog for authors"
-# git shortlog can give us a list of commit authors
-# and the number of commits in the tag range.
-git -C "${SRC_REPO}" shortlog \
-	-E --grep "^(([.]github)|([.]lastclean)|(Add\s+ChangeLog)|(Update[s]?\s+for)|(Update\s+CHANGES))" --invert-grep \
-	--group="author" --format="- %<(80,trunc)%s" ${START_TAG}..HEAD |\
-#	Undent the commits and make headings for the authors
-	sed -r -e "s/\s+-(.+)/  -\1/g" --e "s/^([^ ].+)/- #### \1/g" \
-	>>"${FULL_CHANGELOG_FILE}"
+
+debug "Getting commits by author"
+while read LINE ; do
+	[[ "${LINE}" =~ -[[:space:]]+([^:]+):[[:space:]]+\(([0-9]+)\) ]] || continue
+	author=${BASH_REMATCH[1]}
+	count=${BASH_REMATCH[2]}
+	echo -e "\n- #### ${author} (${count}):" >>"${FULL_CHANGELOG_FILE}"
+	sed -n -r -e "/@#@#@#@/{;:a;N;/#@#@#@#/!ba;/${author}/p}" \
+		/tmp/asterisk/raw-commits-23.1.0.tmp.txt |\
+		sed -n -r -e "s/Subject:\s+(.+)/  - \1/gp" >>"${FULL_CHANGELOG_FILE}"
+done < <(cat "${AUTHORS_SUMMARY_FILE}")
 
 debug "Adding commit list"
 cat <<-EOF >>"${FULL_CHANGELOG_FILE}"
@@ -286,7 +332,7 @@ cat <<-EOF >>"${FULL_CHANGELOG_FILE}"
 
 EOF
 
-sed -n -r -e '/^Subject:/!d;s/^Subject:\s*(.*)/-  \1/g;s/\s+$//gp' "${RAW_COMMIT_FILE}" >>"${FULL_CHANGELOG_FILE}"
+sed -n -r -e '/^Subject:/!d;s/^Subject:\s*(.*)/-  \1/gp' "${RAW_COMMIT_FILE}" >>"${FULL_CHANGELOG_FILE}"
 
 cat <<-EOF >>"${FULL_CHANGELOG_FILE}"
 
