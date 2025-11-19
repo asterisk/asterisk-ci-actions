@@ -7,7 +7,7 @@ source ${CHECKS_DIR}/checks.functions
 #set -e
 shopt -s extglob
 
-assert_env_variables --print PR_PATH PR_COMMITS_PATH PR_COMMENTS_PATH || exit 1
+assert_env_variables --print PR_NUMBER PR_PATH PR_COMMITS_PATH PR_COMMENTS_PATH || exit 1
 
 : ${PR_CHECKLIST_PATH:=/dev/stderr}
 
@@ -43,12 +43,17 @@ if [ $commit_count -eq 1 ] && [ "$pr_title" != "${commit_titles[0]}" ] ; then
 	checklist_added=true
 fi
 
-cb=$(tr '[:cntrl:]' ' ' <<< $"${commit_bodies[0]}" | sed -r -e '/^$/d' -e $'s/[[:blank:]]+/ /g')
-pb=$(tr '[:cntrl:]' ' ' <<< $"${pr_body}" | sed -r -e '/^$/d' -e $'s/[[:blank:]]+/ /g')
+echo -e $"${commit_bodies[0]}" | tr '[:cntrl:]' ' ' > /tmp/pr-commit-body-${PR_NUMBER}.txt
+echo -e $"${pr_body}" | tr '[:cntrl:]' ' ' > /tmp/pr-desc-body-${PR_NUMBER}.txt
+
+sed -i -r -e '/^$/d' \
+		-e $'s/[[:blank:]]+/ /g' \
+		-e 's@https://github.com/asterisk/[^/]+/issues/([0-9]+)@#\1@g' \
+		/tmp/pr-{desc,commit}-body-${PR_NUMBER}.txt
 
 debug_out "Checking for PR description/Commit msg body mismatches"
 
-if [ $commit_count -eq 1 ] && [ "${pb}" != "${cb}" ] ; then
+if [ $commit_count -eq 1 ] && ! diff -qEZBbw --strip-trailing-cr /tmp/pr-{desc,commit}-body-${PR_NUMBER}.txt ; then
 	debug_out "PR description and commit message body mismatch."
 	cat <<-EOF | print_checklist_item --append-newline
 	- [ ] The PR description does not match the commit message body. 
