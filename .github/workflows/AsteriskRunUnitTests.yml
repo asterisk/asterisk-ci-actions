@@ -111,5 +111,6 @@ jobs:
           if-no-files-found: ignore
           path: |
             ${{ env.LOG_DIR }}
+            ${{ env.OUTPUT_DIR }}
             ${{ inputs.output_cache_dir }}/output
 
