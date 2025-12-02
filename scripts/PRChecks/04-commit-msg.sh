@@ -11,7 +11,7 @@ assert_env_variables --print PR_NUMBER PR_PATH PR_COMMITS_PATH PR_COMMENTS_PATH 
 
 : ${PR_CHECKLIST_PATH:=/dev/stderr}
 
-pr_title=$(jq -j -r '.title' ${PR_PATH})
+pr_title=$(jq -j -r '.title' ${PR_PATH} | sed -r -e 's/^\s*//g' -e 's/\s*$//g')
 # We need to strip out any carriage returns('\r') so we can do
 # more accurate comparisons.
 pr_body=$(jq -j -r '.body | sub("\r";"";"g")' ${PR_PATH})
@@ -31,7 +31,9 @@ readarray -d "" -t commit_bodies < <( jq --raw-output0 '.[].commit.message | sub
 debug_out "Checking for PR description/Commit msg title mismatches"
 checklist_added=false
 
-if [ $commit_count -eq 1 ] && [ "$pr_title" != "${commit_titles[0]}" ] ; then
+commit_title=$(echo "${commit_titles[0]}" | sed -r -e 's/^\s*//g' -e 's/\s*$//g')
+
+if [ $commit_count -eq 1 ] && [ "$pr_title" != "${commit_title}" ] ; then
 	debug_out "PR title and commit title mismatch"
 	cat <<-EOF | print_checklist_item --append-newline
 	- [ ] The PR title does not match the commit title. This can cause 
