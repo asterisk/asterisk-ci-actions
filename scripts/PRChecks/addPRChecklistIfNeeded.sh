@@ -6,12 +6,13 @@ DRY_RUN=false
 DOWNLOAD_ONLY=false
 DOWNLOAD=true
 QUIET_CHECKS=false
+FORCE_CLOSE=false
 
 source ${SCRIPT_DIR}/ci.functions
 source ${CHECKS_DIR}/checks.functions
 
 assert_env_variables REPO PR_NUMBER || exit 1
-printvars REPO PR_NUMBER DRY_RUN DOWNLOAD_ONLY DONT_DOWNLOAD QUIET_CHECKS
+printvars REPO PR_NUMBER DRY_RUN DOWNLOAD_ONLY DONT_DOWNLOAD QUIET_CHECKS FORCE_CLOSE
 
 pr_path=/tmp/pr-${PR_NUMBER}.json
 pr_files_path=/tmp/pr-files-${PR_NUMBER}.json
@@ -20,6 +21,8 @@ pr_comments_path=/tmp/pr-comments-${PR_NUMBER}.json
 pr_reviews_path=/tmp/pr-reviews-${PR_NUMBER}.json
 pr_status_path=/tmp/pr-status-${PR_NUMBER}.json
 pr_timeline_path=/tmp/pr-timeline-${PR_NUMBER}.json
+pr_checklist_comment_path=/tmp/pr-checklist-comment-${PR_NUMBER}.md
+pr_checklist_path=/tmp/pr-checklist-${PR_NUMBER}.md
 
 if $DOWNLOAD ; then
 	debug_out "Downloading PR,  diff, commits, comments"
@@ -38,6 +41,18 @@ if $DOWNLOAD ; then
 	gh api /repos/${status_url##*/repos/} | jq . > ${pr_status_path}
 	
 	gh api /repos/${REPO}/issues/${PR_NUMBER}/timeline | jq . > ${pr_timeline_path}
+
+	checklist_review_id=$(jq -r '.[] | select(.state != "DISMISSED" and (.body | startswith("<!--PRCL-->")) ) | .id' ${pr_reviews_path})
+	if [ -n "$checklist_review_id" ] ; then
+		debug_out "Found existing checklist review ${checklist_review_id}"
+	fi
+	dismissed_checklist_review_id=$(jq -r '.[] | select(.state == "DISMISSED" and (.body | startswith("<!--PRCL-->")) ) | .id' ${pr_reviews_path})
+	dismissed_checklist_review_body=$(jq -r '.[] | select(.state == "DISMISSED" and (.body | startswith("<!--PRCL-->")) ) | .body' ${pr_reviews_path})
+	dismissed_checklist_review_reason=$(sed -n -r -e "s/.+PRCR:([^ -]+)\s+.*/\1/gp" <<<"${dismissed_checklist_review_body}")
+	if [ -n "$dismissed_checklist_review_id" ] ; then
+		debug_out "Found existing dismissed checklist review ${dismissed_checklist_review_id}"
+		debug_out "Found existing dismissed checklist review reason: ${dismissed_checklist_review_reason}"
+	fi
 fi
 
 if $DOWNLOAD_ONLY ; then
@@ -45,7 +60,32 @@ if $DOWNLOAD_ONLY ; then
 	exit 0
 fi
 
-pr_checklist_path=/tmp/pr-checklist-${PR_NUMBER}.md
+clear_existing_checklist() {
+	if [ -n "$checklist_review_id" ] ; then
+		force=false
+		[ "$1" == "force" ] && force=true || :
+		msg="$1"
+		debug_out "Removing existing obsolete PR checklist review ${msg}"
+		if $DRY_RUN ; then
+			debug_out "DRY-RUN: gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id}/dismissals -f 'event=DISMISS' -X PUT -f'message=Checklist Complete'"
+			debug_out "DRY-RUN: gh pr edit --repo ${REPO} --remove-label \"has-pr-checklist\" ${PR_NUMBER}"
+		else
+			echo "<!--PRCL-->" > ${pr_checklist_comment_path}
+			${force} && echo "<!--PRCR:exception -->" >> ${pr_checklist_comment_path} || :
+			echo "Pull Request Checklist Complete ${msg}" >> ${pr_checklist_comment_path}
+			gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id} \
+				-X PUT  -F "body=@${pr_checklist_comment_path}" > /dev/null
+			gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id}/dismissals -f 'event=DISMISS' -X PUT -f'message=Pull Request Checklist Complete' >/dev/null
+			gh pr edit --repo ${REPO} --remove-label "has-pr-checklist" ${PR_NUMBER}
+		fi
+	fi
+}
+
+if $FORCE_CLOSE ; then
+	clear_existing_checklist force
+	exit 0
+fi
+
 [ -f ${pr_checklist_path} ] && rm ${pr_checklist_path}
 
 SCRIPT_ARGS="--repo=${REPO} --pr-number=${PR_NUMBER} \
@@ -100,29 +140,10 @@ for s in $(find ${CHECKS_DIR} -name '[0-9]*.sh' | sort) ; do
 	esac
 done
 
-checklist_review_id=$(jq -r '.[] | select(.state != "DISMISSED" and (.body | startswith("<!--PRCL-->")) ) | .id' ${pr_reviews_path})
-if [ -n "$checklist_review_id" ] ; then
-	debug_out "Found existing checklist review ${checklist_review_id}"
-fi
-
-pr_checklist_comment_path=/tmp/pr-checklist-comment-${PR_NUMBER}.md
 
 if ! $checklist_added ; then
 	debug_out "No PR checklist items found.  No reminder needed"
-	if [ -n "$checklist_review_id" ] ; then
-		debug_out "Removing existing obsolete PR checklist review"
-		if $DRY_RUN ; then
-			debug_out "DRY-RUN: gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id}/dismissals -f 'event=DISMISS' -X PUT -f'message=Checklist Complete'"
-			debug_out "DRY-RUN: gh pr edit --repo ${REPO} --remove-label \"has-pr-checklist\" ${PR_NUMBER}"
-		else
-			echo "<!--PRCL-->" > ${pr_checklist_comment_path}
-			echo "Pull Request Checklist Complete" >> ${pr_checklist_comment_path}
-			gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id} \
-				-X PUT  -F "body=@${pr_checklist_comment_path}" > /dev/null
-			gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id}/dismissals -f 'event=DISMISS' -X PUT -f'message=Pull Request Checklist Complete' >/dev/null
-			gh pr edit --repo ${REPO} --remove-label "has-pr-checklist" ${PR_NUMBER}
-		fi
-	fi
+	clear_existing_checklist
 	exit 0
 fi
 
