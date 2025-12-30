@@ -5,6 +5,11 @@ on:
       ASTERISKTEAM_PAT:
         required: true
 
+env:
+  REPO:            ${{ github.repository }}
+  CHERRY_PICK_VALID_BRANCHES: ${{ vars.CHERRY_PICK_VALID_BRANCHES }}
+  GH_TOKEN:        ${{ secrets.GITHUB_TOKEN }}
+
 permissions:
   actions: write
   checks: read
@@ -30,3 +35,28 @@ jobs:
           accessed: 'true'
 #          max-total-size: '5GB'
 #          created: 'true'
+
+  RecheckPRs:
+    runs-on: ubuntu-latest
+    steps:
+        # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
+      - name: GetActionsRepo
+        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
+
+      - name: RecheckPRs
+        run: |
+          # Get PRs with the has-pr-checklist label and re-run the checklist.
+          # Need to use the 'issues" API because the "pulls" API doesn't allow
+          # filtering by label.  Go figure.
+          declare -a PRs=( $(gh api "/repos/${REPO}/issues?labels=has-pr-checklist" | jq '.[].pull_request.url |  sub(".*/"; "") | tonumber') )
+          declare -p PRs
+          for PR_NUMBER in "${PRs[@]}" ; do
+            echo
+            echo "Rechecking PR ${PR_NUMBER}"
+            echo
+            ${SCRIPT_DIR}/PRChecks/addPRChecklistIfNeeded.sh \
+              --repo=${REPO} \
+              --pr-number=${PR_NUMBER} \
+              --cherry-pick-valid-branches=${CHERRY_PICK_VALID_BRANCHES} \
+              --quiet-checks
+          done

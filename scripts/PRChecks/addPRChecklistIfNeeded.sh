@@ -29,18 +29,18 @@ if $DOWNLOAD ; then
 
 	gh api /repos/${REPO}/pulls/${PR_NUMBER} | jq . > ${pr_path}
 
-	gh api /repos/${REPO}/pulls/${PR_NUMBER}/files | jq . > ${pr_files_path}
+	gh api --paginate /repos/${REPO}/pulls/${PR_NUMBER}/files | jq . > ${pr_files_path}
 
-	gh api /repos/${REPO}/pulls/${PR_NUMBER}/commits | jq . > ${pr_commits_path}
+	gh api --paginate /repos/${REPO}/pulls/${PR_NUMBER}/commits | jq . > ${pr_commits_path}
 
-	gh api /repos/${REPO}/issues/${PR_NUMBER}/comments | jq . > ${pr_comments_path}
+	gh api --paginate /repos/${REPO}/issues/${PR_NUMBER}/comments | jq . > ${pr_comments_path}
 
-	gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews | jq . > ${pr_reviews_path}
+	gh api --paginate /repos/${REPO}/pulls/${PR_NUMBER}/reviews | jq . > ${pr_reviews_path}
 
 	status_url=$(jq -r '.statuses_url' ${pr_path})
-	gh api /repos/${status_url##*/repos/} | jq . > ${pr_status_path}
+	gh api --paginate /repos/${status_url##*/repos/} | jq . > ${pr_status_path}
 	
-	gh api /repos/${REPO}/issues/${PR_NUMBER}/timeline | jq . > ${pr_timeline_path}
+	gh api --paginate /repos/${REPO}/issues/${PR_NUMBER}/timeline | jq . > ${pr_timeline_path}
 
 	checklist_review_id=$(jq -r '.[] | select(.state != "DISMISSED" and (.body | startswith("<!--PRCL-->")) ) | .id' ${pr_reviews_path})
 	if [ -n "$checklist_review_id" ] ; then
@@ -75,7 +75,8 @@ clear_existing_checklist() {
 			echo "Pull Request Checklist Complete ${msg}" >> ${pr_checklist_comment_path}
 			gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id} \
 				-X PUT  -F "body=@${pr_checklist_comment_path}" > /dev/null
-			gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id}/dismissals -f 'event=DISMISS' -X PUT -f'message=Pull Request Checklist Complete' >/dev/null
+			gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id}/dismissals \
+				-f 'event=DISMISS' -X PUT -f'message=Pull Request Checklist Complete' >/dev/null
 			gh pr edit --repo ${REPO} --remove-label "has-pr-checklist" ${PR_NUMBER}
 		fi
 	fi
