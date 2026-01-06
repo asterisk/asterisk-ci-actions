@@ -140,6 +140,14 @@ if $DISTCLEAN ; then
 fi
 
 if $CONFIGURE ; then
+	if [ ! -x ./configure ] || [ ! -x ./menuselect/configure ] ; then
+		debug_out "Running bootstrap.sh"
+		./bootstrap.sh &>/tmp/bootstrap.log || {
+			cat /tmp/bootstrap.log >&2
+			log_error_msgs "./bootstrap.sh failed"
+			exit 1
+		}
+	fi
 	debug_out "Running configure"
 	SUCCESS=true
 	runner ./configure ${common_config_args} > /dev/null || SUCCESS=false
@@ -167,7 +175,12 @@ set_menuselect_options() {
 if $MENUSELECT ; then
 	SUCCESS=true
 	debug_out "Running initial menuselect"
-	runner ${GMAKE} menuselect.makeopts || SUCCESS=false
+	runner ${GMAKE} menuselect.makeopts &>/dev/null || SUCCESS=false
+	$SUCCESS || {
+		log_error_msgs "Initial menuselect failed. Retrying"
+		SUCCESS=true
+		runner ${GMAKE} menuselect.makeopts || SUCCESS=false
+	}
 	cp menuselect-tree menuselect.{makedeps,makeopts} ${OUTPUT_DIR}/
 	$SUCCESS || {
 		log_error_msgs "Initial menuselect failed"
