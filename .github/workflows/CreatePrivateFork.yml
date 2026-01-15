@@ -52,10 +52,4 @@ jobs:
           dst_repo:        ${{ inputs.dst_repo }}
           github_token:    ${{ secrets.ASTERISKTEAM_PAT }}
 
-  UpdateControlData:
-    needs: CreatePrivateFork
-    uses: ./.github/workflows/UpdateControlData.yml
-    with:
-      repo: ${{ inputs.dst_repo }}
-    secrets: inherit
 
