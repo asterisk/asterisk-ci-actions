@@ -12,7 +12,7 @@ source ${SCRIPT_DIR}/ci.functions
 source ${CHECKS_DIR}/checks.functions
 
 assert_env_variables REPO PR_NUMBER || exit 1
-printvars REPO PR_NUMBER DRY_RUN DOWNLOAD_ONLY DONT_DOWNLOAD QUIET_CHECKS FORCE_CLOSE
+printvars REPO PR_NUMBER DRY_RUN DOWNLOAD_ONLY DONT_DOWNLOAD QUIET_CHECKS FORCE_CLOSE CHERRY_PICK_VALID_BRANCHES
 
 pr_path=/tmp/pr-${PR_NUMBER}.json
 pr_files_path=/tmp/pr-files-${PR_NUMBER}.json
@@ -23,6 +23,7 @@ pr_status_path=/tmp/pr-status-${PR_NUMBER}.json
 pr_timeline_path=/tmp/pr-timeline-${PR_NUMBER}.json
 pr_checklist_comment_path=/tmp/pr-checklist-comment-${PR_NUMBER}.md
 pr_checklist_path=/tmp/pr-checklist-${PR_NUMBER}.md
+org_members_path=/tmp/orgmembers.json
 
 if $DOWNLOAD ; then
 	debug_out "Downloading PR,  diff, commits, comments"
@@ -53,6 +54,9 @@ if $DOWNLOAD ; then
 		debug_out "Found existing dismissed checklist review ${dismissed_checklist_review_id}"
 		debug_out "Found existing dismissed checklist review reason: ${dismissed_checklist_review_reason}"
 	fi
+
+	export PR_ORG=$(jq -r '.base.user.login' ${pr_path})
+	gh api --paginate /orgs/${PR_ORG}/members | jq . > ${org_members_path}
 fi
 
 if $DOWNLOAD_ONLY ; then
@@ -89,6 +93,11 @@ fi
 
 [ -f ${pr_checklist_path} ] && rm ${pr_checklist_path}
 
+USER_IS_ADMIN=false
+ORGUSERS_REGEX="($(jq -r -c '.[].login' ${org_members_path} | tr '\n' '|')_)"
+PR_USER=$(jq -r '.user.login' ${pr_path})
+[[ ${PR_USER} =~ ${ORGUSERS_REGEX} ]] && USER_IS_ADMIN=true
+
 SCRIPT_ARGS="--repo=${REPO} --pr-number=${PR_NUMBER} \
 --pr-path=${pr_path} \
 --pr-files-path=${pr_files_path} \
@@ -97,7 +106,9 @@ SCRIPT_ARGS="--repo=${REPO} --pr-number=${PR_NUMBER} \
 --pr-reviews-path=${pr_reviews_path} \
 --pr-status-path=${pr_status_path} \
 --pr-timeline-path=${pr_timeline_path} \
---pr-checklist-path=${pr_checklist_path}"
+--pr-checklist-path=${pr_checklist_path} \
+--cherry-pick-valid-branches=${CHERRY_PICK_VALID_BRANCHES} \
+--user-is-admin=${USER_IS_ADMIN}"
 
 debug_out "Running PR checks with arguments: ${SCRIPT_ARGS}"
 

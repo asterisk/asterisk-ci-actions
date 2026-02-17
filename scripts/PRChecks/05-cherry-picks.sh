@@ -6,12 +6,23 @@ source ${SCRIPT_DIR}/ci.functions
 source ${CHECKS_DIR}/checks.functions
 set -e
 
-assert_env_variables --print PR_COMMENTS_PATH || exit $EXIT_ERROR
+assert_env_variables --print PR_PATH PR_COMMENTS_PATH || exit $EXIT_ERROR
 
 : ${PR_CHECKLIST_PATH:=/dev/stderr}
-: ${CHERRY_PICK_VALID_BRANCHES:='["23","22","20","certified/20.7"]'}
 
-debug_out "    Looking for 'cherry-pick-to' headers."
+if [ -z "${CHERRY_PICK_VALID_BRANCHES}" ] ; then
+	cpvar=$(gh variable --repo=${REPO} get CHERRY_PICK_VALID_BRANCHES)
+	sfvar=$(gh variable --repo=${REPO} get SECURITY_FIX_BRANCHES)
+	if [[ "${REPO}" =~ GHSA ]] && [ -n "${sfvar}" ] ; then
+		CHERRY_PICK_VALID_BRANCHES="${sfvar}"
+	elif [ -n "${cpvar}" ] ; then
+		CHERRY_PICK_VALID_BRANCHES="${cpvar}"
+	else
+		CHERRY_PICK_VALID_BRANCHES='["23","22","20","certified/20.7"]'
+	fi
+fi
+
+debug_out "    Looking for 'cherry-pick-to' headers matching ${CHERRY_PICK_VALID_BRANCHES}."
 value=$(jq -c -r "[ .[].body | match(\"(^|\r?\n)cherry-pick-to:[[:blank:]]*(([0-9.]+)|(certified/[0-9.]+)|(master|none))\"; \"g\") | .captures[1].string ]" ${PR_COMMENTS_PATH})
 
 if [ "$value" == "[]" ] ; then
@@ -31,6 +42,11 @@ fi
 
 if [ "$value" == '["none"]' ] ; then
 	debug_out "Cherry-pick to none found. No checklist item needed."
+	exit $EXIT_OK
+fi
+
+if ${USER_IS_ADMIN} ; then
+	debug_out "User is an admin.  Not checking cherry-pick-to."
 	exit $EXIT_OK
 fi
 
