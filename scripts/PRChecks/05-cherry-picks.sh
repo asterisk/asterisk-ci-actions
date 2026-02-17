@@ -12,7 +12,7 @@ assert_env_variables --print PR_PATH PR_COMMENTS_PATH || exit $EXIT_ERROR
 
 if [ -z "${CHERRY_PICK_VALID_BRANCHES}" ] ; then
 	cpvar=$(gh variable --repo=${REPO} get CHERRY_PICK_VALID_BRANCHES)
-	sfvar=$(gh variable --repo=${REPO} get SECURITY_FIX_BRANCHES)
+	sfvar=$(gh variable --repo=${REPO} get SECURITY_FIX_BRANCHES || :)
 	if [[ "${REPO}" =~ GHSA ]] && [ -n "${sfvar}" ] ; then
 		CHERRY_PICK_VALID_BRANCHES="${sfvar}"
 	elif [ -n "${cpvar}" ] ; then

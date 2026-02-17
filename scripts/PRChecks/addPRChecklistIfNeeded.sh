@@ -81,7 +81,7 @@ clear_existing_checklist() {
 				-X PUT  -F "body=@${pr_checklist_comment_path}" > /dev/null
 			gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id}/dismissals \
 				-f 'event=DISMISS' -X PUT -f'message=Pull Request Checklist Complete' >/dev/null
-			gh pr edit --repo ${REPO} --remove-label "has-pr-checklist" ${PR_NUMBER}
+			gh pr edit --repo ${REPO} --remove-label "has-pr-checklist" ${PR_NUMBER} >/dev/null || :
 		fi
 	fi
 }
