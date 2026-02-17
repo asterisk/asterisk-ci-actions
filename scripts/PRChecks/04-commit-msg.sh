@@ -89,7 +89,7 @@ declare -A has_fixes=( ["commit"]=false ["pr"]=false )
 has_extra_trailers=false
 
 check_for_extra_trailers() {
-	bad_trailers=$(echo "$2" | grep -A999 -E '^(Resolves|Fixes|DeveloperNote|UserNote|UpgradeNote)' | sed -n -r -e '/^[^ :]+:/!d;/(Resolves|Fixes|DeveloperNote|UpgradeNote|UserNote)/!p')
+	bad_trailers=$(echo "$2" | grep -A999 -E '^(Resolves|Closes|Fixes|DeveloperNote|UserNote|UpgradeNote)' | sed -n -r -e '/^[^ :]+:/!d;/(Resolves|Closes|Fixes|DeveloperNote|UpgradeNote|UserNote)/!p')
 	if [ -n "$bad_trailers" ] ; then
 		debug_out "${1} has extra trailers: ${bad_trailers}"
 		has_extra_trailers=true
@@ -105,7 +105,7 @@ done
 if $has_extra_trailers ; then
 	cat <<-EOF | print_checklist_item --append-newline
 	- [ ] The PR description and/or commit message has unsupported trailers after 
-	the \`Resolves\`, \`Fixes\`, \`UserNote\`, \`UpgradeNote\` and/or \`DeveloperNote\` trailers. 
+	the \`Resolves\`, \`Closes\`, \`Fixes\`, \`UserNote\`, \`UpgradeNote\` and/or \`DeveloperNote\` trailers. 
 	Please refrain from adding unsupported trailers as they will confuse the 
 	release change log generation.  If you really need them, please move them 
 	before any of the supportred trailers and ensure there's a blank line after them.
@@ -113,14 +113,14 @@ if $has_extra_trailers ; then
 	checklist_added=true
 fi
 
-debug_out "Checking PR and commits for Fixes/Resolves."
+debug_out "Checking PR and commits for Fixes/Closes/Resolves."
 has_bad_fixes=false
 declare -A issues_resolved=()
 check_for_bad_fixes() {
 	while read LINE ; do
 		# Skip the check if someone typed "Resolves an issue..."
-		[[ "$LINE" =~ ^(Resolves|Fixes)[[:blank:]][a-zA-Z] ]] && continue
-		[[ "$LINE" =~ (^|[[:cntrl:]])(Fixes|Resolves)([^[:cntrl:]]+) ]] || continue
+		[[ "$LINE" =~ ^(Resolves|Closes|Fixes)[[:blank:]][a-zA-Z] ]] && continue
+		[[ "$LINE" =~ (^|[[:cntrl:]])(Fixes|Closes|Resolves)([^[:cntrl:]]+) ]] || continue
 		keyword=${BASH_REMATCH[2]}
 		value=${BASH_REMATCH[3]}
 		has_fixes[$1]=true
@@ -146,15 +146,15 @@ done
 if $has_bad_fixes ; then
 	cat <<-EOF | print_checklist_item --append-newline
 	- [ ] The PR description and/or commit message has a malformed 
-	\`Fixes\` or \`Resolves\` trailer. 
-	The \`Fixes\` and \`Resolves\` keywords MUST be preceeded by a blank line 
+	\`Fixes\`, \`Closes\` or \`Resolves\` trailer. 
+	The \`Fixes\, \`Closes\` and \`Resolves\` keywords MUST be preceeded by a blank line 
 	and followed immediately by a colon, a space, a hash sign(\`#\`), and the issue number. 
 	If you have multiple issues to reference, you can add additional 
-	\`Fixes\` and \`Resolves\` trailers on consecutive lines as long as the first 
+	\`Fixes\`, \`Closes\` and \`Resolves\` trailers on consecutive lines as long as the first 
 	one has the preceeding blank line. 
 	A malformed trailer will prevent the issue from being automatically closed when 
 	the PR merges and from being listed in the release change logs.<br> 
-	  Regular expression: \`^(Fixes|Resolves): #[0-9]+$\`.<br> 
+	  Regular expression: \`^(Fixes|Closes|Resolves): #[0-9]+$\`.<br> 
 	  Example: \`Fixes: #9999\`. 
 	EOF
 	checklist_added=true
@@ -166,10 +166,10 @@ if ! ${has_fixes[pr]} ; then
 	if [ ${#pr_mentioned_by[@]} -gt 0 ] ; then
 	cat <<-EOF | print_checklist_item --append-newline
 	- [ ] The PR is cross-referenced by one or more issues (${pr_mentioned_by[@]/#/#}) 
-	but doesn't contain any \`Fixes\` or \`Resolves\` trailers. 
+	but doesn't contain any \`Fixes\`, \`Closes\` or \`Resolves\` trailers. 
 	A missing trailer will prevent the issue from being automatically closed when 
 	the PR merges and from being listed in the release change logs.<br> 
-	  Regular expression: \`^(Fixes|Resolves): #[0-9]+$\`.<br> 
+	  Regular expression: \`^(Fixes|Closes|Resolves): #[0-9]+$\`.<br> 
 	  Example: \`Fixes: #9999\`. 
 	EOF
 	checklist_added=true
@@ -199,10 +199,10 @@ fi
 if $has_stray_refs ; then
 	cat <<-EOF | print_checklist_item --append-newline
 	- [ ] The PR description and/or commit message references one or more 
-	issues ( ${stray_issues[@]} ) without a \`Fixes:\` or \`Resolves:\` 
+	issues ( ${stray_issues[@]} ) without a \`Fixes:\`, \`Closes:\` or \`Resolves:\` 
 	keyword. Without those keywords, the issues won't be automatically 
 	closed when the PR merges and won't be listed in the release change logs.<br>
-	  Regular expression: \`^(Fixes|Resolves): #[0-9]+$\`.<br> 
+	  Regular expression: \`^(Fixes|Closes|Resolves): #[0-9]+$\`.<br> 
 	  Example: \`Fixes: #9999\`. 
 	EOF
 	checklist_added=true
@@ -243,9 +243,9 @@ fi
 if [ "${has_fixes[commit]}" != "${has_fixes[pr]}" ] ; then
 	debug_out "Commit has fixes but PR doesn't."
 	cat <<-EOF | print_checklist_item --append-newline
-	- [ ] Either the PR description has a \`Fixes\` or \`Resolves\` special trailer 
+	- [ ] Either the PR description has a \`Fixes\`, \`Closes\` or \`Resolves\` special trailer 
 	but the commit mesage doesn't or the other way around. 
-	A properly formatted \`Fixes\` or \`Resolves\` 
+	A properly formatted \`Fixes\`, \`Closes\` or \`Resolves\` 
 	trailer is required in the PR description to allow the issue and the PR 
 	to be cross-linked and for the issue to be automatically closed when the 
 	PR merges. It's also required in the commit message to allow the issue 
