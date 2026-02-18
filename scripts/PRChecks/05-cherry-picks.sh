@@ -6,12 +6,13 @@ source ${SCRIPT_DIR}/ci.functions
 source ${CHECKS_DIR}/checks.functions
 set -e
 
+printvars REPO PR_NUMBER DRY_RUN CHERRY_PICK_VALID_BRANCHES USER_IS_ADMIN
 assert_env_variables --print PR_PATH PR_COMMENTS_PATH || exit $EXIT_ERROR
 
 : ${PR_CHECKLIST_PATH:=/dev/stderr}
 
 if [ -z "${CHERRY_PICK_VALID_BRANCHES}" ] ; then
-	cpvar=$(gh variable --repo=${REPO} get CHERRY_PICK_VALID_BRANCHES)
+	cpvar=$(gh variable --repo=${REPO} get CHERRY_PICK_VALID_BRANCHES || : )
 	sfvar=$(gh variable --repo=${REPO} get SECURITY_FIX_BRANCHES || :)
 	if [[ "${REPO}" =~ GHSA ]] && [ -n "${sfvar}" ] ; then
 		CHERRY_PICK_VALID_BRANCHES="${sfvar}"

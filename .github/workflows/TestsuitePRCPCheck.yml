@@ -22,6 +22,7 @@ env:
   GH_TOKEN:        ${{ secrets.GITHUB_TOKEN }}
   LOG_DIR:         ${{ github.workspace }}/logs
   LOG_FILE:        ${{ github.workspace }}/logs/job_summary.txt
+  BUILD_CACHE_KEY_PREFIX: ${{ github.workflow }}-${{ github.run_number }}-${{ github.event.number }}
   TESTING_IN_PROGRESS: ${{ vars.CHERRY_PICK_TESTING_IN_PROGRESS }}
   TESTS_PASSED:        ${{ vars.CHERRY_PICK_CHECKS_PASSED_LABEL }}
   TESTS_FAILED:        ${{ vars.CHERRY_PICK_CHECKS_FAILED_LABEL }}

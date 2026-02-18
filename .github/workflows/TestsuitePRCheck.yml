@@ -22,6 +22,7 @@ env:
   GH_TOKEN:        ${{ secrets.GITHUB_TOKEN }}
   LOG_DIR:         ${{ github.workspace }}/logs
   LOG_FILE:        ${{ github.workspace }}/logs/job_summary.txt
+  BUILD_CACHE_KEY: ${{ github.workflow }}-${{ github.run_number }}-${{ github.event.number }}-${{ github.event.pull_request.base.ref }}
   TRIGGER:         ${{ github.event.action }}
   TESTING_IN_PROGRESS: ${{ vars.PR_SUBMIT_TESTING_IN_PROGRESS }}
   TESTS_PASSED:        ${{ vars.PR_SUBMIT_TESTS_PASSED }}
