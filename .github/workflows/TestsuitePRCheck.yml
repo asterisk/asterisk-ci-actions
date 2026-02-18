@@ -27,10 +27,11 @@ env:
   TESTING_IN_PROGRESS: ${{ vars.PR_SUBMIT_TESTING_IN_PROGRESS }}
   TESTS_PASSED:        ${{ vars.PR_SUBMIT_TESTS_PASSED }}
   TESTS_FAILED:        ${{ vars.PR_SUBMIT_TESTS_FAILED }}
-  RECHECKPR_LABEL:     ${{ vars.RECHECKPR_LABEL }}
-  ASTERISK_REPO:       ${{ vars.ASTERISK_REPO }}
+  RECHECKPR_LABEL:            ${{ vars.RECHECKPR_LABEL }}
+  ASTERISK_REPO:              ${{ vars.ASTERISK_REPO }}
   PR_STATE_CHANGE_DELAY_SEC:  ${{ vars.PR_STATE_CHANGE_DELAY_SEC || 120 }}
   ASSOCIATED_TEST_PR_REGEX:   ${{ vars.ASSOCIATED_TEST_PR_REGEX }}
+  CHERRY_PICK_VALID_BRANCHES: ${{ vars.CHERRY_PICK_VALID_BRANCHES }}
 
 jobs:
   Setup:
@@ -174,7 +175,8 @@ jobs:
           if [[ $RESULT =~ (success|failure) ]] ; then
             ${SCRIPT_DIR}/PRChecks/addPRChecklistIfNeeded.sh \
               --repo=${REPO} \
-              --pr-number=${PR_NUMBER}
+              --pr-number=${PR_NUMBER} \
+              --cherry-pick-valid-branches=${CHERRY_PICK_VALID_BRANCHES}
 
             ${SCRIPT_DIR}/createJobSummary.sh \
               --result=${RESULT} \
