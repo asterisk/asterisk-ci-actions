@@ -46,6 +46,7 @@ jobs:
       - name: RecheckPRs
         run: |
           # Get PRs with the has-pr-checklist label and re-run the checklist.
+          # Then check if a reminder is needed.
           # Need to use the 'issues" API because the "pulls" API doesn't allow
           # filtering by label.  Go figure.
           declare -a PRs=( $(gh api "/repos/${REPO}/issues?labels=has-pr-checklist" | jq '.[].pull_request.url |  sub(".*/"; "") | tonumber') )
@@ -59,4 +60,8 @@ jobs:
               --pr-number=${PR_NUMBER} \
               --cherry-pick-valid-branches=${CHERRY_PICK_VALID_BRANCHES} \
               --quiet-checks
+            ${SCRIPT_DIR}/PRChecks/addPRChecklistReminderIfNeeded.sh \
+              --repo=${REPO} \
+              --pr-number=${PR_NUMBER} \
+              --no-download
           done

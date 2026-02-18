@@ -43,18 +43,6 @@ if $DOWNLOAD ; then
 	
 	gh api --paginate /repos/${REPO}/issues/${PR_NUMBER}/timeline | jq . > ${pr_timeline_path}
 
-	checklist_review_id=$(jq -r '.[] | select(.state != "DISMISSED" and (.body | startswith("<!--PRCL-->")) ) | .id' ${pr_reviews_path})
-	if [ -n "$checklist_review_id" ] ; then
-		debug_out "Found existing checklist review ${checklist_review_id}"
-	fi
-	dismissed_checklist_review_id=$(jq -r '.[] | select(.state == "DISMISSED" and (.body | startswith("<!--PRCL-->")) ) | .id' ${pr_reviews_path})
-	dismissed_checklist_review_body=$(jq -r '.[] | select(.state == "DISMISSED" and (.body | startswith("<!--PRCL-->")) ) | .body' ${pr_reviews_path})
-	dismissed_checklist_review_reason=$(sed -n -r -e "s/.+PRCR:([^ -]+)\s+.*/\1/gp" <<<"${dismissed_checklist_review_body}")
-	if [ -n "$dismissed_checklist_review_id" ] ; then
-		debug_out "Found existing dismissed checklist review ${dismissed_checklist_review_id}"
-		debug_out "Found existing dismissed checklist review reason: ${dismissed_checklist_review_reason}"
-	fi
-
 	export PR_ORG=$(jq -r '.base.user.login' ${pr_path})
 	gh api --paginate /orgs/${PR_ORG}/members | jq . > ${org_members_path}
 fi
@@ -64,6 +52,23 @@ if $DOWNLOAD_ONLY ; then
 	exit 0
 fi
 
+checklist_review_id=$(jq -r '.[] | select(.state != "DISMISSED" and (.body | startswith("<!--PRCL-->")) ) | .id' ${pr_reviews_path})
+if [ -n "$checklist_review_id" ] ; then
+	debug_out "Found existing checklist review ${checklist_review_id}"
+fi
+dismissed_checklist_review_id=$(jq -r '.[] | select(.state == "DISMISSED" and (.body | startswith("<!--PRCL-->")) ) | .id' ${pr_reviews_path})
+dismissed_checklist_review_body=$(jq -r '.[] | select(.state == "DISMISSED" and (.body | startswith("<!--PRCL-->")) ) | .body' ${pr_reviews_path})
+dismissed_checklist_review_reason=$(sed -n -r -e "s/.+PRCR:([^ -]+)\s+.*/\1/gp" <<<"${dismissed_checklist_review_body}")
+if [ -n "$dismissed_checklist_review_id" ] ; then
+	debug_out "Found existing dismissed checklist review ${dismissed_checklist_review_id}"
+	debug_out "Found existing dismissed checklist review reason: ${dismissed_checklist_review_reason}"
+fi
+
+checklist_reminder_id=$(jq -r '.[] | select(.body | startswith("<!--PRCLREMINDER-->")) | .id' ${pr_comments_path})
+if [ -n "$checklist_reminder_id" ] ; then
+	debug_out "Found existing checklist reminder ${checklist_reminder_id}."
+fi
+
 clear_existing_checklist() {
 	if [ -n "$checklist_review_id" ] ; then
 		force=false
@@ -71,17 +76,24 @@ clear_existing_checklist() {
 		msg="$1"
 		debug_out "Removing existing obsolete PR checklist review ${msg}"
 		if $DRY_RUN ; then
+			debug_out "DRY-RUN: gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id} -X PUT  -F \"body=@${pr_checklist_comment_path}\""
 			debug_out "DRY-RUN: gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id}/dismissals -f 'event=DISMISS' -X PUT -f'message=Checklist Complete'"
 			debug_out "DRY-RUN: gh pr edit --repo ${REPO} --remove-label \"has-pr-checklist\" ${PR_NUMBER}"
+			debug_out "DRY-RUN: gh pr edit --repo ${REPO} --remove-label \"has-pr-checklist-reminder\" ${PR_NUMBER}"
+			if [ -n "${checklist_reminder_id}" ] ; then
+				debug_out "DRY-RUN: gh api --method DELETE  /repos/${REPO}/issues/comments/${checklist_reminder_id}"
+			fi
 		else
 			echo "<!--PRCL-->" > ${pr_checklist_comment_path}
 			${force} && echo "<!--PRCR:exception -->" >> ${pr_checklist_comment_path} || :
 			echo "Pull Request Checklist Complete ${msg}" >> ${pr_checklist_comment_path}
-			gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id} \
-				-X PUT  -F "body=@${pr_checklist_comment_path}" > /dev/null
-			gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id}/dismissals \
-				-f 'event=DISMISS' -X PUT -f'message=Pull Request Checklist Complete' >/dev/null
+			gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id} -X PUT  -F "body=@${pr_checklist_comment_path}" > /dev/null
+			gh api /repos/${REPO}/pulls/${PR_NUMBER}/reviews/${checklist_review_id}/dismissals -f 'event=DISMISS' -X PUT -f'message=Pull Request Checklist Complete' >/dev/null
 			gh pr edit --repo ${REPO} --remove-label "has-pr-checklist" ${PR_NUMBER} >/dev/null || :
+			gh pr edit --repo ${REPO} --remove-label "has-pr-checklist-reminder" ${PR_NUMBER} >/dev/null || :
+			if [ -n "${checklist_reminder_id}" ] ; then
+				gh api --method DELETE /repos/${REPO}/issues/comments/${checklist_reminder_id}
+			fi
 		fi
 	fi
 }
