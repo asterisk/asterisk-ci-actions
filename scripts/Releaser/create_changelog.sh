@@ -321,7 +321,7 @@ while read LINE ; do
 	count=${BASH_REMATCH[2]}
 	echo -e "\n- #### ${author} (${count}):" >>"${FULL_CHANGELOG_FILE}"
 	sed -n -r -e "/@#@#@#@/{;:a;N;/#@#@#@#/!ba;/${author}/p}" \
-		/tmp/asterisk/raw-commits-23.1.0.tmp.txt |\
+		"${RAW_COMMIT_FILE}" |\
 		sed -n -r -e "s/Subject:\s+(.+)/  - \1/gp" >>"${FULL_CHANGELOG_FILE}"
 done < <(cat "${AUTHORS_SUMMARY_FILE}")
 

@@ -139,7 +139,7 @@ jobs:
           DEPLOY_SSH_USERNAME: ${{ secrets.deploy_ssh_username }}
         run: |
           # Run the release script
-          ${SCRIPT_DIR}/Releaser/runAsteriskReleaser.sh
+          ${SCRIPT_DIR}/Releaser/runAsteriskReleaser.sh --debug
 
       - name: Save Output
         id: save-output

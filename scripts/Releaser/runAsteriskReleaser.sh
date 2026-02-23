@@ -48,6 +48,7 @@ git config --global --get safe.directory ${REPO_DIR} &>/dev/null || {
 	git config --global --add safe.directory ${REPO_DIR}
 }
 
+
 debug "Validating tags"
 ${SCRIPT_DIR}/version_validator.sh \
 	--product=${PRODUCT} --src-repo=${REPO_DIR} \
@@ -80,9 +81,6 @@ debug "Checking out ${end_tag_array[branch]}"
 git -C ${REPO_DIR} checkout ${end_tag_array[branch]} >/dev/null 2>&1
 git -C ${REPO_DIR} pull >/dev/null 2>&1
 
-git -C ${REPO_DIR} config --local user.email "asteriskteam@digium.com"
-git -C ${REPO_DIR} config --local user.name "Asterisk Development Team"
-
 START_TAG=$(${SCRIPT_DIR}/get_start_tag.sh --src-repo=${REPO_DIR} \
 	--product=${PRODUCT} --debug \
 	$(booloption security) $(booloption hotfix) $(booloption norc) \
@@ -94,6 +92,9 @@ tag_parser ${START_TAG} start_tag_array || bail "Unable to parse start tag '${ST
 debug "Tags valid: ${START_TAG} Release Type: ${start_tag_array[release_type]} -> ${END_TAG} Release Type: ${end_tag_array[release_type]}"
 
 gh auth setup-git -h github.com
+
+git -C ${REPO_DIR} config --local user.email "asteriskteam@digium.com"
+git -C ${REPO_DIR} config --local user.name "Asterisk Development Team"
 
 echo $"${GPG_PRIVATE_KEY}" > gpg.key
 gpg --import gpg.key

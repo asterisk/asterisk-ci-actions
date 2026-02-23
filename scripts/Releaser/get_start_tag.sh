@@ -154,7 +154,8 @@ if [ "${new[release_type]}" == "rc" ] ; then
 			# We need to search refs/remotes because the repo was probably just cloned and only
 			# the new branch checked out.  The rest of teh branches won't exist locally.
 			debug "Searching refs/remotes/origin/releases/${new[certprefix]}*"
-			last_branch=$(git -C "${SRC_REPO}" for-each-ref --sort="v:refname" --format="%(refname:lstrip=4)" refs/remotes/origin/releases/${new[certprefix]}* | tail -2 | head -1)
+			last_branch=$(git -C "${SRC_REPO}" for-each-ref --sort="v:refname" --format="%(refname:lstrip=4)" \
+							--exclude="refs/remotes/origin/${new[branch]}" refs/remotes/origin/releases/${new[certprefix]}* | tail -1)
 			debug "last branch: ${last_branch}"
 			debug "Searching tags for ${last_branch}${new[patchsep]}[0-9]{,[0-9]}"
 			lastga=$(git -C "${SRC_REPO}" tag --sort="v:refname" -l ${last_branch}${new[patchsep]}[0-9]{,[0-9]} | tail -1)
