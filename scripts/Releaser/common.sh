@@ -296,6 +296,15 @@ tag_parser() {
 	return 0
 }
 
+is_new_major_release() {
+	local -n et="$1"
+	if { ${et[certified]} && [ "${et[patch]}" == "1" ] ; } || { [ "${et[minor]}" == "0" ] && [ "${et[patch]}" == "0" ] ; } &&
+		{ [ "${et[release_type]}" == "ga" ] || [ "${et[release_num]}" == "1" ] ; } ; then
+		return 0
+	fi
+	return 1
+}
+
 mdtohtml() {
 	cat <<-EOF
 	<html><head><title>$1</title></head><body>

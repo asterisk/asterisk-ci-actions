@@ -14,6 +14,7 @@ source "${progdir}/common.sh"
 TMPDIR=/tmp/${PRODUCT}
 mkdir -p ${TMPDIR}
 SUMMARY_FILE=${TMPDIR}/summary-${END_TAG}.tmp.md
+SHORT_SUMMARY_FILE=${TMPDIR}/short-summary-${END_TAG}.tmp.md
 RAW_COMMIT_FILE=${TMPDIR}/raw-commits-${END_TAG}.tmp.txt
 FULL_CHANGELOG_FILE="${DST_DIR}/ChangeLog-${END_TAG}.md"
 
@@ -80,6 +81,13 @@ if ${start_tag_array[certified]} && [ "${start_tag_array[release_type]}" == "pre
 	tag_parser ${START_TAG} start_tag_array
 	debug "$(declare -p start_tag_array)"
 fi
+
+SHORT_EMAIL_ANNOUNCEMENT=false
+if is_new_major_release end_tag_array ; then
+	SHORT_EMAIL_ANNOUNCEMENT=true
+fi
+
+debug "Sending short email announcement: ${SHORT_EMAIL_ANNOUNCEMENT}"
 
 debug "Getting commit list for ${START_TAG}..HEAD"
 git -C "${SRC_REPO}" --no-pager log \
@@ -190,6 +198,9 @@ debug "Getting GitHub security advisory list"
 ghsalist=( $(sed -n -r -e "s/^\s*(Fixes|Resolves|Closes):\s*(#)?((GHSA|ghsa)-[0-9a-z-]+).*/\3/gp" "${RAW_COMMIT_FILE}" | sort -n | tr '[:space:]' ' ') )
 ghsacount=${#ghsalist[*]}
 printf -- "- Security Advisories Resolved: %d\n" $ghsacount >> "${SUMMARY_FILE}"
+
+cp "${SUMMARY_FILE}" "${SHORT_SUMMARY_FILE}"
+
 if [ $ghsacount -gt 0 ] ; then
 	for issue in ${ghsalist[*]} ; do
 		gh api /repos/${GH_REPO}/security-advisories/$issue \
@@ -404,9 +415,13 @@ if [ "${end_tag_array[release_type]}" == "rc" ] \
 fi
 
 if $FULL_EMAIL ; then
-cat "${FULL_CHANGELOG_FILE}" >>"${DST_DIR}/email_announcement.md"
+	cat "${FULL_CHANGELOG_FILE}" >>"${DST_DIR}/email_announcement.md"
 else
-cat "${SUMMARY_FILE}" >>"${DST_DIR}/email_announcement.md"
+	if ${BRIEF_EMAIL_ANNOUNCEMENT} ; then
+		cat "${SHORT_SUMMARY_FILE}" >>"${DST_DIR}/email_announcement.md"
+	else
+		cat "${SUMMARY_FILE}" >>"${DST_DIR}/email_announcement.md"
+	fi
 fi
 
 debug "Create the README"
