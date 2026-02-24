@@ -30,8 +30,11 @@ declare -A end_tag_array
 tag_parser ${END_TAG} end_tag_array || bail "Unable to parse end tag '${END_TAG}'"
 
 if ${end_tag_array[certified]} && [ "${end_tag_array[release_type]}" == "ga" ] && ! ${SECURITY} ; then
-	NORC=true
-	FORCE_CHERRY_PICK=true
+	# Don't force cherry-pick for the first new cert because it should have RCs
+	if [ "${end_tag_array[patch]}" != "1" ] ; then
+		NORC=true
+		FORCE_CHERRY_PICK=true
+	fi
 fi
 
 cd ${GITHUB_WORKSPACE}

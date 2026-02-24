@@ -17,8 +17,11 @@ tag_parser ${END_TAG} end_tag || bail "Unable to parse end tag '${END_TAG}'"
 ${DEBUG} && declare -p end_tag
 
 if ${end_tag[certified]} && [ "${end_tag[release_type]}" == "ga" ] && ! ${SECURITY} ; then
-	NORC=true
-	FORCE_CHERRY_PICK=true
+	# Don't force cherry-pick for the first new cert because it should have RCs
+	if [ ${end_tag_array[patch]} -gt 1 ] ; then
+		NORC=true
+		FORCE_CHERRY_PICK=true
+	fi
 fi
 
 if [ -z "${START_TAG}" ] ; then
@@ -50,7 +53,7 @@ if ${CHERRY_PICK} ; then
 		--start-tag=${START_TAG} --end-tag=${END_TAG} \
 		--src-repo="${SRC_REPO}" --dst-dir="${DST_DIR}" \
 		$(booloption security) $(booloption hotfix) \
-		$(booloption debug) $(booloption force_cherry_pick)
+		$(booloption debug) $(booloption force-cherry-pick)
 fi
 
 if ! ${SKIP_TEST_BUILDS} ; then
