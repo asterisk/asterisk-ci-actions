@@ -70,8 +70,8 @@ jobs:
           echo "Attempting to delete any existing cache"
           gh cache delete -R ${REPO} ${BUILD_CACHE_KEY} || :
 
-  Check:
-    name: Check
+  Test:
+    name: Test
     needs: [ Setup ]
     permissions:
       actions: read
@@ -98,10 +98,10 @@ jobs:
   PostWorkflow:
     if: ${{ always() }}
     runs-on: ubuntu-latest
-    needs: [Setup,Check]
+    needs: [Setup,Test]
     env:
       RESULT_SETUP:   ${{ needs.Setup.result }}
-      RESULT_CHECK:   ${{ needs.Check.result }}
+      RESULT_CHECK:   ${{ needs.Test.result }}
     steps:
         # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
       - name: GetActionsRepo

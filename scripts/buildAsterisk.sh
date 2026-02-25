@@ -150,9 +150,10 @@ if $CONFIGURE ; then
 	fi
 	debug_out "Running configure"
 	SUCCESS=true
-	runner ./configure ${common_config_args} > /dev/null || SUCCESS=false
-	$SUCCESS || { SUCCESS=true ; runner ./configure ${common_config_args} NOISY_BUILD=yes || SUCCESS=false ; }
+	runner ./configure ${common_config_args} &> ${OUTPUT_DIR}/configure.log || SUCCESS=false
+	$SUCCESS || { SUCCESS=true ; runner ./configure ${common_config_args} NOISY_BUILD=yes  &> ${OUTPUT_DIR}/configure_noisy.log || SUCCESS=false ; }
 	cp config.{status,log} makeopts ${OUTPUT_DIR}/ || :
+	cp include/asterisk/autoconfig.h ${OUTPUT_DIR}/ || :
 	$SUCCESS || {
 		log_error_msgs "./configure failed"
 		exit 1
@@ -181,7 +182,9 @@ if $MENUSELECT ; then
 		SUCCESS=true
 		runner ${GMAKE} menuselect.makeopts || SUCCESS=false
 	}
-	cp menuselect-tree menuselect.{makedeps,makeopts} ${OUTPUT_DIR}/
+	cp menuselect-tree ${OUTPUT_DIR}/
+	cp menuselect.makedeps ${OUTPUT_DIR}/menuselect.makedeps.initial
+	cp menuselect.makeopts ${OUTPUT_DIR}/menuselect.makeopts.initial
 	$SUCCESS || {
 		log_error_msgs "Initial menuselect failed"
 		exit 1
@@ -294,6 +297,9 @@ if $MENUSELECT ; then
 		exit 1
 	}
 fi
+
+cp menuselect.makedeps ${OUTPUT_DIR}/menuselect.makedeps
+cp menuselect.makeopts ${OUTPUT_DIR}/menuselect.makeopts
 
 debug_out "Running make ari-stubs"
 runner ${GMAKE} ari-stubs || {

@@ -110,7 +110,7 @@ jobs:
           if-no-files-found: ignore
           path: ${{ env.LOG_DIR }}
 
-  Check:
+  Test:
     needs: [Setup]
     if: ${{ needs.Setup.outputs.branch_count > 0 && ( success() ) }}
     permissions:
@@ -142,10 +142,10 @@ jobs:
   PostWorkflow:
     if: ${{ always() }}
     runs-on: ubuntu-latest
-    needs: [Setup,Check]
+    needs: [Setup,Test]
     env:
       RESULT_SETUP:   ${{ needs.Setup.result }}
-      RESULT_CHECK:   ${{ needs.Check.result }}
+      RESULT_CHECK:   ${{ needs.Test.result }}
       BRANCHES: ${{ needs.Setup.outputs.branches }}
     steps:
         # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars

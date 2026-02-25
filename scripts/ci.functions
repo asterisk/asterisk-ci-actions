@@ -67,8 +67,12 @@ runner() {
 }
 
 run_silent_unless_error() {
-	_TMPFILE=$(mktemp -t rsue-XXXXXX.log)
-	"${@}" &>${_TMPFILE} || { RC=$? ; cat ${_TMPFILE} >&2 ; return $RC ; }
+	if [ -n "${VERBOSE}" ] ; then
+		"${@}"
+	else
+		_TMPFILE=$(mktemp -t rsue-XXXXXX.log)
+		"${@}" &>${_TMPFILE} || { RC=$? ; cat ${_TMPFILE} >&2 ; return $RC ; }
+	fi
 }
 
 begin_group() {

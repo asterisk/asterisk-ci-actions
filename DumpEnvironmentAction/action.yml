@@ -36,13 +36,13 @@ runs:
         echo "ACTION_PATH=${ACTION_PATH}" >> ${GITHUB_ENV}
         echo "SCRIPT_DIR=${ACTION_PATH}/scripts" >> ${GITHUB_ENV}
         
-        OUTPUT_DIR=/tmp/DumpEnvironment
+        DUMP_OUTPUT_DIR=/tmp/DumpEnvironment
         echo "SAVE_NAME=${SAVE_NAME}" >> ${GITHUB_ENV}
-        echo "OUTPUT_DIR=${OUTPUT_DIR}" >> ${GITHUB_ENV}
-        if [ -d ${OUTPUT_DIR} ] ; then
-          rm -rf ${OUTPUT_DIR}
+        echo "DUMP_OUTPUT_DIR=${DUMP_OUTPUT_DIR}" >> ${GITHUB_ENV}
+        if [ -d ${DUMP_OUTPUT_DIR} ] ; then
+          rm -rf ${DUMP_OUTPUT_DIR}
         fi
-        mkdir ${OUTPUT_DIR}
+        mkdir ${DUMP_OUTPUT_DIR}
         set +e +v +x
         echo "::group::network"
         set -x
@@ -54,66 +54,66 @@ runs:
         set +x
         echo "::endgroup::"
         echo "::group::inputs"
-        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${OUTPUT_DIR}/inputs.json
+        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${DUMP_OUTPUT_DIR}/inputs.json
         ${{toJSON(fromJSON(inputs.action-inputs))}}
         %%EOF%%
         echo "::endgroup::"
         
         echo "::group::action_vars"
-        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${OUTPUT_DIR}/action_vars.json
+        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${DUMP_OUTPUT_DIR}/action_vars.json
         ${{toJSON(fromJSON(inputs.action-vars))}}
         %%EOF%%
         echo "::endgroup::"
         
         echo "::group::jobs_context"
-        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${OUTPUT_DIR}/jobs_context.json
+        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${DUMP_OUTPUT_DIR}/jobs_context.json
         ${{toJSON(fromJSON(inputs.jobs))}}
         %%EOF%%
         echo "::endgroup::"
 
         echo "::group::needs_context"
-        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${OUTPUT_DIR}/needs_context.json
+        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${DUMP_OUTPUT_DIR}/needs_context.json
         ${{toJSON(fromJSON(inputs.needs))}}
         %%EOF%%
         echo "::endgroup::"
 
         echo "::group::env_context"
-        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${OUTPUT_DIR}/env_context.json
+        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${DUMP_OUTPUT_DIR}/env_context.json
         ${{toJSON(env)}}
         %%EOF%%
         echo "::endgroup::"
         
         echo "::group::github_context"
-        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${OUTPUT_DIR}/github_context.json
+        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${DUMP_OUTPUT_DIR}/github_context.json
         ${{toJSON(github)}}
         %%EOF%%
         echo "::endgroup::"
 
         echo "::group::job_context"
-        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${OUTPUT_DIR}/job_context.json
+        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${DUMP_OUTPUT_DIR}/job_context.json
         ${{toJSON(job)}}
         %%EOF%%
         echo "::endgroup::"
 
         echo "::group::runner_context"
-        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${OUTPUT_DIR}/runner_context.json
+        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${DUMP_OUTPUT_DIR}/runner_context.json
         ${{toJSON(runner)}}
         %%EOF%%
         echo "::endgroup::"
 
         echo "::group::steps_context"
-        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${OUTPUT_DIR}/steps_context.json
+        cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${DUMP_OUTPUT_DIR}/steps_context.json
         ${{toJSON(steps)}}
         %%EOF%%
         echo "::endgroup::"
 
         echo "::group::shell_env"
-        printenv | sort | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${OUTPUT_DIR}/shell_env.env
+        printenv | sort | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${DUMP_OUTPUT_DIR}/shell_env.env
         echo "::endgroup::"
 
         echo "::group::GITHUB_WORKSPCE: ${GITHUB_WORKSPACE}"
-        echo "${GITHUB_WORKSPACE}" > ${OUTPUT_DIR}/GITHUB_WORKSPACE.txt
-        ls -al ${GITHUB_WORKSPACE} | tee -a ${OUTPUT_DIR}/GITHUB_WORKSPACE.txt
+        echo "${GITHUB_WORKSPACE}" > ${DUMP_OUTPUT_DIR}/GITHUB_WORKSPACE.txt
+        ls -al ${GITHUB_WORKSPACE} | tee -a ${DUMP_OUTPUT_DIR}/GITHUB_WORKSPACE.txt
         echo "::endgroup::"
 
         if ! ${{ inputs.dump_dirs }} ; then
@@ -121,29 +121,29 @@ runs:
         fi
 
         echo "::group::HOME: ${HOME}"
-        echo "${HOME}" > ${OUTPUT_DIR}/HOME.txt
-        ls -al ${HOME} | tee -a ${OUTPUT_DIR}/HOME.txt
+        echo "${HOME}" > ${DUMP_OUTPUT_DIR}/HOME.txt
+        ls -al ${HOME} | tee -a ${DUMP_OUTPUT_DIR}/HOME.txt
         echo "::endgroup::"
 
         echo "::group::RUNNER_WORKSPACE: ${RUNNER_WORKSPACE}"
-        echo "${RUNNER_WORKSPACE}" > ${OUTPUT_DIR}/RUNNER_WORKSPACE.txt
-        ls -al ${RUNNER_WORKSPACE} | tee -a ${OUTPUT_DIR}/RUNNER_WORKSPACE.txt
+        echo "${RUNNER_WORKSPACE}" > ${DUMP_OUTPUT_DIR}/RUNNER_WORKSPACE.txt
+        ls -al ${RUNNER_WORKSPACE} | tee -a ${DUMP_OUTPUT_DIR}/RUNNER_WORKSPACE.txt
         echo "::endgroup::"
 
         echo "::group::RUNNER_WORK: ${HOME}/work"
-        echo "${HOME}/work" > ${OUTPUT_DIR}/RUNNER_WORK.txt
-        find "${HOME}/work" | tee -a ${OUTPUT_DIR}/RUNNER_WORK.txt
+        echo "${HOME}/work" > ${DUMP_OUTPUT_DIR}/RUNNER_WORK.txt
+        find "${HOME}/work" | tee -a ${DUMP_OUTPUT_DIR}/RUNNER_WORK.txt
         echo "::endgroup::"
 
         if [ -n "${GITHUB_ACTION_PATH}" ] ; then
           echo "::group::GITHUB_ACTION_PATH: ${GITHUB_ACTION_PATH}"
-          echo "${GITHUB_ACTION_PATH}" > ${OUTPUT_DIR}/GITHUB_ACTION_PATH.txt
-          ls -al ${GITHUB_ACTION_PATH} | tee -a ${OUTPUT_DIR}/GITHUB_ACTION_PATH.txt
+          echo "${GITHUB_ACTION_PATH}" > ${DUMP_OUTPUT_DIR}/GITHUB_ACTION_PATH.txt
+          ls -al ${GITHUB_ACTION_PATH} | tee -a ${DUMP_OUTPUT_DIR}/GITHUB_ACTION_PATH.txt
           echo "::endgroup::"
           GITHUB_ACTION_DIR=$(dirname ${GITHUB_ACTION_PATH})
           echo "::group::GITHUB_ACTION_DIR: ${GITHUB_ACTION_DIR}"
-          echo "${GITHUB_ACTION_DIR}" > ${OUTPUT_DIR}/GITHUB_ACTION_DIR.txt
-          ls -al ${GITHUB_ACTION_DIR} | tee -a ${OUTPUT_DIR}/GITHUB_ACTION_DIR.txt
+          echo "${GITHUB_ACTION_DIR}" > ${DUMP_OUTPUT_DIR}/GITHUB_ACTION_DIR.txt
+          ls -al ${GITHUB_ACTION_DIR} | tee -a ${DUMP_OUTPUT_DIR}/GITHUB_ACTION_DIR.txt
           echo "::endgroup::"
         fi
         exit 0
@@ -155,5 +155,5 @@ runs:
       with:
         name: ${{inputs.artifact_id}}
         path: |
-          ${{env.OUTPUT_DIR}}
+          ${{env.DUMP_OUTPUT_DIR}}
         
