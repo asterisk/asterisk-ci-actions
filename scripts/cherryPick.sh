@@ -64,12 +64,19 @@ git fetch --no-tags origin refs/pull/${PR_NUMBER}/head
 
 # Get commits
 debug_out "Getting commits for PR ${PR_NUMBER}"
-mapfile -t COMMITS < <(gh api /repos/${REPO}/pulls/${PR_NUMBER}/commits \
-		--jq '.[] | .sha + "|" + (.commit.message | split("\n")[0]) + "|" + .commit.author.name + "|" + .commit.author.email + "|"' || echo "@_ERROR_@")
-[[ "${COMMITS[0]}" =~ @_ERROR_@ ]] && {
+gh api --paginate /repos/${REPO}/pulls/${PR_NUMBER}/commits > /tmp/pr-${PR_NUMBER}-commits.json || {
+	log_error_msgs "Error getting commits for PR ${PR_NUMBER}.  Retrying"
+	gh api --paginate /repos/${REPO}/pulls/${PR_NUMBER}/commits > /tmp/pr-${PR_NUMBER}-commits.json || {
+		log_error_msgs "Error getting commits for PR ${PR_NUMBER}.  Retry failed."
+		exit 1
+	}
+}
+
+mapfile -t COMMITS < <(jq -r '.[] | .sha + "|" + (.commit.message | split("\n")[0]) + "|" + .commit.author.name + "|" + .commit.author.email + "|"' /tmp/pr-${PR_NUMBER}-commits.json)
+if [[ ${#COMMITS[@]} -eq 0 ]] || [[ "${COMMITS[0]}" =~ @_ERROR_@ ]] ; then
 	log_error_msgs "No commits for PR ${PR_NUMBER}"
 	exit 1
-}
+fi
 
 echo "COMMITS array: "
 declare -p COMMITS
