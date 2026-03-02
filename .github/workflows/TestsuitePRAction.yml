@@ -1,0 +1,28 @@
+name: TestsuitePRAction
+on:
+  workflow_call:
+
+jobs:
+  Check:
+    name: "Check"
+    if: ${{ (github.event.action != 'labeled') || (github.event.action == 'labeled' && github.event.label.name == vars.RECHECKPR_LABEL) }}
+    concurrency:
+      group: check-${{ github.triggering_actor }}-${{ github.head_ref }}
+      cancel-in-progress: true
+    uses: ./.github/workflows/TestsuitePRCheck.yml
+
+  CPCheck:
+    name: "CPCheck"
+    if: ${{ github.event.label.name == vars.CHERRY_PICK_TEST_LABEL }}
+    concurrency:
+      group: cpcheck-${{ github.triggering_actor }}-${{ github.head_ref }}
+      cancel-in-progress: true
+    uses: ./.github/workflows/TestsuitePRCPCheck.yml
+
+  Merge:
+    name: "Merge"
+    if: contains(fromJSON(vars.MERGE_APPROVED_LABELS), github.event.label.name)
+    concurrency:
+      group: merge-${{ github.triggering_actor }}-${{ github.head_ref }}
+      cancel-in-progress: true
+    uses: ./.github/workflows/TestsuitePRMerge.yml
