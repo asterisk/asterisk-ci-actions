@@ -133,7 +133,10 @@ for BRANCH in $branches ; do
 		git config --local user.name "$NAME"
 		# The SHA should already be downloaded in FETCH_HEAD
 		# so we should be able to just cherry-pick it.
-		debug_out "Cherry-picking: SHA: $SHA MESSAGE: $MESSAGE to branch $BRANCH"
+		#exists=$(git --no-pager log -1 --oneline --grep "^${MESSAGE}$" "$BRANCH")
+		#[ -n "$exists" ] && { echo "Commit ${SHA:0:8} already in branch $BRANCH" ; continue ; }
+
+		debug_out "Cherry-picking: SHA: ${SHA:0:8} MESSAGE: '${MESSAGE}' to branch ${BRANCH}"
 		git cherry-pick ${SHA}
 		if [ $? -eq 0 ] ; then
 			debug_out "Successfully cherry-picked: SHA: $SHA MESSAGE: $MESSAGE to branch $BRANCH"
