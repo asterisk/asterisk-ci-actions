@@ -132,7 +132,8 @@ jobs:
       - name: GetActionsRepo
         uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
 
-      - name: Add labels, reminders and summary
+      - name: Check status
+        shell: bash
         run: |
 
           label=""
@@ -178,10 +179,19 @@ jobs:
               --pr-number=${PR_NUMBER} \
               --cherry-pick-valid-branches=${CHERRY_PICK_VALID_BRANCHES}
 
+            shopt -s extglob
+            gh api --paginate /repos/${REPO}/actions/runs/${GITHUB_RUN_ID}/jobs > /tmp/jobs.json || :
+            jobname=$(jq -r '.jobs[]| select(.name | contains("PostWorkflow")) | .name' /tmp/jobs.json 2>/dev/null || :)
+            # Action / CPCheck / PostWorkflow
+            jobname="${jobname////}"
+            # Action CPCheck PostWorkflow
+            jobname="${jobname//?(Action|PostWorkflow)/}"
+            # '  CPCheck  '
+            jobname="${jobname// /}"
             ${SCRIPT_DIR}/createJobSummary.sh \
               --result=${RESULT} \
               --repo=${REPO} \
-              --workflow-name="${WORKFLOW_NAME}" \
+              --workflow-name="${jobname}" \
               --pr-number=${PR_NUMBER} \
               --workflow-run=${WORKFLOW_RUN_ID} \
               --tmp-dir=./run-${WORKFLOW_RUN_ID} \
