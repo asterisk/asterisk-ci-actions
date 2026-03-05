@@ -162,16 +162,17 @@ fi
 
 debug_out "Checking PR for issue mentions. ${has_fixes[pr]} ${has_fixes['pr']}"
 if ! ${has_fixes[pr]} ; then
-	pr_mentioned_by=( $(jq '.[] | select(.event == "cross-referenced") | .source.issue.number' $PR_TIMELINE_PATH) )
+	pr_mentioned_by=( $(jq -r '.[] | select(.event == "cross-referenced") | select( .source.issue.pull_request == null) | .source.issue | ( .repository.owner.login + "/" + .repository.name + "#" + (.number |tostring))' $PR_TIMELINE_PATH) )
 	if [ ${#pr_mentioned_by[@]} -gt 0 ] ; then
 	cat <<-EOF | print_checklist_item --append-newline
-	- [ ] The PR is cross-referenced by one or more issues (${pr_mentioned_by[@]/#/#}) 
+	- [ ] The PR is cross-referenced by one or more issues (${pr_mentioned_by[@]})
 	but doesn't contain any \`Fixes\`, \`Closes\` or \`Resolves\` trailers. 
 	A missing trailer will prevent the issue from being automatically closed when 
 	the PR merges and from being listed in the release change logs.<br> 
 	  Regular expression: \`^(Fixes|Closes|Resolves): #[0-9]+$\`.<br> 
 	  Example: \`Fixes: #9999\`. 
 	EOF
+	debug_out "PR is cross-referenced by issues ${pr_mentioned_by[@]} but doesn't have any Fixes/Closes/Resolves trailers."
 	checklist_added=true
 	fi
 fi
