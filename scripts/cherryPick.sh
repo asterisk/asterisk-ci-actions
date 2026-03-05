@@ -9,7 +9,7 @@ source ${SCRIPT_DIR}/ci.functions
 
 assert_env_variables REPO REPO_DIR PR_NUMBER || exit 1
 
-printvars REPO REPO_DIR PR_NUMBER BRANCH BRANCHES NO_CLONE PUSH
+printvars REPO REPO_DIR PR_NUMBER BRANCH BRANCHES CLONE PUSH
 
 if [ -z "${BRANCH}" ] && [ -z "${BRANCHES}" ] ; then
 	error_out "Either --branch or --branches must be specified"
@@ -38,7 +38,7 @@ cd $(dirname ${REPO_DIR})
 : ${BRANCHES:=[\"$BRANCH\"]}
 : ${GITHUB_SERVER_URL:="https://github.com"}
 
-if $NO_CLONE ; then
+if ! $CLONE ; then
 	debug_out "Skipping clone"
 else
 	debug_out "Cloning ${REPO} to ${REPO_DIR}"
@@ -131,12 +131,14 @@ for BRANCH in $branches ; do
 		
 		git config --local user.email "$EMAIL"
 		git config --local user.name "$NAME"
-		# The SHA should already be downloaded in FETCH_HEAD
-		# so we should be able to just cherry-pick it.
-		#exists=$(git --no-pager log -1 --oneline --grep "^${MESSAGE}$" "$BRANCH")
-		#[ -n "$exists" ] && { echo "Commit ${SHA:0:8} already in branch $BRANCH" ; continue ; }
 
 		debug_out "Cherry-picking: SHA: ${SHA:0:8} MESSAGE: '${MESSAGE}' to branch ${BRANCH}"
+		# Check to make sure the commit isn't already merged
+		exists=$(git --no-pager log -1 --oneline --grep "^${MESSAGE}$" "${BRANCH}")
+		[ -n "$exists" ] && { debug_out "Commit ${SHA:0:8} already in branch ${BRANCH}.  Skipping." ; continue ; }
+
+		# The SHA should already be downloaded in FETCH_HEAD
+		# so we should be able to just cherry-pick it.
 		git cherry-pick ${SHA}
 		if [ $? -eq 0 ] ; then
 			debug_out "Successfully cherry-picked: SHA: $SHA MESSAGE: $MESSAGE to branch $BRANCH"
