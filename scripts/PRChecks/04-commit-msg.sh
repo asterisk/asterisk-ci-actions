@@ -147,7 +147,7 @@ if $has_bad_fixes ; then
 	cat <<-EOF | print_checklist_item --append-newline
 	- [ ] The PR description and/or commit message has a malformed 
 	\`Fixes\`, \`Closes\` or \`Resolves\` trailer. 
-	The \`Fixes\, \`Closes\` and \`Resolves\` keywords MUST be preceeded by a blank line 
+	The \`Fixes\`, \`Closes\` and \`Resolves\` keywords MUST be preceeded by a blank line 
 	and followed immediately by a colon, a space, a hash sign(\`#\`), and the issue number. 
 	If you have multiple issues to reference, you can add additional 
 	\`Fixes\`, \`Closes\` and \`Resolves\` trailers on consecutive lines as long as the first 
