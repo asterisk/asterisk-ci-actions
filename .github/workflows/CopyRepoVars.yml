@@ -18,7 +18,7 @@ jobs:
   CopyRepoVars:
     runs-on: ubuntu-latest
     steps:
-      - name: Copy Variables
+      - name: Copy Repo Variables
         uses: asterisk/asterisk-ci-actions/CopyRepoVariables@main
         with:
           src_repo: ${{ inputs.src_repo }}
