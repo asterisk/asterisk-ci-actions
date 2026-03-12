@@ -11,17 +11,8 @@ on:
         description: 'Destination repo in asterisk org:'
         required: true
         type: string
-      actions_ref:
-        description: 'JSON object reference to the actions.  Default: { "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
-        type: string
-        required: false
-        default: '{ "owner": "asterisk", "repo": "asterisk-ci-actions", "branch": "main" }'
-        
+
 env:
-  ACTIONS_OWNER:    ${{ fromJSON(inputs.actions_ref).owner }}
-  ACTIONS_REPO:     ${{ fromJSON(inputs.actions_ref).repo }}
-  ACTIONS_BRANCH:   ${{ fromJSON(inputs.actions_ref).branch }}
-  SCRIPT_DIR:       ${{ github.workspace }}/asterisk-ci-actions/scripts
   GITHUB_TOKEN:     ${{ secrets.ASTERISKTEAM_PAT }}
   SRC_REPO:         ${{ inputs.src_repo }}
   DST_REPO:         ${{ inputs.dst_repo }}
@@ -30,13 +21,10 @@ jobs:
   CreatePrivateFork:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup
-        run: |
-          # Setup
-          wget -qO asterisk-ci-actions.tar.gz \
-            https://github.com/${ACTIONS_OWNER}/${ACTIONS_REPO}/archive/refs/heads/${ACTIONS_BRANCH}.tar.gz
-          tar -xf asterisk-ci-actions.tar.gz --transform="s/^${ACTIONS_REPO}-${ACTIONS_BRANCH}/asterisk-ci-actions/g"
-
+        # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
+      - name: GetActionsRepo
+        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
+    
       - name: CreateFork
         run: |
           fix_branches=$(gh -R asterisk/${SRC_REPO} variable get SECURITY_FIX_BRANCHES | sed -n -r -e 's/("|\[|\])//gp')
