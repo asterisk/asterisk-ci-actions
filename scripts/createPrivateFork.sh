@@ -84,9 +84,9 @@ echo "Creating remote repository asterisk/${DST_REPO} from local directory ./${D
 gh repo create "asterisk/${DST_REPO}" --source "./${DST_REPO}" --private --disable-issues --disable-wiki --push
 
 echo "Setting repo asterisk/${DST_REPO} parameters"
-gh repo edit "asterisk/${DST_REPO}" --allow-forking=false --enable-auto-merge=false \
+gh repo edit "asterisk/${DST_REPO}" --allow-forking=true --enable-auto-merge=false \
 	--enable-discussions=false --enable-issues=false --enable-merge-commit=false \
-	--enable-wiki=false --default-branch=master
+	--enable-wiki=false 3--default-branch=master
 
 echo "Enabling actions on repo asterisk/${DST_REPO}"
 gh api --method PUT \
