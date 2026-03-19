@@ -86,7 +86,7 @@ gh repo create "asterisk/${DST_REPO}" --source "./${DST_REPO}" --private --disab
 echo "Setting repo asterisk/${DST_REPO} parameters"
 gh repo edit "asterisk/${DST_REPO}" --allow-forking=true --enable-auto-merge=false \
 	--enable-discussions=false --enable-issues=false --enable-merge-commit=false \
-	--enable-wiki=false 3--default-branch=master
+	--enable-wiki=false --default-branch=master
 
 echo "Enabling actions on repo asterisk/${DST_REPO}"
 gh api --method PUT \
