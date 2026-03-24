@@ -1,5 +1,5 @@
 name: CreatePrivateFork
-run-name: "CreatePrivateFork"
+run-name: "CreatePrivateFork asterisk/${{ inputs.dst_repo }}"
 on:
   workflow_dispatch:
     inputs:
