@@ -16,7 +16,7 @@ declare -A end_tag
 tag_parser ${END_TAG} end_tag || bail "Unable to parse end tag '${END_TAG}'"
 ${DEBUG} && declare -p end_tag
 
-if ${end_tag[certified]} && [ "${end_tag[release_type]}" == "ga" ] && ! ${SECURITY} ; then
+if ${end_tag[certified]} && [ "${end_tag[release_type]}" == "ga" ] && ! ${SECURITY} && ! ${HOTFIX} ; then
 	# Don't force cherry-pick for the first new cert because it should have RCs
 	if [ ${end_tag_array[patch]} -gt 1 ] ; then
 		NORC=true
