@@ -33,10 +33,16 @@ cd "${SRC_REPO}"
 git checkout ${new[branch]}  >/dev/null 2>&1
 
 if [ -z "${START_TAG}" ] ; then
-	START_TAG=$(git -C "${SRC_REPO}" describe --abbrev=0 "${new[branch]}")
+	if ${new[certified]} ; then
+		tagpattern="${new[certprefix]}${new[major]}.${new[minor]}*"
+	else
+		tagpattern="${new[major]}.*"
+	fi
+	START_TAG=$(git -C "${SRC_REPO}" describe --match="${tagpattern}" --abbrev=0 "${new[branch]}")
 fi
 
 debug "Parsing start tag ${START_TAG}"
+
 tag_parser ${START_TAG} last || bail "Unable to parse start tag '${START_TAG}'"
 debug "$(declare -p last)"
 
