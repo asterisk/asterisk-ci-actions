@@ -181,7 +181,7 @@ jobs:
       - id: cache-build-output
         if: success() && inputs.build_cache_dir != '' && inputs.build_cache_key != ''
         name: CacheBuildProducts
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ${{ inputs.build_cache_dir }}
           key:  ${{ inputs.build_cache_key }}
@@ -189,7 +189,7 @@ jobs:
       - name: Save Output
         if: ${{ always() }}
         id: save-output
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.NORMALIZED_BRANCH }}-build${{inputs.job_name_extra}}
           if-no-files-found: ignore

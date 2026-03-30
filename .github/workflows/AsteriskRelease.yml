@@ -144,14 +144,14 @@ jobs:
       - name: Save Output
         id: save-output
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{env.PRODUCT}}-${{env.NEW_VERSION}}
           path: ${{env.PRODUCT}}-${{env.NEW_VERSION}}
 
       - name: Send Release Announcements
         if: inputs.send_email && steps.releaser.outputs.mail_list != 'none'
-        uses: dawidd6/action-send-mail@v6
+        uses: dawidd6/action-send-mail@v16
         with:
           server_address: email-smtp.us-east-1.amazonaws.com
           server_port: 587

@@ -3,63 +3,41 @@ run-name: "TestWorkflow"
 on:
   workflow_dispatch:
     inputs:
-      branches:
-        description: "JSON array of branches: ['18','20'] (no spaces) or leave blank for all current branches."
-        required:    false
+      email_to:
+        description: "Email address"
+        required:    true
         type:        string
 
-env:
-  FROM_WF: "from workflow"
+permissions:
+  actions: write
+  checks: read
+  contents: write
+  issues: read
+  pull-requests: write
+  statuses: read
 
 jobs:
   Job1:
     runs-on: ubuntu-latest
-    env:
-      FROM_JOB: "from job"
-    defaults:
-      run:
-        shell: bash
-    outputs:
-      testgroup:      ${{ steps.st1.outputs.TESTGROUP }}
-      testobject:      ${{ steps.st1.outputs.TESTOBJECT }}
     steps:
-      - name: Test ENV
-        id: st1
+      - name: Create file
         run: |
-          {
-            echo "TESTGROUP=pjs5" >> ${GITHUB_OUTPUT}
-            echo 'TESTOBJECT<<EOF'
-            cat <<EOFINNER
-            {
-            "pjs5": {
-                "name": "pjs5",
-                "dir": "tests/CI/output/pjsip5",
-                "timeout": 240,
-                "step_timeout_minutes": 45,
-                "options": "",
-                "testcmd": "--test-regex=tests/channels/pjsip/[s]"
-            }
-            }
-          EOFINNER
-            echo "EOF"
-          } >> ${GITHUB_OUTPUT}
+          cat <<-EOF > /tmp/email.txt
+          This is a test of the send email action.
+          EOF
 
-  Job2:
-    needs: Job1
-    runs-on: ubuntu-latest
-    env:
-      XXXXX: ${{ needs.Job1.outputs.testobject }}
-      GROUP: ${{ needs.Job1.outputs.testgroup }}
-      ZZZZZ: ${{ toJSON(fromJSON(needs.Job1.outputs.testobject)[needs.Job1.outputs.testgroup]) }}
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Test GET
-        run: |
-          echo "TESTOBJ: ${XXXXX}"
-          echo "TESTGROUP: ${GROUP}"
-          echo "LOCAL: ${{ toJSON(fromJSON(env.XXXXX)[env.GROUP]) }}"
-          echo "TESTOBJZ: ${ZZZZZ}"
-
-
+      - name: Send Release Announcements
+        uses: dawidd6/action-send-mail@v16
+        with:
+          server_address: email-smtp.us-east-1.amazonaws.com
+          server_port: 587
+          secure: false
+          username: ${{secrets.ASTERISKTEAM_SES_KEY_ID}}
+          password: ${{secrets.ASTERISKTEAM_SES_KEY_SECRET}}
+          subject: 'Test Email'
+          to: ${{ inputs.email_to }}
+          from: Asterisk Development Team <asteriskteam@sangoma.com>
+          body: "file:///tmp/email.txt"
+          reply_to: no-reply+asteriskteam@sangoma.com
+          ignore_cert: true
+          convert_markdown: false

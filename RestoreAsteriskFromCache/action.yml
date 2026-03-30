@@ -17,7 +17,7 @@ runs:
   using: "composite"
   steps:
     - name: Restore Asterisk Cache
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v5
       with:
         path: ${{inputs.build_cache_dir}}
         key:  ${{inputs.build_cache_key}}

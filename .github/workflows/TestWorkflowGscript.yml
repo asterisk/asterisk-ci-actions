@@ -24,7 +24,7 @@ jobs:
       PR: ${{ fromJSON(vars.PR_REVIEWERS)[0] }}
     steps:
     - id: copyvars
-      uses: actions/github-script@v7
+      uses: actions/github-script@v8
       with:
         github-token: ${{ secrets.ASTERISKTEAM_PAT }}
         retries: 5

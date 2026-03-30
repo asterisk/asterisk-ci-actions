@@ -16,7 +16,7 @@ runs:
   using: "composite"
   steps:
     - id: copyvars
-      uses: actions/github-script@v7
+      uses: actions/github-script@v8
       env:
         SRC_REPO: "${{inputs.src_repo}}"
         DST_REPO: "${{inputs.dst_repo}}"
