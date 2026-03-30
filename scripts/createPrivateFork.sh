@@ -35,9 +35,14 @@ if [ -z "${WORK_DIR}" ] && [ -z "${GITHUB_WORKSPACE}" ] ; then
 	exit 1
 fi
 
+if [ -z "${SKIP_MASTER_BRANCH_RENAME}" ] ; then
+	SKIP_MASTER_BRANCH_RENAME=true
+fi
+
 if [ -z "${GITHUB_WORKSPACE}" ] ; then
 	export GITHUB_WORKSPACE=${WORK_DIR}
 fi
+
 
 export GH_TOKEN=${GITHUB_TOKEN}
 export GIT_TOKEN=${GITHUB_TOKEN}
@@ -86,7 +91,7 @@ gh repo create "asterisk/${DST_REPO}" --source "./${DST_REPO}" --private --disab
 echo "Setting repo asterisk/${DST_REPO} parameters"
 gh repo edit "asterisk/${DST_REPO}" --allow-forking=true --enable-auto-merge=false \
 	--enable-discussions=false --enable-issues=false --enable-merge-commit=false \
-	--enable-wiki=false --default-branch=master
+	--enable-wiki=false --enable-projects=false --default-branch=master
 
 echo "Enabling actions on repo asterisk/${DST_REPO}"
 gh api --method PUT \
@@ -95,15 +100,18 @@ gh api --method PUT \
 	"/repos/asterisk/${DST_REPO}/actions/permissions" \
 	-F "enabled=true" -f "allowed_actions=all"
 
-# A "GitHub Hack" to enable workflows on the repo.
-echo "Renaming master branch to main and back again to trigger workflow"
-gh api --method POST -H "Accept: application/vnd.github+json" \
-	-H "X-GitHub-Api-Version: 2022-11-28" \
-	/repos/asterisk/${DST_REPO}/branches/master/rename -f "new_name=main" >/dev/null
-sleep 2
-gh api --method POST -H "Accept: application/vnd.github+json" \
-	-H "X-GitHub-Api-Version: 2022-11-28" \
-	/repos/asterisk/${DST_REPO}/branches/main/rename -f "new_name=master" >/dev/null
+if ${SKIP_MASTER_BRANCH_RENAME} ; then
+	# A "GitHub Hack" to enable workflows on the repo.
+	echo "Renaming master branch to main and back again to trigger workflow"
+	gh api --method POST -H "Accept: application/vnd.github+json" \
+		-H "X-GitHub-Api-Version: 2022-11-28" \
+		/repos/asterisk/${DST_REPO}/branches/master/rename -f "new_name=main" || :
+	sleep 2
+	echo "Renaming main branch back to master again to trigger workflow"
+	gh api --method POST -H "Accept: application/vnd.github+json" \
+		-H "X-GitHub-Api-Version: 2022-11-28" \
+		/repos/asterisk/${DST_REPO}/branches/main/rename -f "new_name=master" || :
+fi
 
 # Clone all the labels from the soure repo.
 echo "Copyinglabels from asterisk/${SRC_REPO} to asterisk/${DST_REPO}"
