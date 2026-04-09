@@ -23,6 +23,15 @@ if [ -z "${CHERRY_PICK_VALID_BRANCHES}" ] ; then
 	fi
 fi
 
+base_branch=$(jq -c '[.base.ref]' "${PR_PATH}")
+# If the base branch isn't mmaster, swap things around in CHERRY_PICK_VALID_BRANCHES
+if [ "${base_branch}" != "master" ] ; then
+	CHERRY_PICK_VALID_BRANCHES=$(jq -c '. - '${base_branch}' + ["master"]' <<<${CHERRY_PICK_VALID_BRANCHES})
+	debug_out "   Base branch is ${base_branch} so swapping with master in CHERRY_PICK_VALID_BRANCHES"
+	debug_out "   CHERRY_PICK_VALID_BRANCHES=${CHERRY_PICK_VALID_BRANCHES}"
+fi
+
+
 debug_out "    Looking for 'cherry-pick-to' headers matching ${CHERRY_PICK_VALID_BRANCHES}."
 value=$(jq -c -r "[ .[].body | match(\"(^|\r?\n)cherry-pick-to:[[:blank:]]*(([0-9.]+)|(certified/[0-9.]+)|(master|none))\"; \"g\") | .captures[1].string ]" ${PR_COMMENTS_PATH})
 
