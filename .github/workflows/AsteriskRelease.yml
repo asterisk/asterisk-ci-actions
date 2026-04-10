@@ -121,14 +121,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
         # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
-      - name: GetActionsRepo
-        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
-
-      - name: Setup
-        run: |
-          echo "::group::Installing software"
-          sudo -E ${SCRIPT_DIR}/setupRunner.sh --for-release
-          echo "::endgroup::"
+      - name: SetupRunner
+        uses: asterisk/asterisk-ci-actions/SetupRunner@main
+        with:
+          apt_packages: ${{ vars.ASTERISK_RUNNER_APT_PACKAGES }}
+          install_sipp: false
 
       - name: Release
         id: releaser
