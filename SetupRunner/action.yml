@@ -1,0 +1,38 @@
+name: SetupRunner
+inputs:
+  apt_packages:
+    required: true
+    type: string
+  install_sipp:
+    required: false
+    type: boolean
+    default: true
+  sipp_version:
+    required: false
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: GetActionsRepo
+      uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
+
+    - name: PackageSetup
+      uses: asterisk/cache-apt-pkgs-action@master-combined-fixes
+      with:
+        packages: >-
+          ${{ inputs.apt_packages }}
+        execute_install_scripts: true
+        version: 1.0
+  
+    - name: ExtraSetup
+      shell: bash
+      env:
+        INSTALL_SIPP: ${{ case(inputs.install_sipp == 'true', '--install-sipp', '--dont-install-sipp') }}
+        SIPP_VERSION: ${{ case(inputs.sipp_verison != '', format('--sipp-version={0}', inputs.sipp_verison), '') }}
+      run: |
+        # Setup
+        echo "::group::Final runner setup"
+        sudo -E ${SCRIPT_DIR}/setupRunner.sh ${INSTALL_SIPP} ${SIPP_VERSION}
+        echo "::endgroup::"
+  

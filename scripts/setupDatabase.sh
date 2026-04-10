@@ -49,10 +49,13 @@ createdb $PGOPTS -E UTF-8 -T template0 -O ${USER} ${DATABASE} &>/tmp/create_db.o
 }
 
 debug_out "Creating ${DSN} ODBC DSN"
-declare -a DRIVERS=( "PostgreSQL" "PostgreSQL Unicode" )
+odbcinst -d -q >&2
+
+declare -a DRIVERS=( "PostgreSQL Unicode" "PostgreSQL ANSI" "PostgreSQL" )
 DRIVER=
 for d in "${DRIVERS[@]}" ; do
-	odbcinst -d -q -n "$d" &>/dev/null && {
+	debug_out "Checking for '${d}' ODBC driver"
+	odbcinst -d -q -n "$d" && {
 		DRIVER="$d"
 		break
 	}
@@ -60,6 +63,7 @@ done
 
 [ -z "$DRIVER" ] && {
 	log_error_msgs "No ODBC Postgres driver found"
+	cat /etc/odbcinst.ini
 	exit 1
 }
 

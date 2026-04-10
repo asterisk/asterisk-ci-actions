@@ -28,7 +28,6 @@ on:
       sipp_version:
         required: false
         type: string
-        default: v3.6.1
 
 env:
   TEST_TYPE:        ${{ inputs.test_type }}
@@ -38,7 +37,6 @@ env:
   OUTPUT_DIR:       ${{ github.workspace }}/${{ inputs.output_cache_dir }}/output
   REPO_DIR:         ${{ github.event.repository.name }}
   REPO_ORG:         ${{ github.event.repository.owner.login }}
-  SIPP_VERSION:     ${{ inputs.sipp_version }}
   BUILD_CACHE_DIR:  ${{ inputs.build_cache_dir }}
   BUILD_CACHE_KEY:  ${{ inputs.build_cache_key }}
   UNITTEST_COMMAND: ${{ inputs.unittest_command }}
@@ -54,15 +52,16 @@ jobs:
         shell: bash
     steps:
         # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
-      - name: GetActionsRepo
-        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
+      - name: SetupRunner
+        uses: asterisk/asterisk-ci-actions/SetupRunner@main
+        with:
+          apt_packages: ${{ vars.ASTERISK_RUNNER_APT_PACKAGES }} 
+          install_sipp: true
+          sipp_version: ${{ inputs.sipp_version || vars.SIPP_VERSION }}
 
-      - name: Setup Runner
+      - name: SetupDirectories
         run: |
           # Setup
-          echo "::group::Installing software"
-          sudo -E ${SCRIPT_DIR}/setupRunner.sh --sipp-version=${SIPP_VERSION}
-          echo "::endgroup::"
           mkdir -p ${LOG_DIR}
           mkdir -p ${OUTPUT_DIR}
 

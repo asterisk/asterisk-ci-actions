@@ -68,3 +68,12 @@ jobs:
               --repo=${REPO} \
               --pr-number=${PR_NUMBER}
           done
+
+  RefreshPackageCache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SetupRunner
+        uses: asterisk/asterisk-ci-actions/SetupRunner@main
+        with:
+          apt_packages: ${{ vars.ASTERISK_RUNNER_APT_PACKAGES }}
+          install_sipp: false

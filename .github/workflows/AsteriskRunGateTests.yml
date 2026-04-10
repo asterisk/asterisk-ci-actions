@@ -47,7 +47,6 @@ on:
       sipp_version:
         required: false
         type: string
-        default: v3.6.1
 
 env:
   TEST_TYPE:    ${{ inputs.test_type }}
@@ -56,7 +55,6 @@ env:
   USER_GROUP:   ${{ inputs.user_group }}
   OUTPUT_DIR:   ${{ github.workspace }}/${{ inputs.output_cache_dir }}/output
   REALTIME:     ${{ inputs.realtime }}
-  SIPP_VERSION: ${{ inputs.sipp_version }}
   ASTERISK_REPO:      ${{ inputs.asterisk_repo }}
   TESTSUITE_REPO:     ${{ inputs.testsuite_repo }}
   TESTSUITE_TEST_PR:  ${{ inputs.testsuite_test_pr }}
@@ -73,16 +71,17 @@ jobs:
         shell: bash
     steps:
         # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
-      - name: GetActionsRepo
-        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
+      - name: SetupRunner
+        uses: asterisk/asterisk-ci-actions/SetupRunner@main
+        with:
+          apt_packages: ${{ vars.ASTERISK_RUNNER_APT_PACKAGES }} 
+          install_sipp: true
+          sipp_version: ${{ inputs.sipp_version || vars.SIPP_VERSION }}
 
-      - name: Setup Runner
+      - name: SetupDirectories
         run: |
           # Setup
           source ${SCRIPT_DIR}/ci.functions
-          echo "::group::Installing software"
-          sudo -E ${SCRIPT_DIR}/setupRunner.sh --sipp-version=${SIPP_VERSION}
-          echo "::endgroup::"
 
           TESTSUITE_DIR=${GITHUB_WORKSPACE}/$(basename ${TESTSUITE_REPO})
           ASTERISK_DIR=${GITHUB_WORKSPACE}/$(basename ${ASTERISK_REPO})

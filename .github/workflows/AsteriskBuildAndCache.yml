@@ -39,7 +39,6 @@ on:
       sipp_version:
         required: false
         type: string
-        default: v3.6.1
       output_cache_dir:
         type: string
         required: false
@@ -70,7 +69,6 @@ env:
   BUILD_SCRIPT:      ${{ inputs.build_script }}
   BUILD_OPTIONS:     ${{ inputs.build_options }}
   MODULES_BLACKLIST: ${{ inputs.modules_blacklist }}
-  SIPP_VERSION:      ${{ inputs.sipp_version }}
   CACHE_DIR:         ${{ github.workspace }}/${{ inputs.output_cache_dir }}
   OUTPUT_DIR:        ${{ github.workspace }}/${{ inputs.output_cache_dir }}/output
   BUILD_CACHE_DIR:   ${{ inputs.build_cache_dir }}
@@ -79,6 +77,7 @@ env:
   LOG_DIR:           ${{ github.workspace }}/logs
   LOG_FILE:          ${{ github.workspace }}/logs/job_summary.txt
   GH_TOKEN:          ${{ secrets.GITHUB_TOKEN }}
+  SIPP_VERSION:      ${{ inputs.sipp_version || vars.SIPP_VERSION }}
 
 jobs:
   Build:
@@ -89,16 +88,16 @@ jobs:
         shell: bash
     steps:
         # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
-      - name: GetActionsRepo
-        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
+      - name: SetupRunner
+        uses: asterisk/asterisk-ci-actions/SetupRunner@main
+        with:
+          apt_packages: ${{ vars.ASTERISK_RUNNER_APT_PACKAGES }}
+          install_sipp: true
+          sipp_version: ${{ env.SIPP_VERSION }}
 
-      - name: Setup Runner
+      - name: SetupDirectories
         run: |
-          # Setup
-          echo "::group::Installing software"
-          sudo -E ${SCRIPT_DIR}/setupRunner.sh --sipp-version=${SIPP_VERSION}
-          echo "::endgroup::"
-
+          # SetupDirectories
           REPO_NAME=$(basename ${ASTERISK_REPO})
           REPO_DIR=${GITHUB_WORKSPACE}/${REPO_NAME}
           REPO_ORG=$(dirname ${ASTERISK_REPO})
