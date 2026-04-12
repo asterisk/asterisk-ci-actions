@@ -1,0 +1,48 @@
+name: TestPackageCache
+run-name: "TestPackageCache"
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  checks: read
+  contents: write
+  issues: read
+  pull-requests: write
+  statuses: read
+
+jobs:
+  Job1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: PreSetup
+        run: |
+          echo "::group::/var/lib/apt/lists"
+          ls -al /var/lib/apt/lists
+          echo "::endgropup::"
+          for d in alternatives info triggers ; do
+            echo "::group::dpkg ${d}"
+            ls -al /var/lib/dpkg/${d}
+            echo "::endgropup::"
+          done
+
+      - name: PackageSetup
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: >-
+            odbc-postgresql
+          execute_install_scripts: true
+          version: 1.0
+          debug: true
+
+      - name: PostSetup
+        run: |
+          echo "::group::/var/lib/apt/lists"
+          ls -al /var/lib/apt/lists
+          echo "::endgropup::"
+          for d in alternatives info triggers ; do
+            echo "::group::dpkg ${d}"
+            ls -al /var/lib/dpkg/${d}
+            echo "::endgropup::"
+          done
+
