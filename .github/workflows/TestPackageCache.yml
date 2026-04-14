@@ -2,6 +2,11 @@ name: TestPackageCache
 run-name: "TestPackageCache"
 on:
   workflow_dispatch:
+    inputs:
+      cache_key:
+        description: "Cache Key"
+        required:    false
+        type:        string
 
 permissions:
   actions: write
@@ -10,6 +15,9 @@ permissions:
   issues: read
   pull-requests: write
   statuses: read
+
+env:
+  CACHE_KEY: ${{ inputs.cache_key }}
 
 jobs:
   Job1:
@@ -27,7 +35,8 @@ jobs:
           done
 
       - name: PackageSetup
-        uses: asterisk/cache-apt-pkgs-action@master-combined-fixes
+        if: ${{ inputs.cache_key == '' }}
+        uses: asterisk/cache-apt-pkgs-action@master-combined-fixes-test
         with:
           packages: >-
             wget curl file apt-utils
@@ -48,33 +57,27 @@ jobs:
             python3-psycopg2 rsync
             python3-markdown python3-markdown-*
           execute_install_scripts: true
+          no_install_recommends: true
+          no_upgrade: true
           version: 1.0
-#          debug: true
+          debug: true
 
-#      - id: load-cache
-#        if: ${{ env.CACHE_KEY }}
-#        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-#        with:
-#          path: ~/cache-apt-pkgs
-#          key: cache-apt-pkgs_${{ env.CACHE_KEY }}
+      - id: load-cache
+        if: ${{ env.CACHE_KEY }}
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/cache-apt-pkgs
+          key: cache-apt-pkgs_${{ env.CACHE_KEY }}
 
       - name: PostSetup
         run: |
-          #tar -czf ~/cache-apt-pkgs.tar.gz -C ~ cache-apt-pkgs
-          cat <<-EOF >~/test.md
-          This is a test
-          ==============
+          tar -czf ~/cache-apt-pkgs.tar.gz -C ~ cache-apt-pkgs
           
-          of something
-          EOF
-           
-          python3 -m markdown --extension=extra -o html -e utf-8 ~/test.md
-          
-#      - id: upload-tarball
-#        if: ${{ env.CACHE_KEY }}
-#        uses: actions/upload-artifact@v7
-#        with:
-#          name: cache-apt-pkgs-tarball_${{ env.CACHE_KEY }}
-#          path: ~/cache-apt-pkgs.tar.gz
-#          archive: false
+      - id: upload-tarball
+        if: ${{ env.CACHE_KEY }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: cache-apt-pkgs-tarball_${{ env.CACHE_KEY }}
+          path: ~/cache-apt-pkgs.tar.gz
+          archive: false
 
