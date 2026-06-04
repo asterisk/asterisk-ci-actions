@@ -257,7 +257,7 @@ done
 
 $DRY_RUN && ECHO_CMD="echo"
 
-source $(dirname $(dirname $(realpath $0)))/tag.functions
+source "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/tag.functions"
 
 mdtohtml() {
 	cat <<-EOF

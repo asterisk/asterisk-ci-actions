@@ -86,7 +86,7 @@ fi
 ${FORCE_CHERRY_PICK} && debug "Forcing cherry-pick" || :
 
 [ $commit_count -eq 0 ] && bail "There were no commits to cherry-pick"
-echo "Found ${commit_count}commits to cherry-pick"
+echo "Found ${commit_count} commits to cherry-pick"
 
 # Cherry-pick for real.
 for hash in ${commit_hashes[@]} ; do

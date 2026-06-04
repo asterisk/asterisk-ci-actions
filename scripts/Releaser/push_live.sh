@@ -79,7 +79,7 @@ StrictHostKeyChecking no
 UpdateHostKeys no
 EOF
 
-scp -F /tmp/ssh_config -p "${progdir}/common.sh" "${progdir}/downloads_host_publish.sh" \
+scp -F /tmp/ssh_config -p "${progdir}/common.sh" "${progdir}/tag.functions" "${progdir}/downloads_host_publish.sh" \
 	${DEPLOY_SSH_USERNAME}@${DEPLOY_HOST}:/home/${DEPLOY_SSH_USERNAME}/
 
 ssh -F /tmp/ssh_config ${DEPLOY_SSH_USERNAME}@${DEPLOY_HOST} \
