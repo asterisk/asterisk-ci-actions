@@ -2,11 +2,6 @@ name: NightlyTest
 on:
   workflow_call:
     inputs:
-      test_type:
-        description: 'weekly, nightly, prstatechange, prrecheck, cherry-pick'
-        type: string
-        required: false
-        default: nightly
       branches:
         required: true
         type: string
@@ -28,15 +23,48 @@ permissions:
   pull-requests: write
   statuses: read
 
+env:
+  REPO:            ${{ github.repository }}
+  REPO_DIR:        ${{ github.workspace }}/${{ github.event.repository.name }}
+  REPO_ORG:        ${{ github.event.repository.owner.login }}
+  WORKFLOW_NAME:   ${{ github.workflow }}
+  WORKFLOW_RUN_ID: ${{ github.run_id }}
+  GH_TOKEN:        ${{ secrets.GITHUB_TOKEN }}
+  LOG_DIR:         ${{ github.workspace }}/logs
+  LOG_FILE:        ${{ github.workspace }}/logs/job_summary.txt
+  BUILD_CACHE_KEY_PREFIX: ${{ github.workflow }}-${{ github.run_number }}-${{ github.event.number }}
+  TEST_TYPE:       nightly
+
 jobs:
+  Setup:
+    name: Setup
+    runs-on: ubuntu-slim
+    outputs:
+      test_type:          ${{ steps.setup.outputs.TEST_TYPE }}
+    steps:
+      - id: setup
+        name: Setup
+        shell: bash
+        run: |
+          # Setup
+          echo "TEST_TYPE=${TEST_TYPE}" >> "${GITHUB_OUTPUT}"
+
   Test:
+    needs: [Setup]
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      issues: read
+      pull-requests: read
+      statuses: read
     strategy:
       fail-fast: false
       matrix:
         branch: ${{ fromJSON(inputs.branches) }}
     uses: ./.github/workflows/AsteriskUnitGateTest.yml
     with:
-      test_type:         ${{ inputs.test_type }}
+      test_type:         ${{ needs.Setup.outputs.test_type }}
       asterisk_repo:     ${{ github.repository }}
       pr_number:         0
       base_branch:       ${{ matrix.branch }}
@@ -48,4 +76,40 @@ jobs:
       gatetest_commands: ${{ vars.GATETEST_COMMANDS }}
       realtime:          ${{ inputs.realtime }}
       sipp_version:      ${{ vars.SIPP_VERSION }}
+
+  PostWorkflow:
+    if: ${{ always() }}
+    runs-on: ubuntu-slim
+    needs: [Test]
+    env:
+      RESULT: ${{ needs.Test.result }}
+    steps:
+        # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
+      - name: GetActionsRepo
+        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
+
+      - name: Check status
+        shell: bash
+        run: |
+          if [[ $RESULT =~ (success|failure) ]] ; then
+            shopt -s extglob
+            gh api --paginate /repos/${REPO}/actions/runs/${GITHUB_RUN_ID}/jobs > /tmp/jobs.json || :
+            jobname=$(jq -r '.jobs[]| select(.name | contains("PostWorkflow")) | .name' /tmp/jobs.json 2>/dev/null || :)
+            jobname="${jobname////}"
+            jobname="${jobname//?(Action|PostWorkflow)/}"
+            jobname="${jobname// /}"
+          
+            ${SCRIPT_DIR}/createJobSummary.sh \
+              --result=${RESULT} \
+              --repo=${REPO} \
+              --workflow-name="${jobname}" \
+              --workflow-run=${GITHUB_RUN_ID} \
+              --tmp-dir=./run-${GITHUB_RUN_ID} \
+              --artifact-suffix="-${TEST_TYPE}-${GITHUB_RUN_NUMBER}" \
+              --job-summary-output=job_summary.txt \
+              --write-step-summary \
+              --verbose || :
+          fi
+          exit 0
+
 
