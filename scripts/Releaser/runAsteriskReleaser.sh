@@ -124,6 +124,7 @@ if ${CREATE_GITHUB_RELEASE} ; then
 		--product=${PRODUCT} \
 		--src-repo=${REPO_DIR} --dst-dir=${STAGING_DIR} --debug \
 		--start-tag=${START_TAG} --end-tag=${END_TAG} \
+		$(booloption security) \
 		$(booloption push-branches) $(booloption push-tarballs)
 fi
 

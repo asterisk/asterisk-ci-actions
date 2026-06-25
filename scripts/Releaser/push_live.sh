@@ -1,7 +1,7 @@
 #!/bin/bash
 
 declare needs=( end_tag )
-declare wants=( product src_repo dst_dir start_tag push_branches push_tarballs )
+declare wants=( product src_repo dst_dir start_tag security push_branches push_tarballs )
 declare tests=( src_repo dst_dir )
 
 progdir="$(dirname $(realpath $0) )"
@@ -34,11 +34,22 @@ fi
 
 declare -i RC=0
 set -x
+
+if ${SECURITY} ; then
+    title="Asterisk Security Release ${END_TAG}"
+else
+    title="Asterisk Release ${END_TAG}"
+fi
+
+if ${end_tag[certified]} ; then
+    title="Certified ${title}"
+fi
+
 gh release create ${END_TAG} \
 	--verify-tag \
 	$( [ "${end_tag[release_type]}" != "ga" ] && echo "--prerelease" ) \
 	--notes-file ${DST_DIR}/email_announcement.md \
-	--target ${end_tag[branch]} -t "Asterisk Release ${END_TAG}" || RC=1
+	--target ${end_tag[branch]} -t "${title}" || RC=1
 
 if [ $RC -ne 0 ] ; then
 	# Try again
@@ -48,7 +59,7 @@ if [ $RC -ne 0 ] ; then
 		--verify-tag \
 		$( [ "${end_tag[release_type]}" != "ga" ] && echo "--prerelease" ) \
 		--notes-file ${DST_DIR}/email_announcement.md \
-		--target ${end_tag[branch]} -t "Asterisk Release ${END_TAG}" || RC=1
+		--target ${end_tag[branch]} -t "${title}" || RC=1
 fi
 
 if [ $RC -ne 0 ] ; then
