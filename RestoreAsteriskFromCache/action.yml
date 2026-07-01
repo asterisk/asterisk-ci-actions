@@ -17,20 +17,30 @@ runs:
   using: "composite"
   steps:
     - name: Restore Asterisk Cache
-      uses: actions/cache/restore@v5
+      uses: actions/download-artifact@v8
       with:
-        path: ${{inputs.build_cache_dir}}
-        key:  ${{inputs.build_cache_key}}
+        name:  ${{inputs.build_cache_key}}.tar.gz
 
     - name: Install From Cache
       shell: bash
       env:
         REPO_DIR:        ${{inputs.repo_dir}}
         BUILD_CACHE_DIR: ${{inputs.build_cache_dir}}
+        BUILD_CACHE_KEY: ${{inputs.build_cache_key}}
         USER_GROUP:      ${{inputs.user_group}}
       run: |
         # Install from cache
         cd ${GITHUB_WORKSPACE}
+        if [ ! -f ${BUILD_CACHE_KEY}.tar.gz ] ; then
+          echo "*** No cached asterisk build found"
+          exit 1
+        fi
+        tar -xf ${BUILD_CACHE_KEY}.tar.gz
+        if [ ! -d ${BUILD_CACHE_DIR} ] ; then
+          echo "*** No cached asterisk build found in tarball"
+          exit 1
+        fi
+
         if [ -f ${BUILD_CACHE_DIR}/asterisk-source.tar.gz ] ; then
           echo "*** Found ${BUILD_CACHE_DIR}/asterisk-source.tar.gz"
           tar -xf ${BUILD_CACHE_DIR}/asterisk-source.tar.gz

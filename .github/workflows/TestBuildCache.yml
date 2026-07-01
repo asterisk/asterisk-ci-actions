@@ -1,0 +1,42 @@
+name: TestBuildCache
+run-name: "TestBuildCache"
+on:
+  workflow_dispatch:
+
+jobs:
+  Build:
+    uses: ./.github/workflows/AsteriskBuildAndCache.yml
+    with:
+      test_type:         nightly
+      asterisk_repo:     asterisk/asterisk
+      pr_number:         0
+      base_branch:       master
+      is_cherry_pick:    false
+      build_options:     
+      modules_blacklist: 
+      build_cache_dir:   build-cache
+      build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-0-master
+      no_alembic:        true
+      sipp_version:      3.7.5
+
+  RestoreInstall:
+    needs: Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Restore Asterisk Cache
+        uses: asterisk/asterisk-ci-actions/RestoreAsteriskFromCache@main
+        with:
+          repo_dir:        asterisk
+          build_cache_dir: build-cache
+          build_cache_key: ${{ github.workflow }}-${{ github.run_number }}-0-master
+          user_group:
+
+      - name: Check
+        run: |
+          ls -al
+          ls -al build-cache
+          ls -al /usr/sbin/asterisk
+          ls -al /var/lib/asterisk
