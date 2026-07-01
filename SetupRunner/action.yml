@@ -17,22 +17,28 @@ runs:
     - name: GetActionsRepo
       uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
 
+# This thing is beyond busted and I'm tired of screwing with it.
     - name: PackageSetup
+      if: false
       uses: asterisk/cache-apt-pkgs-action@master-combined-fixes
       with:
         packages: >-
           ${{ inputs.apt_packages }}
         execute_install_scripts: true
+        no_install_recommends: true
+        no_upgrade: true
         version: 1.0
+        debug: true
   
     - name: ExtraSetup
       shell: bash
       env:
+        INSTALL_PACKAGES: true
         INSTALL_SIPP: ${{ case(inputs.install_sipp == 'true', '--install-sipp', '--dont-install-sipp') }}
         SIPP_VERSION: ${{ case(inputs.sipp_verison != '', format('--sipp-version={0}', inputs.sipp_verison), '') }}
       run: |
         # Setup
         echo "::group::Final runner setup"
-        sudo -E ${SCRIPT_DIR}/setupRunner.sh ${INSTALL_SIPP} ${SIPP_VERSION}
+        sudo -E ${SCRIPT_DIR}/setupRunner.sh --install-packages ${INSTALL_SIPP} ${SIPP_VERSION}
         echo "::endgroup::"
   

@@ -69,7 +69,10 @@ jobs:
               --pr-number=${PR_NUMBER}
           done
 
+# We no longer cache apt packahes so there's no need to run this unless we decide to
+# start caching again
   RefreshPackageCache:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: SetupRunner
