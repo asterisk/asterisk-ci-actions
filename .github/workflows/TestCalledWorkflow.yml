@@ -9,6 +9,9 @@ on:
       gatetest_commands:
         type: string
         required: true
+      cache_key:
+        type: string
+        required: true
 
 env:
   GATETEST_GROUP:     ${{ inputs.gatetest_group }}
@@ -21,6 +24,12 @@ jobs:
         run:
           shell: bash
       steps:
+        - name: Restore Cache
+          id: save-cache
+          uses: actions/download-artifact@v8
+          with:
+            name: testcache.tar.gz
+      
         - name: Test GET
           run: |
             echo "GROUP: ${{inputs.gatetest_group}}"
@@ -29,5 +38,10 @@ jobs:
             echo "--------------------------"
             echo "GROUP: ${GATETEST_GROUP}"
             echo "CMD: ${GATETEST_COMMAND}"
-
-
+            ls -al
+            if [ -f testcache.tar.gz ] ; then
+              tar -xvf testcache.tar.gz
+              ls -al testcache
+            else
+              echo "testcache.tar.gz not found"
+            fi

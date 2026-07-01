@@ -35,6 +35,20 @@ jobs:
           EOFINNER
             echo "EOF"
           } >> ${GITHUB_OUTPUT}
+          mkdir testcache
+          echo "aaaaa" > testcache/file1
+          echo "bbbbb" > testcache/file2
+          chmod a+x testcache/file2
+          tar -czf testcache.tar.gz testcache
+
+      - name: Save Cache
+        id: save-cache
+        uses: actions/upload-artifact@v7
+        with:
+          name: testcache
+          if-no-files-found: error
+          path: testcache.tar.gz
+          archive: false
 
   Job2:
     needs: Job1
@@ -42,4 +56,6 @@ jobs:
     with:
       gatetest_group: ${{ needs.Job1.outputs.testgroup }}
       gatetest_commands: ${{ needs.Job1.outputs.testobject }}
+      cache_key: testcache
+
 
