@@ -169,21 +169,21 @@ jobs:
           make DESTDIR=${BUILD_CACHE_PATH} install-headers  >/dev/null
           echo "*** Caching source"
           git archive --format=tar.gz -o ${BUILD_CACHE_PATH}/asterisk-source.tar.gz --prefix=${REPO_NAME}/ HEAD
-          ls -al ${BUILD_CACHE_PATH}/
+          echo "*** Creating tarball"
+          cd "${GITHUB_WORKSPACE}"
+          tar -czvf "${BUILD_CACHE_KEY}.tar.gz" "${BUILD_CACHE_DIR}"
+          
           echo "::endgroup::"
 
-          echo "::group::Deleting old cache (if any): ${BUILD_CACHE_KEY}"
-          # We don't care if it fails
-          gh cache delete ${BUILD_CACHE_KEY} || :
-          echo "::endgroup::"
 
       - id: cache-build-output
         if: success() && inputs.build_cache_dir != '' && inputs.build_cache_key != ''
         name: CacheBuildProducts
-        uses: actions/cache/save@v5
+        uses: actions/upload-artifact@v7
         with:
-          path: ${{ inputs.build_cache_dir }}
-          key:  ${{ inputs.build_cache_key }}
+          path:  ${{ inputs.build_cache_key }}.tar.gz
+          if-no-files-found: error
+          archive: false
 
       - name: Save Output
         if: ${{ always() }}
