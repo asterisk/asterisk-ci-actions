@@ -32,7 +32,6 @@ env:
   GH_TOKEN:        ${{ secrets.GITHUB_TOKEN }}
   LOG_DIR:         ${{ github.workspace }}/logs
   LOG_FILE:        ${{ github.workspace }}/logs/job_summary.txt
-  BUILD_CACHE_KEY_PREFIX: ${{ github.workflow }}-${{ github.run_number }}-${{ github.event.number }}
   TEST_TYPE:       nightly
 
 jobs:

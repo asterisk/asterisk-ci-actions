@@ -97,7 +97,7 @@ jobs:
         with:
           repo_dir:        ${{ env.ASTERISK_DIR }}
           build_cache_dir: ${{ inputs.build_cache_dir }}
-          build_cache_key: ${{ inputs.build_cache_key }}
+          build_cache_key: ${{ inputs.build_cache_key }}-${{ env.NORMALIZED_BRANCH }}
           user_group:      ${{ inputs.user_group }}
 
       - name: "Setup testsuite"

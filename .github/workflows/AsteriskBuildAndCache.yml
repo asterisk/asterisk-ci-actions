@@ -171,7 +171,7 @@ jobs:
           git archive --format=tar.gz -o ${BUILD_CACHE_PATH}/asterisk-source.tar.gz --prefix=${REPO_NAME}/ HEAD
           echo "*** Creating tarball"
           cd "${GITHUB_WORKSPACE}"
-          tar -czf "${BUILD_CACHE_KEY}.tar.gz" "${BUILD_CACHE_DIR}"
+          tar -czf "${BUILD_CACHE_KEY}-${NORMALIZED_BRANCH}.tar.gz" "${BUILD_CACHE_DIR}"
           
           echo "::endgroup::"
 
@@ -181,7 +181,7 @@ jobs:
         name: CacheBuildProducts
         uses: actions/upload-artifact@v7
         with:
-          path:  ${{ inputs.build_cache_key }}.tar.gz
+          path:  ${{ env.BUILD_CACHE_KEY }}-${{ env.NORMALIZED_BRANCH }}.tar.gz
           if-no-files-found: error
           archive: false
 

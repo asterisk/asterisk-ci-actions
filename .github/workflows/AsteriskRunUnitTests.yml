@@ -38,7 +38,6 @@ env:
   REPO_DIR:         ${{ github.event.repository.name }}
   REPO_ORG:         ${{ github.event.repository.owner.login }}
   BUILD_CACHE_DIR:  ${{ inputs.build_cache_dir }}
-  BUILD_CACHE_KEY:  ${{ inputs.build_cache_key }}
   UNITTEST_COMMAND: ${{ inputs.unittest_command }}
   LOG_DIR:          ${{ github.workspace }}/logs
   LOG_FILE:         ${{ github.workspace }}/logs/job_summary.txt
@@ -70,7 +69,7 @@ jobs:
         with:
           repo_dir:        ${{ github.event.repository.name }}
           build_cache_dir: ${{ inputs.build_cache_dir }}
-          build_cache_key: ${{ inputs.build_cache_key }}
+          build_cache_key: ${{ inputs.build_cache_key }}-${{ env.NORMALIZED_BRANCH }}
           user_group:      ${{ inputs.user_group }}
 
       - name: Run Unit Tests
