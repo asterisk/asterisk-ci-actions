@@ -20,10 +20,11 @@ echo "RUNNER_ENVIRONMENT=${RUNNER_ENVIRONMENT}"
 
 install_packages() {
 	export DEBIAN_FRONTEND="noninteractive"
+	apt_install_options="--no-install-recommends --no-upgrade -y -qq" 
 	debug_out "Running apt update"
 	run_silent_unless_error apt-get update -y -qq
-	debug_out "Installing wget, curl, file, apr-utils pre-reqs"
-	run_silent_unless_error apt-get install -y -qq wget curl file apt-utils
+	debug_out "Installing wget, curl, file, apt-utils pre-reqs"
+	run_silent_unless_error apt-get install ${apt_install_options} wget curl file apt-utils
 	
 	if ! which gh &>/dev/null ; then
 		debug_out "Installing github cli repo"
@@ -34,7 +35,7 @@ install_packages() {
 	fi
 	
 	debug_out "Installing dev packages"
-	run_silent_unless_error apt-get install -qq sudo build-essential gdb binutils-dev freetds-dev \
+	run_silent_unless_error apt-get install ${apt_install_options} sudo build-essential gdb binutils-dev freetds-dev \
 	  libasound2-dev libbluetooth-dev libc-client2007e-dev \
 	  libcap-dev libcfg-dev libcodec2-dev libcorosync-common-dev \
 	  libcpg-dev libcurl4-openssl-dev libedit-dev libfftw3-dev \
@@ -57,7 +58,7 @@ install_packages() {
 	fi
 	
 	debug_out "Installing addons" 
-	run_silent_unless_error apt-get install -qq ${addons}
+	run_silent_unless_error apt-get install ${apt_install_options} ${addons}
 }
 
 # We're now using an action that installs and caches apt packages so
