@@ -81,7 +81,7 @@ jobs:
       base_branch:       ${{ inputs.base_branch }}
       is_cherry_pick:    ${{ fromJSON(needs.Setup.outputs.is_asterisk_cherry_pick) }}
       build_cache_dir:   build-cache
-      build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
+      build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}
       no_alembic:        true
       sipp_version:      ${{ inputs.sipp_version || vars.SIPP_VERSION }}
 
@@ -105,7 +105,7 @@ jobs:
       gatetest_group:    ${{ inputs.gatetest_group }}
       gatetest_commands: ${{ inputs.gatetest_commands }}
       build_cache_dir:   build-cache
-      build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}-${{ inputs.base_branch }}
+      build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}
       realtime:          false
       sipp_version:      ${{ inputs.sipp_version || vars.SIPP_VERSION }}
       
