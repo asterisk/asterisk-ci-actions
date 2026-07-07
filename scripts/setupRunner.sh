@@ -3,6 +3,23 @@
 FOR_RELEASE=false
 INSTALL_PACKAGES=false
 INSTALL_SIPP=true
+PACKAGES="build-essential gdb binutils-dev freetds-dev
+libasound2-dev libbluetooth-dev libc-client2007e-dev
+libcap-dev libcfg-dev libcodec2-dev libcorosync-common-dev
+libcpg-dev libcurl4-openssl-dev libedit-dev libfftw3-dev
+libgmime-3.0-dev libgsm1-dev libical-dev libiksemel-dev
+libjansson-dev libldap-dev libldap2-dev
+liblua5.2-dev libneon27-dev libnewt-dev libogg-dev libpopt-dev
+libradcli-dev libresample1-dev libsndfile1-dev libsnmp-dev
+libspandsp-dev libspeex-dev libspeexdsp-dev libsrtp2-dev
+libunbound-dev liburiparser-dev libvorbis-dev libxslt1-dev
+xmlstarlet python3-pystache sqlite3 sqlite3-tools
+libsqlite3-dev cmake libsctp-dev libgsl-dev python3-dev python3-venv
+postgresql libpq-dev git libpcap-dev nano python3-pip
+alembic odbc-postgresql unixodbc unixodbc-dev
+python3-psycopg2 rsync
+python3-markdown python3-markdown-*
+dahdi-source libtonezone-dev libopenr2-dev libpri-dev libss7-dev"
 
 : ${SIPP_VERSION:=v3.7.5}
 : ${GITHUB_SERVER_URL:=https://github.com}
@@ -14,51 +31,21 @@ SCRIPT_DIR=$(dirname $(readlink -fn $0))
 	exit 1
 }
 set -e
+shopt -s extglob
 
 cat /etc/os-release
-echo "RUNNER_ENVIRONMENT=${RUNNER_ENVIRONMENT}"
+debug_out "RUNNER_ENVIRONMENT=${RUNNER_ENVIRONMENT}"
 
 install_packages() {
+    mapfile -t  pkgs < <(echo "${PACKAGES//[[:space:]]/$'\n'}")
+    declare -a apt_install_options=( "-y" "-qq" ) 
+    debug_out "Packages to install: ${pkgs[*]}"
 	export DEBIAN_FRONTEND="noninteractive"
-	apt_install_options="--no-install-recommends --no-upgrade -y -qq" 
+#	apt_install_options="--no-install-recommends --no-upgrade -y -qq" 
 	debug_out "Running apt update"
 	run_silent_unless_error apt-get update -y -qq
-	debug_out "Installing wget, curl, file, apt-utils pre-reqs"
-	run_silent_unless_error apt-get install ${apt_install_options} wget curl file apt-utils
-	
-	if ! which gh &>/dev/null ; then
-		debug_out "Installing github cli repo"
-		wget -q -O/tmp/githubcli-archive-keyring.gpg https://cli.github.com/packages/githubcli-archive-keyring.gpg
-		install --mode=0644 -D -t /etc/apt/keyrings /tmp/githubcli-archive-keyring.gpg
-		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /tmp/github-cli.list
-		install --mode=0644 -D -t /etc/apt/sources.list.d /tmp/github-cli.list
-	fi
-	
-	debug_out "Installing dev packages"
-	run_silent_unless_error apt-get install ${apt_install_options} sudo build-essential gdb binutils-dev freetds-dev \
-	  libasound2-dev libbluetooth-dev libc-client2007e-dev \
-	  libcap-dev libcfg-dev libcodec2-dev libcorosync-common-dev \
-	  libcpg-dev libcurl4-openssl-dev libedit-dev libfftw3-dev \
-	  libgmime-3.0-dev libgsm1-dev libical-dev libiksemel-dev \
-	  libjansson-dev libldap-dev libldap2-dev \
-	  liblua5.2-dev libneon27-dev libnewt-dev libogg-dev libpopt-dev \
-	  libradcli-dev libresample1-dev libsndfile1-dev libsnmp-dev \
-	  libspandsp-dev libspeex-dev libspeexdsp-dev libsrtp2-dev \
-	  libunbound-dev liburiparser-dev libvorbis-dev libxslt1-dev \
-	  xmlstarlet python3-pystache sqlite3 sqlite3-tools\
-	  libsqlite3-dev
-	
-	addons="cmake libsctp-dev libgsl-dev python3-dev python3*-venv \
-	  postgresql libpq-dev git libpcap-dev nano python3-pip \
-	  alembic odbc-postgresql unixodbc unixodbc-dev \
-	  python3-psycopg2 rsync"
-	
-	if ! which jq &>/dev/null ; then
-		addons+=" jq"
-	fi
-	
-	debug_out "Installing addons" 
-	run_silent_unless_error apt-get install ${apt_install_options} ${addons}
+	debug_out "Installing packages"
+	run_silent_unless_error apt-get install "${apt_install_options[@]}" "${pkgs[@]}"
 }
 
 # We're now using an action that installs and caches apt packages so
@@ -75,7 +62,7 @@ run_silent_unless_error apt-get remove -y -qq bison || :
 run_silent_unless_error apt-get remove -y -qq byacc || :
 
 
-if [ -n "${RUNNER_ENVIRONMENT}" ] ; then
+if [ "${RUNNER_ENVIRONMENT}" == "github-hosted" ] ; then
 	debug_out "Current kernel.core_pattern: $(sysctl kernel.core_pattern)"
 	sysctl -w kernel.core_pattern=/tmp/core-%e-%t
 	chmod 1777 /tmp

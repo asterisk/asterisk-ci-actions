@@ -36,9 +36,10 @@ runs:
         INSTALL_PACKAGES: true
         INSTALL_SIPP: ${{ case(inputs.install_sipp == 'true', '--install-sipp', '--dont-install-sipp') }}
         SIPP_VERSION: ${{ case(inputs.sipp_verison != '', format('--sipp-version={0}', inputs.sipp_verison), '') }}
+        PACKAGES:     ${{ inputs.apt_packages }}
       run: |
         # Setup
         echo "::group::Final runner setup"
-        sudo -E ${SCRIPT_DIR}/setupRunner.sh --install-packages ${INSTALL_SIPP} ${SIPP_VERSION}
+        sudo -E ${SCRIPT_DIR}/setupRunner.sh --install-packages ${INSTALL_SIPP} ${SIPP_VERSION} --packages="${PACKAGES}"
         echo "::endgroup::"
   
