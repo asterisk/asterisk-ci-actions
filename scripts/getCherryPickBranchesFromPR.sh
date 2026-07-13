@@ -24,28 +24,17 @@ print_output() {
 	fi
 }
 
-jqexp=".[].body | match(\"${CHERRY_PICK_REGEX}\"; \"g\") | .captures[0].string"
-branchlist=$(gh api /repos/${REPO}/issues/${PR_NUMBER}/comments \
-	--jq "${jqexp}" | tr '\n' ' ')
+gh api --paginate "/repos/${REPO}/issues/${PR_NUMBER}/comments" > "/tmp/pr-${PR_NUMBER}-comments.json"
 
-debug_out "Branch list: $branchlist"
+branches=$( jq -c -r --arg CPR "${CHERRY_PICK_REGEX}" '[ .[].body | match($CPR; "g") | .captures[0].string  ] | unique' "/tmp/pr-${PR_NUMBER}-comments.json" )
+branch_count=$(jq '. | length' <<<"${branches}")
+debug_out "Branch list: ${branches}"
 
-if [[ "$branchlist" =~ none ]] ; then
+if [[ "${branches}" =~ none ]] ; then
 	print_output true 0 '[]'
 	exit 0
 fi
 
-eval declare -a BRANCHES=( ${branchlist/none/} ${INCLUDE_BRANCHES//,/ } )
-declare -i branch_count=0
-
-json='['
-for branch in ${BRANCHES[@]} ; do
-	[ $branch_count -ne 0 ] && json+=','
-	json+="\"$branch\""
-	branch_count+=1
-done
-json+=']'
-
-print_output false $branch_count "$json"
+print_output false "${branch_count}" "${branches}"
 
 exit 0

@@ -33,7 +33,11 @@ fi
 
 
 debug_out "    Looking for 'cherry-pick-to' headers matching ${CHERRY_PICK_VALID_BRANCHES}."
-value=$(jq -c -r "[ .[].body | match(\"(^|\r?\n)cherry-pick-to:[[:blank:]]*(([0-9.]+)|(certified/[0-9.]+)|(master|none))\"; \"g\") | .captures[1].string ]" ${PR_COMMENTS_PATH})
+value=$(jq -c -r '[ .[].body
+            | match("(^|\r?\n)cherry-pick-to:[[:blank:]]*(([0-9.]+)|(certified/[0-9.]+)|(master|none))"; "g")
+            | .captures[1].string ] | unique' ${PR_COMMENTS_PATH})
+
+
 
 if [ "$value" == "[]" ] ; then
 	debug_out "No 'cherry-pick-to' headers found.  Adding checklist item."
