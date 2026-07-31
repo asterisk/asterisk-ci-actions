@@ -134,8 +134,22 @@ for BRANCH in $branches ; do
 
 		debug_out "Cherry-picking: SHA: ${SHA:0:8} MESSAGE: '${MESSAGE}' to branch ${BRANCH}"
 		# Check to make sure the commit isn't already merged
-		exists=$(git --no-pager log -1 --oneline --grep "^${MESSAGE}$" "${BRANCH}")
-		[ -n "$exists" ] && { debug_out "Commit ${SHA:0:8} already in branch ${BRANCH}.  Skipping." ; continue ; }
+		# Get the patch-id for the current commit.
+		PATCH_ID=$(git format-patch --stdout -1 ${SHA} | git patch-id | sed -n -r -e "s/([^ ]+)\s+.*/\1/gp")
+		# Search for commits with the same message.
+		mapfile -t DUPS < <(git --no-pager log -1 --oneline --grep "^${MESSAGE}$" "${BRANCH}")
+		# Sometimes messages are reused for unrelated commits like "Fix GCC 16 compile issues."
+		# To detect this, we need to get the patch id for the candidate and check it against
+		# the patch-id for the commit to be cherry-picked.
+		for candidate in "${DUPS[@]}" ; do
+			patch_id=$(git format-patch --stdout -1 ${candidate} | git patch-id | sed -n -r -e "s/([^ ]+)\s+.*/\1/gp")
+			if [ "${patch_id}" == "${PATCH_ID}" ] ; then
+				msg="Commit ${SHA:0:8} appears to already be in branch ${BRANCH}.  Skipping."
+				debug_out "${msg}"
+				error_msgs+=( "${msg}" )
+				continue
+			fi
+		done
 
 		# The SHA should already be downloaded in FETCH_HEAD
 		# so we should be able to just cherry-pick it.
