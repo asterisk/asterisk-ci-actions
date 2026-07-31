@@ -4,10 +4,12 @@ SAT_DIR=$(dirname "$(readlink -fn $0)")
 SCRIPT_DIR=$(dirname "${SAT_DIR}")
 
 set -e
-QUIETER=true
+QUIET=false
 COMBINE_VERSIONS=false
 HELP=false
 PREVIOUS=false
+HEADER=true
+SUPPRESS_MAJOR=false
 
 print_help() {
 	cat <<-EOF >&2
@@ -105,13 +107,20 @@ elif ! ${PREVIOUS} ; then
 fi
 
 string_split "${TAG_PREFIXES}" TPS
+${QUIET} && HEADER=false || :
 
-printf "%-20s %-18s %-20s %-12s\n" "Package Name" "Earliest GA Vers" "Vulnerable Vers" "Patched Vers" >&2
+${HEADER} && printf "%-20s %-18s %-20s %-12s\n" "Package Name" "Earliest GA Vers" "Vulnerable Vers" "Patched Vers" >&2
+
 declare -A versions
 for tp in "${TPS[@]}" ; do
 	if [ -n "${NEXT_RELEASE_TYPES}" ] ; then
-		read -r -a vs < <(${SAT_DIR}/getReleaseTags.sh --src-repo="${SRC_REPO}" --tag-prefix="${tp}" \
-			--next-release-types="${NEXT_RELEASE_TYPES}")
+		if [ "${NEXT_RELEASE_TYPES[0]}" == "major" ] ; then
+			${SUPPRESS_MAJOR} && continue
+			vs=( "${tp}.0.0" )
+		else
+			read -r -a vs < <(${SAT_DIR}/getReleaseTags.sh --src-repo="${SRC_REPO}" --tag-prefix="${tp}" \
+				--next-release-types="${NEXT_RELEASE_TYPES}")
+		fi
 	else
 		read -r -a vs < <(${SAT_DIR}/getReleaseTags.sh --src-repo="${SRC_REPO}" --tag-prefix="${tp}" \
 			--previous=1)
@@ -128,7 +137,7 @@ for tp in "${TPS[@]}" ; do
 		vvr="< ${vs[0]/certified-/}"
 		pv="${vs[0]/certified-/}"
 	fi
-	printf "%-20s %-18s %-20s %-12s\n" "$name" "$cv" "$vvr" "$pv" >&2
+	${QUIET} || printf "%-20s %-18s %-20s %-12s\n" "$name" "$cv" "$vvr" "$pv" >&2
 	versions["$tp"]="${name}|${cv}|${vvr}|${pv}"
 done
 
@@ -136,8 +145,8 @@ modarray="[]"
 if [ -n "${MODULES}" ] ; then
 	string_split "${MODULES}" mods
 	modarray=$(array_to_json_array mods)
+	${QUIET} || printf "Modules: %s\n" "${modarray}" >&2
 fi
-printf "Modules: %s\n" "${modarray}" >&2
 
 string_split "${TAG_PREFIXES}" TPS_NO_CERT
 array_element_remove TPS_NO_CERT "certified"

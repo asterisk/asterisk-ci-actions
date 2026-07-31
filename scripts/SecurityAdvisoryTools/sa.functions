@@ -7,7 +7,7 @@ bail() {
 
 print_invalid_release_types() {
 	string_split "${1}" NRTS 
-	array_element_remove NRTS "(patch|minor)"
+	array_element_remove NRTS "(patch|minor|major)"
 	array_sort NRTS -u
 	array_join NRTS
 }
