@@ -5,47 +5,6 @@ bail() {
 	exit 1
 }
 
-string_split() {
-	IFS="${1}" read -r -a "${2}" <<<"${3}"
-}
-
-array_join() {
-	local IFS="$1"
-	declare -n arr="$2"
-	echo "${arr[*]}"
-}
-
-array_to_json_array() {
-	local rtn="["
-	declare -n arr="$1"
-	tarr=( $(tr "'" '"' <<<"${arr[@]@Q}") )
-	printf "[%s]" $(array_join "," tarr)
-}
-
-array_element_keep() {
-	declare -n arr="${1}"
-	filter="${2}"
-	for i in "${!arr[@]}" ; do
-		[[ ${arr[$i]} =~ ${filter} ]] || unset "arr[$i]"
-	done
-	arr=( "${arr[@]}" )
-}
-
-array_element_remove() {
-	declare -n arr="${1}"
-	filter="${2}"
-	for i in "${!arr[@]}" ; do
-		[[ ${arr[$i]} =~ ${filter} ]] && unset "arr[$i]"
-	done
-	arr=( "${arr[@]}" )
-}
-
-array_sort() {
-	declare -n arr="${1}"
-	sort_opts="${2}"
-	arr=( $( IFS=$'\n' ; sort ${sort_opts} <<<"${arr[*]}" ) )
-}
-
 print_invalid_release_types() {
 	string_split ',' NRTS "${1}"
 	array_element_remove NRTS "(patch|minor)"

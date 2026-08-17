@@ -27,12 +27,14 @@ jobs:
     
       - name: CreateFork
         run: |
-          fix_branches=$(gh -R asterisk/${SRC_REPO} variable get SECURITY_FIX_BRANCHES | sed -n -r -e 's/("|\[|\])//gp')
+          fix_branches=$(gh -R asterisk/${SRC_REPO} variable get SECURITY_FIX_BRANCHES 2>/dev/null || : )
+          fork_actions=$(gh -R asterisk/${SRC_REPO} variable get SECURITY_FORK_ACTIONS 2>/dev/null || : )
           echo "Security fix branches: ${fix_branches}"
           ${SCRIPT_DIR}/SecurityAdvisoryTools/createPrivateFork.sh \
             --src-repo=${SRC_REPO} \
             --dst-repo=${DST_REPO} \
-            --security-fix-branches=${fix_branches}
+            --security-fix-branches="${fix_branches}" \
+            --security-fork-actions="${fork_actions}"
 
       - name: CopyVars
         uses: asterisk/asterisk-ci-actions/CopyRepoVariables@main
