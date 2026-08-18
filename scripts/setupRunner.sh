@@ -38,14 +38,17 @@ debug_out "RUNNER_ENVIRONMENT=${RUNNER_ENVIRONMENT}"
 
 install_packages() {
     mapfile -t  pkgs < <(echo "${PACKAGES//[[:space:]]/$'\n'}")
-    declare -a apt_install_options=( "-y" "-qq" ) 
+#    declare -a apt_install_options=( "-y" "-qq" ) 
+    declare -a apt_install_options=( "-y" ) 
     debug_out "Packages to install: ${pkgs[*]}"
 	export DEBIAN_FRONTEND="noninteractive"
 #	apt_install_options="--no-install-recommends --no-upgrade -y -qq" 
 	debug_out "Running apt update"
-	run_silent_unless_error apt-get update -y -qq
+#	run_silent_unless_error apt-get update -y -qq
+	apt-get update -y
 	debug_out "Installing packages"
-	run_silent_unless_error apt-get install "${apt_install_options[@]}" "${pkgs[@]}"
+#	run_silent_unless_error apt-get install "${apt_install_options[@]}" "${pkgs[@]}"
+	apt-get install "${apt_install_options[@]}" "${pkgs[@]}"
 }
 
 # We're now using an action that installs and caches apt packages so
@@ -58,8 +61,10 @@ fi
 # Bison needs to be removed because the installed versions don't regenerate
 # the AEL parsers correctly.
 debug_out "Removing bison"
-run_silent_unless_error apt-get remove -y -qq bison || :
-run_silent_unless_error apt-get remove -y -qq byacc || :
+#run_silent_unless_error apt-get remove -y -qq bison || :
+#run_silent_unless_error apt-get remove -y -qq byacc || :
+apt-get remove -y bison || :
+apt-get remove -y byacc || :
 
 
 if [ "${RUNNER_ENVIRONMENT}" == "github-hosted" ] ; then
