@@ -11,6 +11,12 @@ jobs:
       cancel-in-progress: true
     uses: ./.github/workflows/TestsuitePRCheck.yml
 
+# AsteriskPRChecklist is actually generic so it can be used here.
+  Checklist:
+    name: "Checklist"
+    if: ${{ github.event.label.name == vars.RUN_CHECKLIST_LABEL }}
+    uses: ./.github/workflows/AsteriskPRChecklist.yml
+
   CPCheck:
     name: "CPCheck"
     if: ${{ github.event.label.name == vars.CHERRY_PICK_TEST_LABEL }}

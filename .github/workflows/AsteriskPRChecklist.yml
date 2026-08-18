@@ -1,0 +1,58 @@
+name: PRChecklist
+on:
+  workflow_call:
+
+permissions:
+  actions: write
+  checks: read
+  contents: read
+  issues: read
+  pull-requests: write
+  repository-projects: read
+  statuses: read
+
+env:
+  REPO:            ${{ github.repository }}
+  REPO_DIR:        ${{ github.workspace }}/${{ github.event.repository.name }}
+  REPO_ORG:        ${{ github.event.repository.owner.login }}
+  PR_NUMBER:       ${{ github.event.number }}
+  BASE_BRANCH:     ${{ github.event.pull_request.base.ref }}
+  WORKFLOW_NAME:   ${{ github.workflow }}
+  WORKFLOW_RUN_ID: ${{ github.run_id }}
+  GH_TOKEN:        ${{ secrets.GITHUB_TOKEN }}
+  LOG_DIR:         ${{ github.workspace }}/logs
+  LOG_FILE:        ${{ github.workspace }}/logs/job_summary.txt
+  TRIGGER:         ${{ github.event.action }}
+  RUN_CHECKLIST_LABEL:          ${{ vars.RUN_CHECKLIST_LABEL }}
+  CHERRY_PICK_VALID_BRANCHES:   ${{ vars.CHERRY_PICK_VALID_BRANCHES }}
+  CHERRY_PICK_MISSING_BRANCHES: ${{ vars.CHERRY_PICK_MISSING_BRANCHES }}
+  CHERRY_PICK_MISSING_TEST_BRANCHES: ${{ vars.CHERRY_PICK_MISSING_TEST_BRANCHES }}
+  SECURITY_FIX_BRANCHES:        ${{ vars.SECURITY_FIX_BRANCHES }}
+
+jobs:
+  RunChecklist:
+    runs-on: ubuntu-latest
+    steps:
+        # ACTIONS_PATH, SCRIPT_DIR, NORMALIZED_BRANCH env vars
+      - name: GetActionsRepo
+        uses: asterisk/asterisk-ci-actions/GetActionsRepo@main
+
+      - name: Run checklist
+        shell: bash
+        run: |
+          gh pr edit --repo ${REPO} \
+            --remove-label ${RUN_CHECKLIST_LABEL} \
+              $PR_NUMBER || :
+
+          if [[ "${REPO}" =~ GHSA ]] ; then
+            CPVB=${SECURITY_FIX_BRANCHES}
+          else
+            CPVB=${CHERRY_PICK_VALID_BRANCHES}
+          fi
+          ${SCRIPT_DIR}/PRChecks/addPRChecklistIfNeeded.sh \
+            --repo=${REPO} \
+            --pr-number=${PR_NUMBER} \
+            --cherry-pick-valid-branches="${CPVB}" \
+            --cherry-pick-missing-branches="${CHERRY_PICK_MISSING_BRANCHES}" \
+            --cherry-pick-missing-test_branches="${CHERRY_PICK_MISSING_TEST_BRANCHES}"
+

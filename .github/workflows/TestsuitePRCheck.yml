@@ -31,6 +31,8 @@ env:
   PR_STATE_CHANGE_DELAY_SEC:  ${{ vars.PR_STATE_CHANGE_DELAY_SEC || 120 }}
   ASSOCIATED_TEST_PR_REGEX:   ${{ vars.ASSOCIATED_TEST_PR_REGEX }}
   CHERRY_PICK_VALID_BRANCHES: ${{ vars.CHERRY_PICK_VALID_BRANCHES }}
+  CHERRY_PICK_MISSING_BRANCHES: ${{ vars.CHERRY_PICK_MISSING_BRANCHES }}
+  CHERRY_PICK_MISSING_TEST_BRANCHES: ${{ vars.CHERRY_PICK_MISSING_TEST_BRANCHES }}
   TEST_TYPE:                  check
 
 jobs:
@@ -181,7 +183,9 @@ jobs:
             ${SCRIPT_DIR}/PRChecks/addPRChecklistIfNeeded.sh \
               --repo=${REPO} \
               --pr-number=${PR_NUMBER} \
-              --cherry-pick-valid-branches=${CHERRY_PICK_VALID_BRANCHES}
+              --cherry-pick-valid-branches="${CHERRY_PICK_VALID_BRANCHES}" \
+              --cherry-pick-missing-branches="${CHERRY_PICK_MISSING_BRANCHES}" \
+              --cherry-pick-missing-test_branches="${CHERRY_PICK_MISSING_TEST_BRANCHES}"
 
             shopt -s extglob
             gh api --paginate /repos/${REPO}/actions/runs/${GITHUB_RUN_ID}/jobs > /tmp/jobs.json || :

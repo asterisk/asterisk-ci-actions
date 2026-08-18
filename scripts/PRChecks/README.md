@@ -1,5 +1,13 @@
 # PR Checklist
 
+The purpose of the checklists are to catch common issues with pull requests.
+
+The checklist runs...
+
+* After the PR submit or change tests are run.
+* Every night on PRs that already have a checklist to see if items have been fixed.
+* When an admin adds the `run-checklist` label to a PR.
+
 ## `addPRChecklistIfNeeded.sh`
 
 ```sh
@@ -56,4 +64,19 @@ By downloading just the documents, you can test new check scripts by modifying t
 Because all data needed for the individual check scripts to do their jobs are in the files passed in as parameters, the check scripts themselves need no permissions or even network access and can be tested by simply running them directly with the appropriate documents. If you don't pass `--pr-checklist-path` option to a check script, it's output will automatically go to /dev/stderr.
 
 You can dump the markdown of all of the checklist items without running the actual checks by running `./dump_all_checklist_items.sh`
+
+## Adding Exceptions to a PR
+
+If a checklist item on a PR is a false positive, for example, an alembic change that doesn't need a sample config change, you can add a comment to it that will cause the script to skip the check the next time it runs.
+
+```
+pr-checklist-exception: <check_name>
+```
+
+`<check_name>` is the name of the check script with the leading sequence number and dash removed as well as the `.sh` suffix.  For example:
+
+```
+pr-checklist-exception: cherry-picks
+pr-checklist-exception: sample-configs
+```
 

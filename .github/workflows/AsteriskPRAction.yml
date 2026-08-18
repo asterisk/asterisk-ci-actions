@@ -11,6 +11,11 @@ jobs:
       cancel-in-progress: true
     uses: ./.github/workflows/AsteriskPRCheck.yml
 
+  Checklist:
+    name: "Checklist"
+    if: ${{ github.event.label.name == vars.RUN_CHECKLIST_LABEL }}
+    uses: ./.github/workflows/AsteriskPRChecklist.yml
+
   CPCheck:
     name: "CPCheck"
     if: ${{ github.event.label.name == vars.CHERRY_PICK_TEST_LABEL }}
