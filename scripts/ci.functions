@@ -175,25 +175,42 @@ log_failed_tests() {
 
 string_split() {
 	local tmp_string
-
-	if [ -z "${3}" ] ; then
-		tmp_string="${!2}"
-		unset "${2}"
-	else
-		tmp_string="${3}"
-	fi
-	IFS="${1}" read -r -a "${2}" <<<"${tmp_string}"
+	case ${#@} in
+		0)
+			return 1
+			;;
+		1)
+			tmp_string="${!1}"
+			unset "${1}"
+			array_name="${1}"
+			ifs=','
+			;;
+		2)
+			tmp_string="${1}"
+			array_name="${2}"
+			ifs=','
+			;;
+		3)
+			tmp_string="${1}"
+			array_name="${2}"
+			ifs="${3}"
+			;;
+		*)
+			return 1
+	esac
+	# shellcheck disable=SC2229
+	IFS="${ifs}" read -r -a "${array_name}" <<<"${tmp_string}"
 }
 
 array_join() {
-	local IFS="$1"
-	declare -n arr="$2"
+	local IFS="${2:-,}"
+	declare -n arr="$1"
 	echo "${arr[*]}"
 }
 
 json_array_join() {
-	local IFS="$1"
-	mapfile -t tmpa < <(jq -r '.[]' <<<"${2}")
+	local IFS="${2:-,}"
+	mapfile -t tmpa < <(jq -r '.[]' <<<"${1}")
 	echo "${tmpa[*]}"
 }
 
@@ -242,4 +259,20 @@ array_element_remove() {
 		[[ ${arr[$i]} =~ ${filter} ]] && unset "arr[$i]"
 	done
 	arr=( "${arr[@]}" )
+}
+
+is_in_array() {
+	local value="${1}"
+	declare -n arr="${2}"
+	for item in "${arr[@]}"; do
+		[[ "${item}" == "${value}" ]] && return 0
+	done
+	return 1
+}
+
+is_in_array_keys() {
+	local key="${1}"
+	declare -n arr="${2}"
+	[[ -v ${2}["${key}"] ]] && return 0 
+	return 1
 }

@@ -104,7 +104,7 @@ elif ! ${PREVIOUS} ; then
 		exit 1
 fi
 
-string_split , TPS "${TAG_PREFIXES}"
+string_split "${TAG_PREFIXES}" TPS
 
 printf "%-20s %-18s %-20s %-12s\n" "Package Name" "Earliest GA Vers" "Vulnerable Vers" "Patched Vers" >&2
 declare -A versions
@@ -134,15 +134,15 @@ done
 
 modarray="[]"
 if [ -n "${MODULES}" ] ; then
-	string_split , mods "${MODULES}"
+	string_split "${MODULES}" mods
 	modarray=$(array_to_json_array mods)
 fi
 printf "Modules: %s\n" "${modarray}" >&2
 
-string_split , TPS_NO_CERT "${TAG_PREFIXES}"
+string_split "${TAG_PREFIXES}" TPS_NO_CERT
 array_element_remove TPS_NO_CERT "certified"
 
-string_split , TPS_ONLY_CERT "${TAG_PREFIXES}"
+string_split "${TAG_PREFIXES}" TPS_ONLY_CERT
 array_element_keep TPS_ONLY_CERT "certified"
 
 cat <<EOF
@@ -155,7 +155,7 @@ if ${COMBINE_VERSIONS} ; then
 		declare -a vvrs
 		declare -a pvs
 		for tp in "${TPS_NO_CERT[@]}" ; do
-			string_split "|" vs "${versions[$tp]}"
+			string_split "${versions[$tp]}" vs "|"
 			vvrs+=( "${vs[2]}" )
 			pvs+=( "${vs[3]}" )
 		done
@@ -166,8 +166,8 @@ if ${COMBINE_VERSIONS} ; then
 	        "ecosystem": "other",
 	        "name": "${vs[0]}"
 	      },
-	      "vulnerable_version_range": "$(array_join ', ' vvrs)",
-	      "patched_versions": "$(array_join ', ' pvs)",
+	      "vulnerable_version_range": "$(array_join vvrs ', ')",
+	      "patched_versions": "$(array_join pvs ', ')",
 	      "vulnerable_functions": ${modarray}
 	    }${comma}
 		EOF
@@ -178,7 +178,7 @@ if ${COMBINE_VERSIONS} ; then
 		declare -a vvrs
 		declare -a pvs
 		for tp in "${TPS_ONLY_CERT[@]}" ; do
-			string_split "|" vs "${versions[$tp]}"
+			string_split "${versions[$tp]}" vs "|"
 			vvrs+=( "${vs[2]}" )
 			pvs+=( "${vs[3]}" )
 		done
@@ -189,8 +189,8 @@ if ${COMBINE_VERSIONS} ; then
 	        "ecosystem": "other",
 	        "name": "${vs[0]}"
 	      },
-	      "vulnerable_version_range": "$(array_join ', ' vvrs)",
-	      "patched_versions": "$(array_join ', ' pvs)",
+	      "vulnerable_version_range": "$(array_join vvrs ', ')",
+	      "patched_versions": "$(array_join pvs ', ')",
 	      "vulnerable_functions": ${modarray}
 	    }
 		EOF
@@ -198,7 +198,7 @@ if ${COMBINE_VERSIONS} ; then
 else
 	lastprefix=${TPS[-1]}
 	for tp in "${TPS[@]}" ; do
-		string_split "|" vs "${versions[$tp]}"
+		string_split "${versions[$tp]}" vs "|"
 		comma=","
 		[ "${tp}" = "${lastprefix}" ] && comma=""
 		cat <<-EOF

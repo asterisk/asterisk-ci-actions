@@ -12,7 +12,8 @@ source ${SCRIPT_DIR}/ci.functions
 source ${CHECKS_DIR}/checks.functions
 
 assert_env_variables REPO PR_NUMBER || exit 1
-printvars REPO PR_NUMBER DRY_RUN DOWNLOAD_ONLY DONT_DOWNLOAD QUIET_CHECKS FORCE_CLOSE CHERRY_PICK_VALID_BRANCHES
+printvars REPO PR_NUMBER DRY_RUN DOWNLOAD_ONLY DONT_DOWNLOAD QUIET_CHECKS FORCE_CLOSE
+printvars CHERRY_PICK_VALID_BRANCHES CHERRY_PICK_MISSING_BRANCHES
 
 pr_path=/tmp/pr-${PR_NUMBER}.json
 pr_files_path=/tmp/pr-files-${PR_NUMBER}.json
@@ -120,6 +121,8 @@ SCRIPT_ARGS="--repo=${REPO} --pr-number=${PR_NUMBER} \
 --pr-timeline-path=${pr_timeline_path} \
 --pr-checklist-path=${pr_checklist_path} \
 --cherry-pick-valid-branches=${CHERRY_PICK_VALID_BRANCHES} \
+--cherry-pick-missing-branches=${CHERRY_PICK_MISSING_BRANCHES} \
+--cherry-pick-missing-test-branches=${CHERRY_PICK_MISSING_TEST_BRANCHES} \
 --user-is-admin=${USER_IS_ADMIN}"
 
 

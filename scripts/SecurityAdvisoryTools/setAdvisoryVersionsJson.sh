@@ -8,12 +8,6 @@ HELP=false
 QUIETER=true
 DRY_RUN=false
 
-bail() {
-	# Join lines that start with whitespace.
-	sed -E ':a ; $!N ; s/\n\s+/ / ; ta ; P ; D' <<<"$@" >&2
-	exit 1
-}
-
 print_help() {
 	cat <<-EOF >/dev/stderr
 	
@@ -58,9 +52,10 @@ if [ -z "${ADVISORIES}" ] ; then
 	exit 1
 fi
 
-string_split ',' advisories "${ADVISORIES}"
+string_split "${ADVISORIES}" advisories 
 
 fail=false
+# shellcheck disable=SC2154
 for a in "${advisories[@]}" ; do
 	[[ $a =~ ^GHSA(-[0-9a-zA-Z]{4}){3}$ ]] || {
 		echo "GHSA id ${a} is malformed" >&2
