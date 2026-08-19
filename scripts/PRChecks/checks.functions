@@ -14,6 +14,10 @@ EXIT_ERROR=1
 EXIT_CHECKLIST_ADDED=17
 EXIT_SKIP_FURTHER_CHECKS=125
 
+_check_name=$(basename -s .sh "$0")
+CHECK_NAME=${_check_name:3}	
+
+
 print_checklist_item() {
 	newlines=$"\n\n\n\n\n"
 	strip="| tr -d '\n'"
@@ -22,6 +26,7 @@ print_checklist_item() {
 	}
 	[[ "$*" =~ --preserve-newlines ]] && strip=""
 	eval cat ${strip} >>${PR_CHECKLIST_PATH}
+	echo -n " ($CHECK_NAME)" >>${PR_CHECKLIST_PATH}
 	[[ "$*" =~ --append-newline(=([0-9]+))? ]] && {
 		echo -ne ${newlines:0:$((${BASH_REMATCH[2]:-1} * 2))} >>${PR_CHECKLIST_PATH}
 	}
