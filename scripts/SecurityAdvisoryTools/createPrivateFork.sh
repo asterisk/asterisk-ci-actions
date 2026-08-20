@@ -176,11 +176,11 @@ fi
 mapfile -t WORKFLOWS < <(gh api "/repos/asterisk/${DST_REPO}/actions/workflows" --jq '.workflows[].name')
 echo "Disabling all workflows first"
 for wf in "${WORKFLOWS[@]}" ; do
-	gh -R "asterisk/${DST_REPO} workflow" disable "$wf" || :
+	gh -R "asterisk/${DST_REPO}" workflow disable "$wf" || :
 done	
 
 # Disable the workflows we never want to run in the private repo.
-echo "Disabling workflows in asterisk/${DST_REPO}"
+echo "Enabling security workflows asterisk/${DST_REPO}"
 for wf in "${SECURITY_FORK_ACTIONS[@]}" ; do
 	gh -R "asterisk/${DST_REPO}" workflow enable "$wf" || :
 done
