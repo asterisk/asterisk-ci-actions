@@ -18,7 +18,7 @@ ${DEBUG} && declare -p end_tag
 
 if ${end_tag[certified]} && [ "${end_tag[release_type]}" == "ga" ] && ! ${SECURITY} && ! ${HOTFIX} ; then
 	# Don't force cherry-pick for the first new cert because it should have RCs
-	if [ ${end_tag_array[patch]} -gt 1 ] ; then
+	if [ ${end_tag[patch]} -gt 1 ] ; then
 		NORC=true
 		FORCE_CHERRY_PICK=true
 	fi

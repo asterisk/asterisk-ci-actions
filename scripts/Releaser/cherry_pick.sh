@@ -47,7 +47,12 @@ cherry_picker() {
 	type=$2
 	# Get the details for the source commit.
 	cd=$(git --no-pager show -s --format="format:%h %ae %ai %s" ${hash})
-	echo "${type:+${type} }Cherry-picking ${cd}"
+	if [[ ! "${hash}" =~ ^${CHERRY_PICK_EXCLUDE:-ZZZZZ} ]] ; then
+		echo "${type:+${type} }Cherry-picking ${cd}"
+	else
+		echo "${type:+${type} }Skipping ${cd}"
+		return 0
+	fi
 
 	# Attempt the cherry-pick.  If successful, continue with the next one.
 	${ECHO_CMD} git cherry-pick ${hash} &>/dev/null && return 0
