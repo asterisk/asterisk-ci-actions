@@ -9,7 +9,7 @@ assert_env_variables --print PR_CHECKLIST_PATH || exit $EXIT_ERROR
 
 : ${PR_CHECKLIST_PATH:=/dev/stderr}
 
-cat <<EOF | print_checklist_item --prepend-newline=1 --append-newline=1 --preserve-newlines
+print_checklist_item --prepend-newline=1 --append-newline=1 --preserve-newlines --no-check-name <<-EOF
 Documentation:<br>
 * [Asterisk Developer Documentation](https://docs.asterisk.org/Development/)<br>
   * [Code Contribution](https://docs.asterisk.org/Development/Policies-and-Procedures/Code-Contribution/)<br>

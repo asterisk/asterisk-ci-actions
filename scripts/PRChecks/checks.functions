@@ -26,7 +26,9 @@ print_checklist_item() {
 	}
 	[[ "$*" =~ --preserve-newlines ]] && strip=""
 	eval cat ${strip} >>${PR_CHECKLIST_PATH}
-	echo -n " ($CHECK_NAME)" >>${PR_CHECKLIST_PATH}
+	
+	[[ "$*" =~ --no-check-name ]] || echo -n " ($CHECK_NAME)" >>${PR_CHECKLIST_PATH}
+	
 	[[ "$*" =~ --append-newline(=([0-9]+))? ]] && {
 		echo -ne ${newlines:0:$((${BASH_REMATCH[2]:-1} * 2))} >>${PR_CHECKLIST_PATH}
 	}

@@ -11,7 +11,7 @@ assert_env_variables --print PR_CHECKLIST_PATH || exit $EXIT_ERROR
 
 # The introduction is wrapped here for convenience but the
 # newlines are stripped out so the PR webpage can handle wrapping.
-cat <<EOF | print_checklist_item --append-newline=2
+print_checklist_item --append-newline=2 --no-check-name <<-EOF
 **Attention!** This pull request may contain issues that could 
 prevent it from being accepted.  Please review the checklist below 
 and take the recommended action.  If you believe any of these are 
