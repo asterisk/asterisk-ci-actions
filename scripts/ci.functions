@@ -74,11 +74,11 @@ runner() {
 }
 
 run_silent_unless_error() {
-	if [ -n "${VERBOSE}" ] ; then
+	if ${VERBOSE} ; then
 		"${@}"
 	else
 		_TMPFILE=$(mktemp -t rsue-XXXXXX.log)
-		"${@}" &>${_TMPFILE} || { RC=$? ; cat ${_TMPFILE} >&2 ; return $RC ; }
+		"${@}" &>"${_TMPFILE}" || { RC=$? ; cat "${_TMPFILE}" >&2 ; return $RC ; }
 	fi
 }
 

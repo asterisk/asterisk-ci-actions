@@ -61,7 +61,7 @@ declare -a apt_install_options=( "-y" "--no-install-recommends" "--no-upgrade"
 	"-o" "Acquire::https::Timeout=${APT_HTTP_TIMEOUT}") 
 
 run_apt_get() {
-	if [ -n "${VERBOSE}" ] ; then
+	if ${VERBOSE} ; then
 		# The stdin redirect from /dev/null is important because some packages
 		# (libpcap-dev for one) would prompt for input and apt needs /dev/stdin even if
 		# noninteractive is set.  timeout doesn't pass it however so we need to either
