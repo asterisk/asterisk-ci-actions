@@ -120,14 +120,14 @@ killall -qe -ABRT $ASTERISK
 runner rsync -vaH $DESTDIR/var/log/asterisk/. ${OUTPUT_DIR}
 
 coreglob="/tmp/core-asterisk*"
-corefiles=$(find $(dirname $coreglob) -name $(basename $coreglob))
+corefiles=$(sudo find "$(dirname "${coreglob}")" -name "$(basename "${coreglob}")")
 if [ -n "$corefiles" ] ; then
 	debug_out "*** Found one or more core files after running tests ***" \
 		"Search glob: ${coreglob}" \
 		"Matching corefiles: ${corefiles}"
 	TESTRC=1
 	sudo "${SCRIPT_DIR}/ast_coredumper.sh" --no-conf-file --outputdir=${OUTPUT_DIR} \
-		--tarball-coredumps --delete-coredumps-after $coreglob
+		--tarball-coredumps --delete-coredumps-after ${coreglob}
 	# If the return code was 2, none of the coredumps actually came from asterisk.
 	[ $? -eq 2 ] && TESTRC=0 || log_error_msgs "Coredumps found after running tests"
 fi
