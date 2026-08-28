@@ -259,14 +259,17 @@ $DRY_RUN && ECHO_CMD="echo"
 source "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/tag.functions"
 
 mdtohtml() {
+	file="${1}"
+	title="${2}"
+	context="${3:+--raw-field=context=${3}}"
 	cat <<-EOF
-	<html><head><title>$1</title></head><body>
+	<html><head><title>${title}</title></head><body>
+	
 	EOF
-	python3 -m markdown --extension=extra -o html -e utf-8 $2
+	gh api -X POST /markdown -f 'mode=gfm' "${context}" -F "text=@${file}"
 	cat <<-EOF
 	
 	</body></html>
 	EOF
-	return 0
 }
 

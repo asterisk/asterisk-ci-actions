@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-declare needs=( start_tag end_tag )
-declare wants=( src_repo gh_repo dst_dir hotfix security advisories adv_url_base )
+declare needs=( start_tag end_tag gh_repo )
+declare wants=( src_repo dst_dir hotfix security advisories adv_url_base )
 declare tests=( start_tag src_repo dst_dir )
 
 # Since creating the changelog doesn't make any
@@ -60,13 +60,24 @@ if ! ${start_tag_array[certified]} && [ "${start_tag_array[release_type]}" == "p
 	git -C "${SRC_REPO}" --no-pager log --oneline ${lastlastmajor}..$lastmajor \
 		> "${TMPDIR}/lastchanges.txt"
 #	Now only print the ones that aren't in that list.
-	while read PLUS SHA MSG ; do
+	while read -r PLUS SHA MSG ; do
 		[[ "$MSG" =~ ^((Add ChangeLog)|(Update for)) ]] && continue || :
 		grep -q "$MSG" "${TMPDIR}/lastchanges.txt" && continue || :
 		git -C "${SRC_REPO}" --no-pager log -1 \
-			--format='format:@#@#@#@%nSubject: %s%nAuthor: %an  %nDate:   %as  %n%n%b%n#@#@#@#%n' \
+			--format='format:%nSubject: %s%nAuthor: %an  %nDate:   %as  %n%n%b%n' \
 			-E --grep "^((Add ChangeLog)|(Update for))" --invert-grep $SHA \
-				>>"${RAW_COMMIT_FILE}"
+				> "${TMPDIR}/commit-${SHA}.txt"
+		
+		echo "@#@#@#@" >> "${RAW_COMMIT_FILE}"
+		cat "${TMPDIR}/commit-${SHA}.txt" >> "${RAW_COMMIT_FILE}"
+		lastline=$(tail -1 "${TMPDIR}/commit-${SHA}.txt")
+		if [ -z "${lastline}" ] ; then
+			debug "LLE: ${SHA}"
+			echo "" >> "${RAW_COMMIT_FILE}"
+		fi
+		echo "#@#@#@#" >> "${RAW_COMMIT_FILE}"
+		
+		
 	done < "${TMPDIR}/majorchanges1.txt"
 fi
 
@@ -90,19 +101,37 @@ fi
 debug "Sending short email announcement: ${SHORT_EMAIL_ANNOUNCEMENT}"
 
 debug "Getting commit list for ${START_TAG}..HEAD"
-git -C "${SRC_REPO}" --no-pager log \
-	--format='format:@#@#@#@%nSubject: %s%nAuthor: %an  %nDate:   %as  %n%n%b%n#@#@#@#' \
-	-E --grep "^(([.]github)|([.]lastclean)|(Add\s+ChangeLog)|(Update[s]?\s+for)|(Update\s+CHANGES))" --invert-grep ${START_TAG}..HEAD >>"${RAW_COMMIT_FILE}"
 
-if [ ! -s "${RAW_COMMIT_FILE}" ] ; then
+mapfile -t SHAS < <(git -C "${SRC_REPO}" --no-pager log \
+	--format='format:%H' \
+	-E --grep "^(([.]github)|([.]lastclean)|(Add\s+ChangeLog)|(Update[s]?\s+for)|(Update\s+CHANGES))" \
+	--invert-grep ${START_TAG}..HEAD)
+
+if [ "${#SHAS[@]}" -eq 0 ] ; then
 	bail "There are no commits in the range ${START_TAG}..HEAD.
 	Do you need to cherry pick?"
 fi
 
+for SHA in "${SHAS[@]}" ; do
+	git -C "${SRC_REPO}" --no-pager log \
+	 	--format='format:Subject: %s%nAuthor: %an  %nDate:   %as  %n%n%b%n' \
+ 		-E --grep "^(([.]github)|([.]lastclean)|(Add\s+ChangeLog)|(Update[s]?\s+for)|(Update\s+CHANGES))" \
+ 		--invert-grep -1 "${SHA}" > "${TMPDIR}/commit-${SHA}.txt"
+
+	# Get rid of any automated "cherry-picked" or "Change-Id" lines.
+	sed -i -r -e '/^(\(cherry.+|Change-Id.+)/d' "${TMPDIR}/commit-${SHA}.txt"
+ 		
+	echo "@#@#@#@" >> "${RAW_COMMIT_FILE}"
+	cat "${TMPDIR}/commit-${SHA}.txt" >> "${RAW_COMMIT_FILE}"
+	lastline=$(tail -1 "${TMPDIR}/commit-${SHA}.txt")
+	if [ -n "${lastline}" ] ; then
+		echo "" >> "${RAW_COMMIT_FILE}"
+	fi
+	echo "#@#@#@#" >> "${RAW_COMMIT_FILE}"
+done
+
 echo "" >>"${RAW_COMMIT_FILE}"
 
-# Get rid of any automated "cherry-picked" or "Change-Id" lines.
-sed -i -r -e '/^(\(cherry.+|Change-Id.+)/d' "${RAW_COMMIT_FILE}"
 
 # Look for any reverts.
 # For every revert commit we found, delete both it and the
@@ -184,25 +213,22 @@ authorcount=$(cat "${AUTHORS_SUMMARY_FILE}" | wc -l)
 printf -- "- Commit Authors: %d\n" $authorcount >> "${SUMMARY_FILE}"
 
 debug "Getting GitHub issue list"
-issuelist=( $(sed -n -r -e "s/^\s*(Fixes|Resolves|Closes):\s*#([0-9]+).*/\2/gp" "${RAW_COMMIT_FILE}" | sort -n | tr '[:space:]' ' ') )
-issuecount=${#issuelist[*]}
+mapfile -t issuelist < <( sed -n -r -e "s/^\s*(Fixes|Resolves|Closes):\s*#([0-9]+).*/\2/gp" "${RAW_COMMIT_FILE}" | sort -n )
+issuecount=${#issuelist[@]}
+debug "Found ${issuecount} issues"
+debug "${issuelist[@]}"
 
-# For historical reasons, let's also look for "ASTERISK-" issues
-debug "Getting ASTERISK issues list"
-astlist=( $(sed -n -r -e 's/^(ASTERISK-[0-9]+)\s*(#.*)?$/\1/gp' "${RAW_COMMIT_FILE}" | sort -n | tr '[:space:]' ' ') )
-astissuecount=${#astlist[*]}
-
-printf -- "- Issues Resolved: %d\n" $(( $issuecount + $astissuecount )) >> "${SUMMARY_FILE}"
+printf -- "- Issues Resolved: %d\n" "$issuecount" >> "${SUMMARY_FILE}"
 
 debug "Getting GitHub security advisory list"
-ghsalist=( $(sed -n -r -e "s/^\s*(Fixes|Resolves|Closes):\s*(#)?((GHSA|ghsa)-[0-9a-z-]+).*/\3/gp" "${RAW_COMMIT_FILE}" | sort -n | tr '[:space:]' ' ') )
-ghsacount=${#ghsalist[*]}
+mapfile -t ghsalist< <(sed -n -r -e "s/^\s*(Fixes|Resolves|Closes):\s*((#)?(GHSA|ghsa)-[0-9a-z-]+).*/\2/gp" "${RAW_COMMIT_FILE}" | sort -n | tr '[:space:]' ' ' )
+ghsacount=${#ghsalist[@]}
 printf -- "- Security Advisories Resolved: %d\n" $ghsacount >> "${SUMMARY_FILE}"
 
 cp "${SUMMARY_FILE}" "${SHORT_SUMMARY_FILE}"
 
 if [ $ghsacount -gt 0 ] ; then
-	for issue in ${ghsalist[*]} ; do
+	for issue in "${ghsalist[@]}" ; do
 		gh api /repos/${GH_REPO}/security-advisories/$issue \
 			--jq '. | "  - [" + .ghsa_id + "](" + .html_url + "): " + .summary' \
 			>> "${SUMMARY_FILE}"
@@ -223,7 +249,9 @@ cat <<-EOF >>"${SUMMARY_FILE}"
 EOF
 
 awk 'BEGIN{RS="@#@#@#@"; ORS="#@#@#@#"} /UserNote/' "${RAW_COMMIT_FILE}" |\
-	sed -n -r -e 's/Subject: (.*)/- #### \1/p' -e '/^UserNote:/,/^(UserNote|UpgradeNote|DeveloperNote|#@#@#@#)/!d ; s/UserNote:\s+//g ; s/#@#@#@#|UpgradeNote.*|UserNote.*|DeveloperNote.*//p ; s/^(.)/  \1/p' \
+	sed -n -r -e 's/Subject: (.*)/- #### \1/p' \
+		-e '/^UserNote:/,/^(UserNote|UpgradeNote|DeveloperNote|#@#@#@#)/!d ; s/UserNote:\s+//g ; s/#@#@#@#|UpgradeNote.*|UserNote.*|DeveloperNote.*//p ; s/^(.)/  \1/p' \
+		-e '/^(Resolves|Fixes|Closes):\s*#[0-9]+$/d' \
 		>>"${SUMMARY_FILE}"
 
 debug "Creating upgrade notes"
@@ -273,14 +301,14 @@ rm "${DST_DIR}/issues_to_close.txt" &>/dev/null || :
 
 debug "Getting ${ghsacount} security advisory titles from GitHub"
 if [ ${ghsacount} -gt 0 ] ; then
-	for issue in ${ghsalist[*]} ; do
+	for issue in "${ghsalist[@]}" ; do
 		gh api /repos/${GH_REPO}/security-advisories/$issue \
 			--jq '. | "  - !" + .ghsa_id + ": " + .summary' \
 			>> "${DST_DIR}/issues_to_close.txt"
 	done
 fi
 
-debug "Getting ${#issuelist[*]} issue titles from GitHub"
+debug "Getting ${#issuelist[@]} issue titles from GitHub"
 if [ ${issuecount} -gt 0 ] ; then
 	# If the issue list is large, we can get rate limit issues
 	# so we're going to get the titles with a single graphql
@@ -288,28 +316,14 @@ if [ ${issuecount} -gt 0 ] ; then
 
 	query="query={ repository(name: \"${GH_REPO%%/*}\", owner: \"${GH_REPO##*/}\") { "
 
-	for n in ${issuelist[@]} ; do
+	for n in "${issuelist[@]}" ; do
 		query+="issue${n}: issue(number: ${n}) { number title } "
 	done
 	query+="}}"
 
 	gh api graphql --paginate -F "$query" \
-		--jq '[ .data.repository[] ] | sort_by(.number) | .[] | "  - " + ( .number | tostring) + ": " + .title' \
+		--jq '[ .data.repository[] ] | sort_by(.number) | .[] | "  - #" + ( .number | tostring) + ": " + .title' \
 		>> "${DST_DIR}/issues_to_close.txt"
-fi
-
-debug "Getting ${#astlist[*]} ASTERISK issue titles from issues-archive"
-if [ ${astissuecount} -gt 0 ] ; then
-	for issue in ${astlist[*]} ; do
-		[[ $issue =~ ASTERISK-([0-9][0-9])[0-9]+ ]] && dir=${BASH_REMATCH[1]}
-		[ -z "$dir" ] && continue
-		ix=${TMPDIR}/index-${dir}.html
-		[ ! -f ${ix} ] && curl -s https://issues-archive.asterisk.org/${dir}/index.html > ${ix}
-		sed -n -r -e "s/.*${issue}<.a>:\s*([^<]+)<.td>.*/  - ${issue}: \1/gp" ${ix} \
-		| python3 -c 'import html, sys; [print(html.unescape(l), end="") for l in sys.stdin]' \
-		>> "${DST_DIR}/asterisk_issues.txt"
-	done
-	sort -u "${DST_DIR}/asterisk_issues.txt" >>"${DST_DIR}/issues_to_close.txt"
 fi
 
 if [ -f "${DST_DIR}/issues_to_close.txt" ] && [ $(cat "${DST_DIR}/issues_to_close.txt" | wc -l ) -gt 0 ] ; then
@@ -326,15 +340,15 @@ cat <<-EOF >>"${FULL_CHANGELOG_FILE}"
 EOF
 
 debug "Getting commits by author"
-while read LINE ; do
+while read -r LINE ; do
 	[[ "${LINE}" =~ -[[:space:]]+([^:]+):[[:space:]]+\(([0-9]+)\) ]] || continue
 	author=${BASH_REMATCH[1]}
 	count=${BASH_REMATCH[2]}
-	echo -e "\n- #### ${author} (${count}):" >>"${FULL_CHANGELOG_FILE}"
+	echo -e "\n- **${author}** (${count}):" >>"${FULL_CHANGELOG_FILE}"
 	sed -n -r -e "/@#@#@#@/{;:a;N;/#@#@#@#/!ba;/${author}/p}" \
 		"${RAW_COMMIT_FILE}" |\
 		sed -n -r -e "s/Subject:\s+(.+)/  - \1/gp" >>"${FULL_CHANGELOG_FILE}"
-done < <(cat "${AUTHORS_SUMMARY_FILE}")
+done < "${AUTHORS_SUMMARY_FILE}"
 
 debug "Adding commit list"
 cat <<-EOF >>"${FULL_CHANGELOG_FILE}"
@@ -353,7 +367,7 @@ EOF
 debug "Adding commit details"
 # Clean up the tags we added to make parsing easier.
 sed -r -e "s/^(.)/  \1/g" \
-	-e '/@#@#@#@/,/Subject:/p ; s/^  Subject:\s+([^ ].+)/#### \1/g;s/\s+$//g' \
+	-e '/@#@#@#@/,/Subject:/p ; s/^  Subject:\s+([^ ].+)/__\1__/g;s/\s+$//g' \
 	"${RAW_COMMIT_FILE}" |\
 	 sed -r -e '/\(cherry picked|Change-Id|#@#@#@#|@#@#@#@|Subject:/d' >> "${FULL_CHANGELOG_FILE}"
 
@@ -431,9 +445,11 @@ debug "Convert markdown to html"
 sed -i -r -e "/<!--\s+CHANGELOGS/,/<!--\s+END-CHANGELOGS/s@\]\([^)]+\)@](ChangeLog-${END_TAG}.html)@g" "${DST_DIR}/README-${END_TAG}.md"
 
 debug "Converting ChangeLog markdown to html"
-mdtohtml "ChangeLog for ${PRODUCT}-${END_TAG}" "${FULL_CHANGELOG_FILE}" >"${DST_DIR}/ChangeLog-${END_TAG}.html"
+mdtohtml "${FULL_CHANGELOG_FILE}" "ChangeLog for ${PRODUCT}-${END_TAG}" "${GH_REPO}" >"${DST_DIR}/ChangeLog-${END_TAG}.html"
 debug "Converting README markdown to html"
-mdtohtml "Readme for ${PRODUCT}-${END_TAG}" "${DST_DIR}/README-${END_TAG}.md" >"${DST_DIR}/README-${END_TAG}.html"
+mdtohtml "${DST_DIR}/README-${END_TAG}.md" "Readme for ${PRODUCT}-${END_TAG}" "${GH_REPO}" > "${DST_DIR}/README-${END_TAG}.html"
+debug "Converting email announcement markdown to html"
+mdtohtml "${DST_DIR}/email_announcement.md" "Readme for ${PRODUCT}-${END_TAG}" "${GH_REPO}" > "${DST_DIR}/email_announcement.html"
 
 
 debug "Done"
