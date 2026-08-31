@@ -33,6 +33,11 @@ on:
         description: 'Gate Commands'
         type: string
         required: true
+      timeout_minutes:
+        description: 'Job timeout'
+        type: number
+        required: false
+        default: 60
       realtime:
         type: boolean
         required: false
@@ -65,6 +70,7 @@ env:
 jobs:
   RunGateTests:
     name: ${{ inputs.base_branch }}-${{ inputs.gatetest_group }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
     runs-on: ubuntu-latest
     defaults:
       run:

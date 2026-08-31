@@ -137,6 +137,7 @@ jobs:
       testsuite_test_pr: ${{ inputs.testsuite_test_pr }}
       gatetest_group:    ${{ matrix.group }}
       gatetest_commands: ${{ inputs.gatetest_commands }}
+      timeout_minutes:   60
       build_cache_dir:   ${{ inputs.build_cache_dir }}
       build_cache_key:   ${{ github.workflow }}-${{ github.run_number }}-${{ inputs.pr_number }}
       realtime:          ${{ inputs.realtime }}
