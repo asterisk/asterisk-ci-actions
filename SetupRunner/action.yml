@@ -14,7 +14,7 @@ inputs:
   apt_timeout:
     required: false
     type: number
-    default: 300
+    default: 900
   install_sipp:
     required: false
     type: boolean

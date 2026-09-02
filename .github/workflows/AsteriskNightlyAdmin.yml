@@ -79,4 +79,5 @@ jobs:
         uses: asterisk/asterisk-ci-actions/SetupRunner@main
         with:
           apt_packages: ${{ vars.ASTERISK_RUNNER_APT_PACKAGES }}
+          apt_timeout: ${{ vars.ASTERISK_RUNNER_APT_TIMEOUT }}
           install_sipp: false
