@@ -254,6 +254,7 @@ if $MENUSELECT ; then
 	debug_out "Setting module enables/disables"
 	mod_disables="codec_ilbc codec_silk codec_siren7 codec_siren14 codec_g729a res_digium_phone"
 	grep -q res_pjsip_config_sangoma res/res.xml && mod_disables+=" res_pjsip_config_sangoma"
+	[ -f channels/chan_sip.c ] &&  mod_disables+=" chan_sip"
 
 	if $TESTED_ONLY ; then
 		# These modules are not tested at all.  They are loaded but nothing is ever done
