@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-declare needs=( start_tag end_tag )
+declare needs=( start_tag end_tag gh_repo )
 declare wants=( product src_repo dst_dir security norc hotfix alembic )
 declare tests=( start_tag src_repo dst_dir )
 
@@ -38,7 +38,7 @@ ln -sf ChangeLogs/ChangeLog-${END_TAG}.md CHANGES.md
 ln -sf ChangeLogs/ChangeLog-${END_TAG}.html CHANGES.html
 
 sed -i -r -e "/<!--\s+CHANGELOGS/,/<!--\s+END-CHANGELOGS/s@\]\([^)]+\)@](ChangeLogs/ChangeLog-${END_TAG}.html)@g" "README.md"
-mdtohtml "Readme for ${PRODUCT}-${END_TAG}" "README.md" > "README.html"
+mdtohtml "README.md" "Readme for ${PRODUCT}-${END_TAG}" "${GH_REPO}" > "README.html"
 
 git add ChangeLogs/ChangeLog-${END_TAG}.{md,html} CHANGES.{md,html} README.{md,html}
 

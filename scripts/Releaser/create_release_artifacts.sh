@@ -90,7 +90,7 @@ if ${COMMIT} ; then
 	${ALEMBIC} || ${CHANGELOG} || bail "There were no changes so so there's nothing to commit"
 	debug "Committing changes for ${END_TAG}"
 	$ECHO_CMD $progdir/commit_changes.sh --start-tag=${START_TAG} \
-		--end-tag=${END_TAG} --src-repo="${SRC_REPO}" --dst-dir="${DST_DIR}" \
+		--end-tag=${END_TAG} --src-repo="${SRC_REPO}"  --gh-repo="${GH_REPO}" --dst-dir="${DST_DIR}" \
 		$(booloption security) $(booloption hotfix) $(booloption norc) \
 		--product=${PRODUCT} $(booloption alembic) $(booloption debug)
 fi
