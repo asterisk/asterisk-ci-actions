@@ -90,6 +90,12 @@ doit() {
 	done
 	
 	case "${2}" in
+		major)
+			if ! ${next[certified]} ; then
+				next[patch]=0
+				next[minor]=0
+			fi
+			;;
 		minor)
 			if ! ${next[certified]} ; then
 				next[patch]=0

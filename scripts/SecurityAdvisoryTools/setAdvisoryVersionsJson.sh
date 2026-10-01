@@ -78,7 +78,7 @@ fi
 
 for a in "${advisories[@]}" ; do
 	echo gh api -X PATCH /repos/${REPO}/security-advisories/${a} --input "${JSON}"
-	${DRY_RUN} || echo gh api -X PATCH /repos/${REPO}/security-advisories/${a} --input "${JSON}"
+	${DRY_RUN} || gh api -X PATCH /repos/${REPO}/security-advisories/${a} --input "${JSON}"
 done
 
 
