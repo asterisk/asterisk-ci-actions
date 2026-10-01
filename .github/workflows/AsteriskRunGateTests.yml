@@ -82,6 +82,8 @@ jobs:
         with:
           apt_packages: ${{ vars.ASTERISK_RUNNER_APT_PACKAGES }} 
           apt_timeout: ${{ vars.ASTERISK_RUNNER_APT_TIMEOUT }}
+          apt_retries: ${{ vars.ASTERISK_RUNNER_APT_RETRIES }}
+          apt_http_timeout: ${{ vars.ASTERISK_RUNNER_APT_HTTP_TIMEOUT }}
           install_sipp: true
           sipp_version: ${{ inputs.sipp_version || vars.SIPP_VERSION }}
 
