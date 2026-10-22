@@ -50,15 +50,34 @@ printvars FOR_RELEASE INSTALL_PACKAGES INSTALL_SIPP \
 debug_out "/etc/os-release: "
 cat /etc/os-release
 
-declare -a apt_update_options=( "-y"
-	"-o" "Acquire::Retries=${APT_RETRIES}"
-	"-o" "Acquire::http::Timeout=${APT_HTTP_TIMEOUT}"
-	"-o" "Acquire::https::Timeout=${APT_HTTP_TIMEOUT}") 
+#declare -a apt_update_options=( "-y"
+#	"-o" "Acquire::Retries=${APT_RETRIES}"
+#	"-o" "Acquire::http::Timeout=${APT_HTTP_TIMEOUT}"
+#	"-o" "Acquire::https::Timeout=${APT_HTTP_TIMEOUT}") 
+#
+#declare -a apt_install_options=( "-y" "--no-install-recommends" "--no-upgrade"
+#	"-o" "Acquire::Retries=${APT_RETRIES}"
+#	"-o" "Acquire::http::Timeout=${APT_HTTP_TIMEOUT}"
+#	"-o" "Acquire::https::Timeout=${APT_HTTP_TIMEOUT}") 
 
-declare -a apt_install_options=( "-y" "--no-install-recommends" "--no-upgrade"
-	"-o" "Acquire::Retries=${APT_RETRIES}"
-	"-o" "Acquire::http::Timeout=${APT_HTTP_TIMEOUT}"
-	"-o" "Acquire::https::Timeout=${APT_HTTP_TIMEOUT}") 
+
+#
+# Because of the frequent hangs, use the main ubuntu mirror instead of the azure based one.
+#
+update_source_files() {
+	for f in "$@" ; do
+		[ -f "${f}" ] || continue
+		sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' "${f}"
+	done
+}
+
+update_source_files /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/*
+
+cat > /etc/apt/apt.conf.d/99-ci-timeouts <<EOF
+Acquire::http::Timeout "${APT_HTTP_TIMEOUT}";
+Acquire::https::Timeout "${APT_HTTP_TIMEOUT}";
+Acquire::Retries "${APT_RETRIES}";
+EOF
 
 run_apt_get() {
 	if ${VERBOSE} ; then
