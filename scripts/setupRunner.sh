@@ -67,10 +67,12 @@ cat /etc/os-release
 update_source_files() {
 	for f in "$@" ; do
 		[ -f "${f}" ] || continue
-		sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' "${f}"
+		grep -q "azure.archive.ubuntu.com" "${f}" || continue
+		debug_out "   Updating $f to use archive.ubuntu.com"
+		sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' "${f}" 
 	done
 }
-
+debug_out "Fixing apt mirrors"
 update_source_files /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/*
 
 cat > /etc/apt/apt.conf.d/99-ci-timeouts <<EOF
