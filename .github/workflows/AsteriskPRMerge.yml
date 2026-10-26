@@ -131,6 +131,9 @@ jobs:
             ${PR_NUMBER} || :
 
   MergeAndCherryPick:
+    concurrency:
+      group: ${{ github.repository }}-MergeAndCherryPick
+      queue: max
     needs: [ Setup, PreMergeTestResults ]
     if: success() && !inputs.dry_run
     runs-on: ubuntu-latest

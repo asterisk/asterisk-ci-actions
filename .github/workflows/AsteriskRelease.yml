@@ -115,6 +115,10 @@ env:
   DEPLOY_DIR:        ${{vars.DEPLOY_DIR}}
   FPBX_ISSUE_REPO:   ${{vars.FPBX_ISSUE_REPO}}
 
+concurrency:
+  group: Releaser
+  queue: max
+
 jobs:
   Release:
     name: Release
