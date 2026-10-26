@@ -19,7 +19,7 @@ if [ -z "${CHERRY_PICK_VALID_BRANCHES}" ] ; then
 	elif [ -n "${cpvar}" ] ; then
 		CHERRY_PICK_VALID_BRANCHES="${cpvar}"
 	else
-		CHERRY_PICK_VALID_BRANCHES='["23","22","20","certified/20.7"]'
+		CHERRY_PICK_VALID_BRANCHES='["24",23","22","20","certified/20.7"]'
 	fi
 fi
 
@@ -33,7 +33,7 @@ fi
 
 debug_out "    Parsing comments for cherry-pick-to: headers."
 mapfile -t CPBRANCHES < <(jq -r '[ .[].body
-            | match("(^|\r?\n)cherry-pick-to:[[:blank:]]*(([0-9.]+)|(certified/[0-9.]+)|(master|none))"; "g")
+            | match("(^|\r?\n)cherry-pick-to:[[:blank:]]*(([0-9.]+)|(certified/[0-9.]+)|(master|none))$"; "g")
             | .captures[1].string ] | sort | unique[]' ${PR_COMMENTS_PATH})
 
 cpbranches=$(array_join CPBRANCHES)
@@ -43,11 +43,13 @@ if [ ${#CPBRANCHES[@]} -eq 0 ] ; then
 	debug_out "No 'cherry-pick-to' headers found.  Adding checklist item."
 	
 	cat <<-EOF | print_checklist_item --append-newline
-	- [ ] The are no \`cherry-pick-to\` headers in any comment in this PR. 
+	- [ ] The are no \`cherry-pick-to\` headers in any comment in this PR 
+	or they're malformed.<br>
 	If the PR applies to more than just the branch it was submitted against, 
-	please add a comment with one or more \`cherry-pick-to: <branch>\` headers or a 
-	comment with \`cherry-pick-to: none\` to indicate that this PR shouldn't 
-	be cherry-picked to any other branch. See the 
+	please add a comment with one or more \`cherry-pick-to: <branch>\` headers 
+	(with each branch on a seprate line) or a comment with \`cherry-pick-to: none\` 
+	to indicate that this PR shouldn't be cherry-picked to any other branch.<br>
+	See the 
 	[Code Contribution](https://docs.asterisk.org/Development/Policies-and-Procedures/Code-Contribution/) 
 	documentation for more information.
 	EOF

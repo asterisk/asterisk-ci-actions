@@ -12,7 +12,7 @@ source ${SCRIPT_DIR}/ci.functions
 source ${CHECKS_DIR}/checks.functions
 
 assert_env_variables REPO PR_NUMBER || exit 1
-printvars REPO PR_NUMBER DRY_RUN DOWNLOAD_ONLY DONT_DOWNLOAD QUIET_CHECKS FORCE_CLOSE
+printvars REPO PR_NUMBER DRY_RUN DOWNLOAD_ONLY DONT_DOWNLOAD QUIET_CHECKS FORCE_CLOSE ONLY_CHECKS
 printvars CHERRY_PICK_VALID_BRANCHES CHERRY_PICK_MISSING_BRANCHES
 
 pr_path=/tmp/pr-${PR_NUMBER}.json
@@ -137,7 +137,14 @@ debug_out "Running PR checks with arguments: ${SCRIPT_ARGS}"
 checklist_added=false
 skip_checklists=false
 
-for s in $(find ${CHECKS_DIR} -name '[0-9]*.sh' | sort) ; do
+if [ -n "${ONLY_CHECKS}" ] ; then
+	string_split "${ONLY_CHECKS}" CTR
+	CHECKS_TO_RUN=( "${CTR[@]/#/${CHECKS_DIR}/}" )
+else
+	mapfile -t CHECKS_TO_RUN < <(find "${CHECKS_DIR}" -name '[0-9]*.sh' | sort)
+fi 
+
+for s in "${CHECKS_TO_RUN[@]}" ; do
 	check_name=$(basename -s .sh $s)
 	exception_skip=false
 	for exception in "${checklist_exceptions[@]}" ; do
