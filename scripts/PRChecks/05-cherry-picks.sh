@@ -32,9 +32,9 @@ if [ "${base_branch}" != "master" ] ; then
 fi
 
 debug_out "    Parsing comments for cherry-pick-to: headers."
-mapfile -t CPBRANCHES < <(jq -r '[ .[].body
-            | match("(^|\r?\n)cherry-pick-to:[[:blank:]]*(([0-9.]+)|(certified/[0-9.]+)|(master|none))$"; "g")
-            | .captures[1].string ] | sort | unique[]' ${PR_COMMENTS_PATH})
+mapfile -t CPBRANCHES < <(jq -r 'map(.body | gsub("\r"; ""; "g") 
+ 		| match("cherry-pick-to:[[:blank:]]*((?:[0-9.]+)|(?:certified/[0-9]+[.][0-9]+)|(?:master|none))(?:\n|$)"; "g")
+ 		| .captures[].string ) | sort | unique[]' ${PR_COMMENTS_PATH})
 
 cpbranches=$(array_join CPBRANCHES)
 checklist_added=false
