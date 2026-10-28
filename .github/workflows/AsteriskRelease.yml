@@ -59,7 +59,7 @@ on:
         type: boolean
         default: false
       send_email:
-        description: 'Send announcement emails?'
+        description: 'Send announcement emails? (WordPress news publishes only for GA releases.)'
         required: true
         type: boolean
         default: false
@@ -71,6 +71,10 @@ on:
       asteriskteam_email_username:
         required: true
       asteriskteam_email_secret:
+        required: true
+      ASTERISK_WORDPRESS_AUTH_PASSWORD:
+        required: true
+      ASTERISK_WORDPRESS_AUTH_USER:
         required: true
       deploy_ssh_priv_key:
         required: true
@@ -169,6 +173,34 @@ jobs:
           reply_to: no-reply+asteriskteam@sangoma.com
           ignore_cert: true
           convert_markdown: false
+
+      - name: Setup Node for WordPress
+        if: inputs.send_email && steps.releaser.outputs.release_type == 'ga'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Publish Asterisk News
+        if: inputs.send_email && steps.releaser.outputs.release_type == 'ga'
+        shell: bash
+        run: |
+          npm install --prefix "${RUNNER_TEMP}/wp-post" --no-save --package-lock=false --ignore-scripts wp-post@1.2.0
+
+          WP_SOURCE_FILE="${GITHUB_WORKSPACE}/${{ steps.releaser.outputs.email_announcement }}"
+          WP_POST_FILE="${RUNNER_TEMP}/wp-email-announcement-${NEW_VERSION}.md"
+          {
+            printf -- '---\ntitle: %s %s Released\nstatus: publish\n---\n' "${PRODUCT^}" "${NEW_VERSION}"
+            cat "${WP_SOURCE_FILE}"
+          } > "${WP_POST_FILE}"
+
+          NODE_PATH="${RUNNER_TEMP}/wp-post/node_modules" node "${SCRIPT_DIR}/Releaser/post_news.js" \
+            --file "${WP_POST_FILE}" \
+            --api-url "${{ vars.ASTERISK_WORDPRESS_API_URL }}" \
+            --user "${{ secrets.ASTERISK_WORDPRESS_AUTH_USER }}" \
+            --password "${{ secrets.ASTERISK_WORDPRESS_AUTH_PASSWORD }}" \
+            --post-endpoint "asterisk-news"
+
+          rm -f "${WP_POST_FILE}"
 
       - name: Open FPBX Issue
         if: inputs.send_email && steps.releaser.outputs.release_type == 'ga'

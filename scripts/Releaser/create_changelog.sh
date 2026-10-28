@@ -451,5 +451,4 @@ mdtohtml "${DST_DIR}/README-${END_TAG}.md" "Readme for ${PRODUCT}-${END_TAG}" "$
 debug "Converting email announcement markdown to html"
 mdtohtml "${DST_DIR}/email_announcement.md" "Readme for ${PRODUCT}-${END_TAG}" "${GH_REPO}" > "${DST_DIR}/email_announcement.html"
 
-
 debug "Done"
