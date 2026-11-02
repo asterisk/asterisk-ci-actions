@@ -33,6 +33,7 @@ if $DEBIAN ; then
 	}
 	export PGDATA=$(sed -n -r -e "s/^\s*data_directory\s*=\s*[']?([^'#]+)[']?.*/\1/gp" ${PGSQLCONF})
 	cluster=$(sed -n -r -e "s/^\s*cluster_name\s*=\s*[']?([^'#]+)[']?.*/\1/gp" ${PGSQLCONF})
+	export CLUSTER=${cluster/\//-}
 	export PG_VERSION=${cluster%%/*}
 	export PGHBA=${PGSQLCONF/postgresql.conf/pg_hba.conf}
 	export STATS_TMP_DIR=$(sed -n -r -e "s/^\s*stats_temp_directory\s*=\s*[']?([^'#]+)[']?.*/\1/gp" ${PGSQLCONF})
@@ -58,19 +59,28 @@ _pg_ctl() {
 			mkdir -p "${STATS_TMP_DIR}"
 			chown postgres:postgres "${STATS_TMP_DIR}"
 		}
+		systemctl start postgresql@${CLUSTER} || return 1
+		return 0
+	}
+	[ "$1" == "stop" ] && {
+		systemctl stop postgresql@${CLUSTER}
+		return 0
 	}
 	if [ -n "$opts" ] ; then
-		OPTS="-o '$opts'"
+		OPTS="'$opts'"
 	fi
 	
 	echo "Running pg_ctl $1 ${OPTS}"
 	if $DEBIAN ; then
 		[ -d /var/run/postgresql ] && chown -R postgres:postgres /var/run/postgresql
-		eval sudo -E -u postgres /usr/lib/postgresql/${PG_VERSION}/bin/pg_ctl \
-			$1 ${OPTS} || return 1
+		sudo -u postgres \
+			env PGDATA="${PGDATA}" PG_VERSION="${PG_VERSION}" PGHBA="${PGHBA}" \
+			/usr/lib/postgresql/${PG_VERSION}/bin/pg_ctl \
+			$1 || return 1
 	else
-		eval sudo -E -u postgres pg_ctl \
-			$1 ${OPTS} || return 1
+		sudo -u postgres \
+			env PGDATA="${PGDATA}" PG_VERSION="${PG_VERSION}" PGHBA="${PGHBA}" \
+			pg_ctl $1 ${OPTS} || return 1
 	fi
 	return 0
 }

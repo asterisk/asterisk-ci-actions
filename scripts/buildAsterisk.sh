@@ -218,7 +218,7 @@ if $MENUSELECT ; then
 		runner menuselect/menuselect --enable ADD_CFLAGS_TO_BUILDOPTS_H menuselect.makeopts
 
 	cat_enables=""
-	cat_disables=""
+	cat_disables="MENUSELECT_UTILS"
 	debug_out "Setting category enables/disables"
 
 	if [[ ! "${BRANCH_NAME}" =~ ^certified ]] ; then
