@@ -129,49 +129,52 @@ gh api --method PUT \
 	"/repos/asterisk/${DST_REPO}/actions/permissions" \
 	-F "enabled=true" -f "allowed_actions=all"
 
-if ! ${SKIP_MASTER_BRANCH_RENAME} ; then
-	# A "GitHub Hack" to enable workflows on the repo.
-	echo "Renaming master branch to main and back again to trigger workflow"
-	gh api --method POST -H "Accept: application/vnd.github+json" \
+
+workflow_dance() {
+	if ! ${SKIP_MASTER_BRANCH_RENAME} ; then
+		# A "GitHub Hack" to enable workflows on the repo.
+		echo "Renaming master branch to main and back again to trigger workflow"
+		gh api --method POST -H "Accept: application/vnd.github+json" \
+			-H "X-GitHub-Api-Version: 2022-11-28" \
+			"/repos/asterisk/${DST_REPO}/branches/master/rename" -f "new_name=main" || :
+		sleep 2
+		echo "Renaming main branch back to master again to trigger workflow"
+		gh api --method POST -H "Accept: application/vnd.github+json" \
+			-H "X-GitHub-Api-Version: 2022-11-28" \
+			"/repos/asterisk/${DST_REPO}/branches/main/rename" -f "new_name=master" || :
+	fi
+	
+	# Now that workflows have been enabled, we need yet
+	# another "GitHub Hack" to get the workflow files
+	# recognized.
+	high_branch=$(gh api --paginate \
+		-H "Accept: application/vnd.github+json" \
 		-H "X-GitHub-Api-Version: 2022-11-28" \
-		"/repos/asterisk/${DST_REPO}/branches/master/rename" -f "new_name=main" || :
+		"/repos/asterisk/${DST_REPO}/branches?per_page=100" \
+		--jq '.[] | .name' | grep -E "^[0-9.]+$" | sort -r -V | head -1)
+	
+	gh repo edit "asterisk/${DST_REPO}" --default-branch="${high_branch}"
+	sleep 1
+	gh repo edit "asterisk/${DST_REPO}" --default-branch=master
 	sleep 2
-	echo "Renaming main branch back to master again to trigger workflow"
-	gh api --method POST -H "Accept: application/vnd.github+json" \
-		-H "X-GitHub-Api-Version: 2022-11-28" \
-		"/repos/asterisk/${DST_REPO}/branches/main/rename" -f "new_name=master" || :
-fi
 
-# Now that workflows have been enabled, we need yet
-# another "GitHub Hack" to get the workflow files
-# recognized.
-high_branch=$(gh api --paginate \
-	-H "Accept: application/vnd.github+json" \
-	-H "X-GitHub-Api-Version: 2022-11-28" \
-	"/repos/asterisk/${DST_REPO}/branches?per_page=100" \
-	--jq '.[] | .name' | grep -E "^[0-9.]+$" | sort -r -V | head -1)
-
-gh repo edit "asterisk/${DST_REPO}" --default-branch="${high_branch}"
-sleep 1
-gh repo edit "asterisk/${DST_REPO}" --default-branch=master
-sleep 2
-
-declare -i wfcount=0
-wfcount=$(gh api "/repos/asterisk/${DST_REPO}/actions/workflows" --jq '.total_count')
-if [ $wfcount -eq 0 ] ; then
-	echo "Waiting for workflows to become available"
-	declare -i start_sec=0
-	declare -i elapsed=0
-	start_sec=$SECONDS
-	while true ; do
-		sleep 1m
-		wfcount=$(gh api "/repos/asterisk/${DST_REPO}/actions/workflows" --jq '.total_count')
-		[ $wfcount -gt 0 ] && break
-		elapsed=$(( (SECONDS - start_sec) / 60 ))
-		echo "No workflows after ${elapsed} minutes.  Sleeping for 1 minute"
-	done
-	echo "$wfcount workflows available after ${elapsed} minutes"
-fi
+	declare -i wfcount=0
+	wfcount=$(gh api "/repos/asterisk/${DST_REPO}/actions/workflows" --jq '.total_count')
+	if [ $wfcount -eq 0 ] ; then
+		echo "Waiting for workflows to become available"
+		declare -i start_sec=0
+		declare -i elapsed=0
+		start_sec=$SECONDS
+		while true ; do
+			sleep 1m
+			wfcount=$(gh api "/repos/asterisk/${DST_REPO}/actions/workflows" --jq '.total_count')
+			[ $wfcount -gt 0 ] && break
+			elapsed=$(( (SECONDS - start_sec) / 60 ))
+			echo "No workflows after ${elapsed} minutes.  Sleeping for 1 minute"
+		done
+		echo "$wfcount workflows available after ${elapsed} minutes"
+	fi
+}
 
 mapfile -t WORKFLOWS < <(gh api "/repos/asterisk/${DST_REPO}/actions/workflows" --jq '.workflows[].name')
 echo "Disabling all workflows first"
