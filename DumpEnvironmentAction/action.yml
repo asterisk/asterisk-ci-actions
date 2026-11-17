@@ -18,7 +18,7 @@ inputs:
     default: '{}'
   save_output:
     type: boolean
-    default: false
+    default: true
   artifact_id:
     type: string
     default: 'DumpEnvironment'
@@ -45,18 +45,22 @@ runs:
         mkdir ${DUMP_OUTPUT_DIR}
         set +e +v +x
         echo "::group::network"
+        {
         echo "*********** ip link"
         ip link || :
         echo "*********** ip addr"
         ip addr || :
         echo "*********** /etc/hosts"
         cat /etc/hosts || :
+        cp /etc/hosts ${DUMP_OUTPUT_DIR}/
         echo "*********** /etc/resolv.conf"
         cat /etc/resolv.conf || :
+        cp /etc/resolv.conf ${DUMP_OUTPUT_DIR}/
         echo "*********** hostname"
         hostname || :
         echo "*********** host localhost"
         host localhost
+        } | tee ${DUMP_OUTPUT_DIR}/network.txt
         echo "::endgroup::"
         echo "::group::inputs"
         cat <<%%EOF%% | sed -r -e "/(TOKEN|token|ghs_)/d" | tee ${DUMP_OUTPUT_DIR}/inputs.json
