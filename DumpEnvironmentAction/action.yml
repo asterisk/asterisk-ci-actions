@@ -18,7 +18,7 @@ inputs:
     default: '{}'
   save_output:
     type: boolean
-    default: true
+    default: false
   artifact_id:
     type: string
     default: 'DumpEnvironment'
