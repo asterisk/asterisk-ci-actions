@@ -146,14 +146,24 @@ assert_env_variables() {
 
 log_error_msgs() {
 	[ ${#@} -eq 0 ] && return 0
+	local prefix="${PROGNAME}: "
+	if [[ "${1}" =~ ^--prefix=(.*)$ ]] ; then
+		if [ -n "${BASH_REMATCH[1]}" ] ; then
+			prefix="${BASH_REMATCH[1]}: "
+		else
+			prefix=""
+		fi
+		shift
+	fi
+	[ ${#@} -eq 0 ] && return 0
 	_IFS=$"$IFS"
 	IFS=$'\n'
-	echo "::error::${*/#*/${PROGNAME}: &}" >&2
+	echo "::error::${*/#*/${prefix}&}" >&2
 	[ -n "${LOG_FILE}" ] && {
 		rp=$(realpath -m "${LOG_FILE}")
 		logdir=$(dirname "${rp}")
 		[ ! -d "${logdir}" ] && mkdir -p "${logdir}"
-		echo "${*/#*/${PROGNAME}: &}" >> "${LOG_FILE}"
+		echo "${*/#*/${prefix}&}" >> "${LOG_FILE}"
 	}
 	unset IFS
 	IFS=$"$_IFS"

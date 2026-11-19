@@ -169,7 +169,7 @@ done
 
 if [ $RC -ne 0 ] ; then
 	debug_out "***** Cherry-picking failed"
-	log_error_msgs "${error_msgs[@]}"
+	log_error_msgs --prefix="" "${error_msgs[@]}"
 	exit $RC
 fi
 debug_out "***** Cherry-picking done"
